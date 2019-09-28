@@ -400,10 +400,6 @@ __title_set  # call once, no need to call again
 # assemble per-prompt commands
 # ============================
 
-# order is important; additional commands must between:
-# __prompt_last_exit_code_update and __prompt_timer_stop
-PROMPT_COMMAND='__prompt_last_exit_code_update; __prompt_live_updates; __prompt_timer_stop'
-
 # -----------------------
 # prompt terminal details
 # -----------------------
@@ -443,43 +439,47 @@ function __prompt_terminal_details () {
 
     row1+="TERM${s}"
     row2+="${TERM:-not set}${s}"
+    if [[ "${color_force+x}" ]]; then
+        row1+="color_force${s}"
+        row2+="${color_force}${s}"
+    fi
     row1+="DISPLAY${s}"
     row2+="${DISPLAY:-not set}${s}"
-    if [[ -n "${COLORTERM:-}" ]]; then
+    if [[ "${COLORTERM+x}" ]]; then
         row1+="COLORTERM${s}"
         row2+="${COLORTERM}${s}"
     fi
-    if [[ -n "${SHLVL:-}" ]]; then
+    if [[ "${SHLVL+x}" ]]; then
         row1+="SHLVL${s}"
         row2+="${SHLVL}${s}"
     fi
     row1+="tty${s}"
     row2+="${__prompt_terminal_details_tty}${s}"
-    if [[ -n "${STY:-}" ]]; then
+    if [[ "${STY+x}" ]]; then
         row1+="STY${s}"
         row2+="${STY}${s}"
     fi
-    if [[ -n "${TMUX:-}" ]]; then
+    if [[ "${TMUX+x}" ]]; then
         row1+="TMUX${s}"
         row2+="${TMUX}${s}"
     fi
-    if [[ -n "${SSH_TTY:-}" ]]; then
+    if [[ "${SSH_TTY+x}" ]]; then
         row1+="SSH_TTY${s}"
         row2+="${SSH_TTY}${s}"
     fi
-    if [[ -n "${SSH_CONNECTION:-}" ]]; then
+    if [[ "${SSH_CONNECTION+x}" ]]; then
         row1+="SSH_CONNECTION${s}"
         row2+="${SSH_CONNECTION}${s}"
     fi
-    if [[ -n "${GPG_AGENT_INFO:-}" ]]; then
+    if [[ "${GPG_AGENT_INFO+x}" ]]; then
         row1+="GPG_AGENT_INFO${s}"
         row2+="${GPG_AGENT_INFO}${s}"
     fi
-    if [[ -n "${SSH_AUTH_SOCK:-}" ]]; then
+    if [[ "${SSH_AUTH_SOCK+x}" ]]; then
         row1+="SSH_AUTH_SOCK${s}"
         row2+="${SSH_AUTH_SOCK}${s}"
     fi
-    if [[ -n "${SSH_AGENT_PID:-}" ]]; then
+    if [[ "${SSH_AGENT_PID+x}" ]]; then
         row1+="SSH_AGENT_PID${s}"
         row2+="${SSH_AGENT_PID}${s}"
     fi
@@ -600,6 +600,10 @@ $(__prompt_terminal_details) $(__prompt_git_info)${debian_chroot:+(${debian_chro
     fi
 }
 __prompt_set
+
+# order is important; additional commands must between functions __prompt_last_exit_code_update and
+# __prompt_timer_stop
+PROMPT_COMMAND='__prompt_last_exit_code_update; __prompt_live_updates; __prompt_timer_stop'
 
 # ----------
 # misc color
@@ -945,3 +949,4 @@ ${b}Special Features of this .bashrc:${boff}
 infob
 
 set +u
+

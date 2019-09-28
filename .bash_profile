@@ -4,6 +4,7 @@
 #   https://gist.github.com/jtmoon79/863a3c42a41f03729023a976bbcd97f0/edit
 #
 # Features:
+#   - tested in a variety of environments; Debian, openSUSE, FreeBSD using various bash versions
 #   - attempts to play well with screen or tmux
 #   - handles graphical and non-graphical environments
 #
@@ -116,3 +117,4 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
 fi
 
 __source_file_bashprofile ~/.bashrc
+
