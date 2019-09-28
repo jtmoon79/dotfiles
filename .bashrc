@@ -1,7 +1,7 @@
 # ~/.bashrc
 #
-# A mish-mash of bashrc ideas that are worthwhile.
-# Expected to be sourced by ~/.bash_profile
+# A mish-mash of bashrc ideas that are worthwhile, some original ideas, others copied.
+# This files is expected to be sourced by it's companion ~/.bash_profile
 #
 # Features:
 #   - turn on colors; color_force=true; . ~/.bashrc
@@ -25,13 +25,12 @@
 # - bash 4.x on Linux Ubuntu 18
 # - bash 4.x on Linux Debian 9
 # - bash 3.2 on FreeBSD 10
-# TODO: test more using docker bash images https://hub.docker.com/_/bash
 #
 # excellent references
-#   https://mywiki.wooledge.org/BashFAQ/061
-#   http://archive.fo/sGtzb
-#   https://misc.flogisoft.com/bash/tip_colors_and_formatting
-#   http://archive.fo/NmIkP
+#   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
+#   https://misc.flogisoft.com/bash/tip_colors_and_formatting (http://archive.fo/NmIkP)
+#   https://shreevatsa.wordpress.com/2008/03/30/zshbash-startup-files-loading-order-bashrc-zshrc-etc/ (http://archive.fo/fktxC)
+#   https://github.com/webpro/awesome-dotfiles (http://archive.fo/WuiJW)
 #
 
 # If not running interactively, don't do anything
