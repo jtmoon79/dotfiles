@@ -1,0 +1,12 @@
+# .screenrc file for GNU screen
+#
+# latest version at
+#    https://gist.github.com/jtmoon79/4531d3ec6a2d7c574bda08ca533920e5/
+
+vbell off
+windowlist -b
+mousetrack off  # mousetrack on prevents scrollback
+term screen-256color
+
+# allow scrollback https://stackoverflow.com/a/1125947/471376
+termcapinfo xterm* ti@:te@
