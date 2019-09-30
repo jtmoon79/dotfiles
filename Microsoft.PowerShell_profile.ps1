@@ -7,7 +7,7 @@
 # adds custom aliases
 #
 # copy this file to $env:HOMEPATH\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
-# this file is available at https://gist.github.com/jtmoon79/492a91e308cdbabaa95c5b73a6128fb6
+# this file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
 
 # writes once on startup
 Write-Host "Powershell" $PSVersionTable.PSVersion "`n"
