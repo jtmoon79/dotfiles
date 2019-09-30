@@ -15,11 +15,8 @@
 # Designed from Debian-derived Linux. Attempts to work with other Linux and FreeBSD.
 # May be imported multiple times in one shell instance (to allow changing varioius force* switches)
 #
-# Source at https://gist.github.com/jtmoon79/b92afbaff3a149e0665c0ce13d7a06a0
-#
-# Set with either command:
-#     curl 'https://gist.githubusercontent.com/jtmoon79/b92afbaff3a149e0665c0ce13d7a06a0/raw/.bashrc' --output=~/.bashrc
-#     wget -O ~/.bashrc 'https://gist.githubusercontent.com/jtmoon79/b92afbaff3a149e0665c0ce13d7a06a0/raw/.bashrc'
+# Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
+# Install using https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
 # Tested against
 # - bash 4.x on Linux Ubuntu 18

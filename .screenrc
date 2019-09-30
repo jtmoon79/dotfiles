@@ -1,7 +1,7 @@
 # .screenrc file for GNU screen
 #
 # latest version at
-#    https://gist.github.com/jtmoon79/4531d3ec6a2d7c574bda08ca533920e5/
+#    https://github.com/jtmoon79/dotfiles/blob/master/.screenrc
 
 vbell off
 windowlist -b

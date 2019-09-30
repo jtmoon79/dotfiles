@@ -1,17 +1,18 @@
 # .bash_profile
 #
 # lastest version at
-#   https://gist.github.com/jtmoon79/863a3c42a41f03729023a976bbcd97f0/edit
+#   https://github.com/jtmoon79/dotfiles/blob/master/.bash_profile
 #
 # Features:
 #   - tested in a variety of environments; Debian, openSUSE, FreeBSD using various bash versions
 #   - attempts to play well with screen or tmux
 #   - handles graphical and non-graphical environments
 #
-# TODO: this calls multiplexers backwards
-#       this file is processed by bash instance and in turn starts a multiplexer instance
-#       this should occur in the opposite way; start a multiplexer instance and then start a bash instance.
-#       is that reasonreasonably possible?
+# XXX: this calls multiplexers backwards
+#      this file is processed by bash instance and which in-turn starts a multiplexer instance
+#      this should occur in the opposite way; start a multiplexer instance and then start a bash
+#      instance. But is that even *reasonably* possible?
+#
 
 declare -a __sourced_files=()
 
@@ -50,7 +51,8 @@ function readlink_(){
 }
 
 function __path_dir_bash_profile_ () {
-    # do not assume this is run from path $HOME. This allows loading companion .bash_profile and .bashrc from different paths.
+    # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
+    # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
     if which dirname &>/dev/null; then
         path=$(dirname -- "${BASH_SOURCE:-}")
@@ -90,7 +92,8 @@ if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && which xhost &>/dev/null; then
 fi
 
 # try different terminal multiplexers but only if not already withiin one
-# TODO: BUG: race condition: multiple shells starting at once will attach to the same detached session (e.g. in Terminator)
+# TODO: BUG: race condition: multiple shells starting at once will attach to the same detached
+#            session (e.g. in Terminator)
 if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     # try tmux
     # added by jtmoon from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
@@ -131,8 +134,8 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     elif [[ "${force_multiplexer+x}" = 'screen' ]] || (which screen &>/dev/null && ! [[ "${force_multiplexer+x}" ]]); then
         # try to attach to Detached session, otherwise start a new session
         screen_detached=
-        # XXX: if screen does start a new instance, then `__source_file_bashprofile .bashrc` else do not
-        #      how to determine ahead of time?
+        # XXX: if screen does start a new instance, then `__source_file_bashprofile .bashrc` else do
+        #      not how to determine ahead of time?
         if (which grep && which tr && which cut) &>/dev/null; then
             # based on `screen -list` output like:
             #
