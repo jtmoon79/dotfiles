@@ -509,6 +509,22 @@ if ! [[ "${prompt_table_variables+x}" ]]; then
     )
 fi
 
+__prompt_table_separator='❚'  # not seen, do not overwrite
+
+declare -g __prompt_table_column_use=false
+function __prompt_table_column_support () {
+    __prompt_table_column_use=false
+    if __installed column && \
+        (
+            echo "${prompt_table_column:-}${__prompt_table_separator}" \
+            | column -t -s "${__prompt_table_separator}" -c 80
+        ) &>/dev/null
+    then
+        __prompt_table_column_use=true
+    fi
+}
+__prompt_table_column_support
+
 function __prompt_table () {
     # Creates a basic table of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
@@ -518,7 +534,7 @@ function __prompt_table () {
     declare row1=''
     declare row2=''
     declare -r s1=${prompt_table_column}  # visible columns
-    declare -r s2='❚'  # temporary separator, will not be printed
+    declare -r s2=${__prompt_table_separator}  # temporary separator, will not be printed
     declare -r s="${s2}${s1}"
 
     #declare b=''  # bold on
@@ -558,7 +574,9 @@ function __prompt_table () {
     # TODO: consider adding color to table? this would need to be done after substring length
     echo  # start with a newline
     declare -ir cols=$(__window_column_count)
-    if __installed column; then
+    # make sure column is installed and supports the characters used (some environments error on
+    # multi-byte separator characters)
+    if ${__prompt_table_column_use}; then
         declare table=
         table=$(echo -e "${row1}\n${row2}" | column -t -s "${s2}" -c ${cols})
         table=${table//  ${s1}/ ${s1}}
@@ -660,6 +678,7 @@ function __prompt_live_updates () {
 
     declare call_eval_color=false
     declare call___prompt_set=false
+    declare call___prompt_table_column_support=false
 
     # update if necessary
     if [[ "${color_force+x}" ]] && [[ "${__color_force_last:-}" != "${color_force:-}" ]]; then
@@ -675,6 +694,7 @@ function __prompt_live_updates () {
     # update if necessary
     if [[ "${__prompt_table_column_last:-}" != "${prompt_table_column}" ]]; then
         call___prompt_set=true
+        call___prompt_table_column_support=true
     fi
     declare -g __prompt_table_column_last=${prompt_table_column}
 
@@ -703,6 +723,9 @@ function __prompt_live_updates () {
     fi
     if ${call___prompt_set}; then
         __prompt_set
+    fi
+    if ${call___prompt_table_column_support}; then
+        __prompt_table_column_support
     fi
 }
 
@@ -1064,7 +1087,7 @@ ${b}Special Features of this .bashrc:${boff}
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
 	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently,
 		$(__tab_str "$(for i in "${!prompt_table_variables[@]}"; do echo "prompt_table_variables[${i}]=${prompt_table_variables[${i}]}"; let i++; done)" 2)
-	Change table separator by setting ${b}prompt_table_column${boff} (currently '${prompt_table_column}').
+	Change table column lines by setting ${b}prompt_table_column${boff} (currently '${prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}prompt_strftime_format${boff} (currently '${prompt_strftime_format}').
 	Override prompt by changing ${b}prompt_bullet${boff} (currently '${b}${prompt_bullet}${boff}').
 "
