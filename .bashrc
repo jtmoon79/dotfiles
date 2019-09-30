@@ -480,9 +480,9 @@ function __window_column_count () {
 
 __prompt_table_tty=$(tty 2>/dev/null || true)  # set once
 
-__prompt_table_sep_default='┃'
-if ! [[ "${prompt_table_sep+x}" ]]; then
-    declare -g prompt_table_sep=${__prompt_table_sep_default}
+__prompt_table_column_default='┃'
+if ! [[ "${prompt_table_column+x}" ]]; then
+    declare -g prompt_table_column=${__prompt_table_column_default}
 fi
 
 if ! [[ "${prompt_table_variables+x}" ]]; then
@@ -513,11 +513,11 @@ function __prompt_table () {
     # Creates a basic table of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
     # have a dump of sheared table data
-    # BUG: prints trailing column delimiters, but if .bashrc is sourced again then that is fixed
+    # BUG: prints trailing column lines, but if .bashrc is sourced again then that is fixed
 
     declare row1=''
     declare row2=''
-    declare -r s1=${prompt_table_sep}  # visible column delimiters
+    declare -r s1=${prompt_table_column}  # visible columns
     declare -r s2='❚'  # temporary separator, will not be printed
     declare -r s="${s2}${s1}"
 
@@ -541,7 +541,7 @@ function __prompt_table () {
         fi
     done
 
-    # remove trailing column delimiter, can only be done in Bash versions >= 4
+    # remove trailing column lines, can only be done in Bash versions >= 4
     if [[ ${#row1} -gt $((${#s}+1)) ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
         row1=${row1::-${#s}}
     fi
@@ -668,15 +668,15 @@ function __prompt_live_updates () {
     fi
     declare -g __color_force_last=${color_force:-}
 
-    # if `unset prompt_table_sep` occurred then reset to default
-    if ! [[ "${prompt_table_sep+x}" ]]; then
-        prompt_table_sep=${__prompt_table_sep_default}
+    # if `unset prompt_table_column` occurred then reset to default
+    if ! [[ "${prompt_table_column+x}" ]]; then
+        prompt_table_column=${__prompt_table_column_default}
     fi
     # update if necessary
-    if [[ "${__prompt_table_sep_last:-}" != "${prompt_table_sep}" ]]; then
+    if [[ "${__prompt_table_column_last:-}" != "${prompt_table_column}" ]]; then
         call___prompt_set=true
     fi
-    declare -g __prompt_table_sep_last=${prompt_table_sep}
+    declare -g __prompt_table_column_last=${prompt_table_column}
 
     # if `unset prompt_strftime_format` occurred then reset to default
     if ! [[ "${prompt_strftime_format+x}" ]]; then
@@ -878,20 +878,30 @@ function __download_from_to () {
     fi
 }
 
+function __downloader_used () {
+    if __installed wget; then
+        echo 'wget'
+    elif __installed curl; then
+        echo 'curl'
+    else
+        return 1
+    fi
+}
+
 function __update_dotbashprofile () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/863a3c42a41f03729023a976bbcd97f0/raw/.bash_profile' "${__path_dir_bashrc}/.bash_profile" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${__path_dir_bashrc}/.bash_profile" "${@}"
 }
 
 function __update_dotbashrc () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/b92afbaff3a149e0665c0ce13d7a06a0/raw/.bashrc' "${__path_dir_bashrc}/.bashrc" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${__path_dir_bashrc}/.bashrc" "${@}"
 }
 
 function __update_dotvimrc () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/e6bece129386dacddbe2256d0e5fdca3/raw/.vimrc' "${__path_dir_bashrc}/.vimrc" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${__path_dir_bashrc}/.vimrc" "${@}"
 }
 
 function __update_dotscreenrc () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/4531d3ec6a2d7c574bda08ca533920e5/raw/.screenrc' "${__path_dir_bashrc}/.screenrc" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${__path_dir_bashrc}/.screenrc" "${@}"
 }
 
 function __update_dots () {
@@ -1050,12 +1060,13 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__update_dotscreenrc${boff}     # update ${__path_dir_bashrc}/.screenrc
 		${b}__update_dotvimrc${boff}        # update ${__path_dir_bashrc}/.vimrc
 		${b}__update_dots${boff}            # update all of the above
+	Parameters like '--no-check-certificate' will be passed to the downloader $(__downloader_used).
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
 	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently,
 		$(__tab_str "$(for i in "${!prompt_table_variables[@]}"; do echo "prompt_table_variables[${i}]=${prompt_table_variables[${i}]}"; let i++; done)" 2)
-	Change table delimiter by setting ${b}prompt_table_sep${boff} (currently '${prompt_table_sep}').
+	Change table separator by setting ${b}prompt_table_column${boff} (currently '${prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}prompt_strftime_format${boff} (currently '${prompt_strftime_format}').
-	Override prompt by changing ${b}prompt_bullet${boff} which is currently '${b}${prompt_bullet}${boff}'.
+	Override prompt by changing ${b}prompt_bullet${boff} (currently '${b}${prompt_bullet}${boff}').
 "
 }
 
