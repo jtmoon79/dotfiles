@@ -14,23 +14,73 @@
 #       is that reasonreasonably possible?
 
 declare -a __sourced_files=()
-__sourced_files[0]=${BASH_SOURCE:-}  # note this file!
+
+function __installed () {
+    # are all passed args found in the $PATH?
+
+    declare prog=
+    for prog in "${@}"; do
+        if ! which "${prog}" &>/dev/null; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+function readlink_(){
+    # make best attempt to use the available readlink (or realpath) but do not
+    # fail if $1 is not found.
+    # readlink options among different readlink implementations (GNU coreutils and BSD) vary.
+    # So make sure readlink exists and understands the options passed before
+    # using it.
+    declare out=
+    # GNU coreutils readlink supports '-e'
+    if __installed readlink && out=$(readlink -n -e -- "${1}"  2>/dev/null); then
+        echo -n "${out}"
+    # BSD readlink supports '-f'
+    elif __installed readlink && out=$(readlink -n -f -- "${1}"  2>/dev/null); then
+        echo -n "${out}"
+    # old versions of readlink may not have '-n'
+    elif __installed readlink && out=$(readlink -e -- "${1}" 2>/dev/null); then
+        echo -n "${out}"
+    # nothing has worked, just echo
+    else
+        echo -n "${1}"
+    fi
+}
+
+function __path_dir_bash_profile_ () {
+    # do not assume this is run from path $HOME. This allows loading companion .bash_profile and .bashrc from different paths.
+    declare path=${BASH_SOURCE:-}/..
+    if which dirname &>/dev/null; then
+        path=$(dirname -- "${BASH_SOURCE:-}")
+    fi
+    if ! [[ -d "${path}" ]]; then
+        path=~  # in case something is wrong, fallback to ~
+    fi
+    echo -n "${path}"
+}
+__path_dir_bash_profile=$(__path_dir_bash_profile_)
 
 function __source_file_bashprofile() {
-    if [[ ! -f "${1}" ]]; then
-       return
+    declare sourcef=
+    sourcef=$(readlink_ "${1}")
+    if ! [[ -f "${sourcef}" ]]; then
+        return 1
     fi
-    if [[ ! -r "${1}" ]]; then
+    if ! [[ -r "${sourcef}" ]]; then
         return 1  # file exists but is not readable
     fi
     # help the user understand what is happening
-    echo "${PS4:-}source ${1} from ${BASH_SOURCE:-}" >&2
-    __sourced_files[${#__sourced_files[@]}]=${1}
-    source "${1}"
+    echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+    source "${sourcef}"
+    __sourced_files[${#__sourced_files[@]}]=${sourcef}
 }
 
+__sourced_files[0]=$(readlink_ "${BASH_SOURCE:-}")  # note *this* file!
+
 # useful for setting $force_multiplexer
-__source_file_bashprofile ~/.bash_profile.local
+__source_file_bashprofile ${__path_dir_bash_profile}/.bash_profile.local
 
 # inform the local X server to allow this shell instance to launch GUI programs
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
@@ -39,7 +89,7 @@ if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && which xhost &>/dev/null; then
     xhost +local:
 fi
 
-# try different terminal multiplexers
+# try different terminal multiplexers but only if not already withiin one
 # TODO: BUG: race condition: multiple shells starting at once will attach to the same detached session (e.g. in Terminator)
 if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     # try tmux
@@ -68,7 +118,7 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
         fi
         if [[ -z "${tmux_detached}" ]] ; then
              # a detached session not present so create a new session
-            __source_file_bashprofile ~/.bashrc
+            __source_file_bashprofile "${__path_dir_bash_profile}/.bashrc"
             echo "${PS4:-}exec tmux new-session" >&2
             exec tmux new-session
         else
@@ -104,7 +154,7 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
         fi
         if [[ -z "${screen_detached}" ]]; then
             # no detached screen, start new screen
-            __source_file_bashprofile ~/.bashrc
+            __source_file_bashprofile "${__path_dir_bash_profile}/.bashrc"
             # without `-l` this will break logins
             echo "${PS4:-}exec screen -l -RR -U" >&2
             exec screen -l -RR -U
@@ -116,5 +166,4 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     fi
 fi
 
-__source_file_bashprofile ~/.bashrc
-
+__source_file_bashprofile "${__path_dir_bash_profile}/.bashrc"

@@ -31,6 +31,8 @@
 #   https://misc.flogisoft.com/bash/tip_colors_and_formatting (http://archive.fo/NmIkP)
 #   https://shreevatsa.wordpress.com/2008/03/30/zshbash-startup-files-loading-order-bashrc-zshrc-etc/ (http://archive.fo/fktxC)
 #   https://github.com/webpro/awesome-dotfiles (http://archive.fo/WuiJW)
+#   https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
+#   https://www.tldp.org/LDP/abs/html/string-manipulation.html
 #
 
 # If not running interactively, don't do anything
@@ -44,30 +46,70 @@ esac
 
 set -u
 
+# prints an error message when the shift count exceeds the number of positional parameters
+shopt -s shift_verbose
+
+# ---------------------------------------
+# functions for sourcing other bash files
+# ---------------------------------------
+
+declare -a __processed_files
+__processed_files=()
+
+function __path_dir_bashrc_ () {
+    # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
+    # .bashrc from different paths.
+    declare path=${BASH_SOURCE:-}/..
+    if which dirname &>/dev/null; then
+        path=$(dirname -- "${BASH_SOURCE:-}")
+    fi
+    if ! [[ -d "${path}" ]]; then
+        path=~  # in case something is wrong, fallback to ~
+    fi
+    echo -n "${path}"
+}
+
+declare __path_dir_bashrc
+__path_dir_bashrc=$(__path_dir_bashrc_)
+if ! [[ -d "${__path_dir_bashrc}" ]]; then
+    __path_dir_bashrc=~
+fi
+
+# function readlink_ *should* be defined in companion .bash_profile. But in case was not defined,
+# create a stub fallback function
+if ! type -t readlink_ &>/dev/null; then
+    function readlink_ () {
+        echo -n "${1}"
+    }
+fi
+
 # .bash_profile may have already created $__sourced_files, only create if not already created
 if ! [[ "${__sourced_files+x}" ]]; then
     declare -a __sourced_files=()
 fi
-__sourced_files[${#__sourced_files[@]}]=${BASH_SOURCE:-}  # note this file!
-declare -a __processed_files
-__processed_files=()
+__sourced_files[${#__sourced_files[@]}]=$(readlink_ "${BASH_SOURCE:-}")  # note this file!
 
 function __source_file_bashrc () {
-    if [[ ! -f "${1}" ]]; then
+    declare sourcef=$(readlink_ "${1}")
+    if [[ ! -f "${sourcef}" ]]; then
        return
     fi
-    if [[ ! -r "${1}" ]]; then
+    if [[ ! -r "${sourcef}" ]]; then
         return 1  # file exists but is not readable
     fi
-    #echo "${PS4:-}source ${1} from ${BASH_SOURCE:-}" >&2
-    __sourced_files[${#__sourced_files[@]}]=${1}
-    source "${1}"
+    echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+    __sourced_files[${#__sourced_files[@]}]=${sourcef}
+    source "${sourcef}"
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
 __source_file_bashrc ~/.bashrc.local.pre
 
 __PATH_original=${PATH}
+
+# ----------------------------
+# other misc. helper functions
+# ----------------------------
 
 # note Bash Version
 # XXX: presumes single-character versions within string like 'X.Y.…'
@@ -107,15 +149,35 @@ function __replace_str () {
     # This function is the most portable method for doing such. Programs like `sed` and `awk`
     # vary too much or may not be available. Often, a bash substring replacement
     # (e.g. `${foo//abc/123}`) suffices but bash 3.2 does not recognize '\t' as tab character.
+    #
+    # tested variations on implemention of this with function using command:
+    #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __replace_str "${table}" "  " " " >/dev/null; done;'
+    #
 
     if [[ ${#} != 3 ]]; then
         return 1
     fi
+
+    # try bash substring replacement because it's faster, make sure it supports replacing in-line
+    # tab character
+    declare testvar=' '
+    # TODO: test this test on Bash 3.2
+    if echo -n "${testvar/ /	}" &>/dev/null; then
+        # about 10% faster if the substitution is done for a variable and then echoed
+        # instead as versus directly echoed (i.e. two statements is faster than one statement)
+        testvar=${1//${2}/${3}}
+        echo -n "${testvar}"
+        return
+    fi
+
+    # bash substring replacement failed so use slower fallback
+    # Fallback method is about x6 slower than bash substring replacement.
+
+    declare out=''
     declare -ir l1=${#1}  # strlen of $1
     declare -ir l2=${#2}  # strlen of $2
     declare -i at=0  # index current
     declare -i atb=0  # index of beginning of next replacement
-    declare out=''
     while [[ ${at} -lt ${l1} ]]; do
         if [[ "${1:${at}:${l2}}" == "${2}" ]]; then
             out+=${1:${atb}:${at}-${atb}}${3}
@@ -142,10 +204,10 @@ function __tab_str () {
 $(for ((i = 0; i < tab_count; i++)); do echo -n '	'; done)"
 }
 
+# XXX: overwrites function in .bash_profile
 function __installed () {
     # are all passed args found in the $PATH?
-
-    declare prog
+    declare prog=
     for prog in "${@}"; do
         if ! which "${prog}" &>/dev/null; then
             return 1
@@ -180,24 +242,44 @@ __env_0_original=$(env_sorted)
 # don't put duplicate lines or lines starting with space in the history.
 export HISTCONTROL=ignoreboth
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-export HISTSIZE=2000
-export HISTFILESIZE=100000
+export HISTSIZE=5000
+export HISTFILESIZE=400000
 export HISTTIMEFORMAT="%Y%m%dT%H%M%S "
 # append to the history file, don't overwrite it
 shopt -s histappend
 
-#
+# ------------------------
+# globbing and completions
+# ------------------------
+
+# see https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
+
+# includes filenames beginning with a ‘.’ in the results of filename expansion. The filenames ‘.’
+# and ‘..’ must always be matched explicitly, even if dotglob is set.
+shopt -s dotglob
+# patterns which fail to match filenames during filename expansion result in an expansion error.
+shopt -s failglob
+# the pattern ‘**’ used in a filename expansion context will match all files and zero or more
+# directories and subdirectories. If the pattern is followed by a ‘/’, only directories and
+# subdirectories match.
+shopt -s globstar
+# Bash attempts spelling correction on directory names during word completion if the directory name
+# initially supplied does not exist.
+shopt -s dirspell
+
+# the following *should* be enabled by default, but be certain because they are important
+shopt -s promptvars
+shopt -s progcomp
+shopt -s progcomp_alias
+shopt -s complete_fullquote
+
 # ---------------
-# ...
+# misc...
 # ---------------
 
 # check the window size after each command and, if necessary, update the values
 # of LINES and COLUMNS.
 shopt -s checkwinsize
-
-# If set, the pattern "**" used in a pathname expansion context will match all
-# files and zero or more directories and subdirectories.
-#shopt -s globstar
 
 # make `less` more friendly for non-text input files, see lesspipe(1)
 if [[ -x /usr/bin/lesspipe ]]; then
@@ -344,32 +426,11 @@ function __prompt_last_exit_code_show () {
     echo -en "${__prompt_last_exit_code_banner:-}"
 }
 
-declare -r __prompt_bullet_default='‣'  # $ ‣ •
+declare __prompt_bullet_default='‣'  # $ ‣ •
 # make sure $prompt_bullet is set
 if ! [[ "${prompt_bullet+x}" ]]; then
-    prompt_bullet=${__prompt_bullet_default}
+    declare -g prompt_bullet=${__prompt_bullet_default}
 fi
-
-function __prompt_live_updates () {
-    # special "live" updates that monitor special variables
-
-    # update if necessary
-    if [[ "${color_force+x}" ]] && [[ "${__color_force_last:-}" != "${color_force:-}" ]]; then
-        eval_color
-        __prompt_set  # to be defined below
-    fi
-    __color_force_last=${color_force:-}
-
-    # if `unset prompt_bullet` occurred then reset to default
-    if ! [[ "${prompt_bullet+x}" ]]; then
-        prompt_bullet=${__prompt_bullet_default}
-    fi
-    # update if necessary
-    if [[ "${__prompt_bullet_last:-}" != "${prompt_bullet}" ]]; then
-        __prompt_set  # to be defined below
-    fi
-    __prompt_bullet_last=${prompt_bullet}
-}
 
 # -------------------
 # set title of window
@@ -381,7 +442,7 @@ function __prompt_live_updates () {
 # TODO: consider adjusting title when ssh-ing to other places, e.g. "ssh foo@bar ..." then swap back
 #       in.
 
-__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # save the current title? - https://unix.stackexchange.com/a/28520/21203
+__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # save the current title? https://unix.stackexchange.com/a/28520/21203
 __title_set_TTY=$(tty 2>/dev/null || true)  # set this once
 __title_set_kernel=${__title_set_kernel:-Kernel $(uname -r)}
 __title_set_OS=${__title_set_OS:-${__OperatingSystem}}
@@ -404,105 +465,99 @@ __title_set  # call once, no need to call again
 # prompt terminal details
 # -----------------------
 
-__prompt_terminal_details_tty=$(tty 2>/dev/null || true)  # set once
+function __window_column_count () {
+    # safely get the columns wide (if a command fails, $cols will become value 0)
+    declare -i cols
+    cols=${COLUMNS:-0}
+    if [[ ${cols} -le 0 ]]; then
+        cols=$(tput cols 2>/dev/null || true)
+    fi
+    if [[ ${cols} -le 0 ]]; then
+        cols=80  # previous attempts failed, fallback to 80
+    fi
+    echo -n ${cols}
+}
 
-function __prompt_terminal_details () {
-    # Creates a crude table of interesting environment variables.
+__prompt_table_tty=$(tty 2>/dev/null || true)  # set once
+
+__prompt_table_sep_default='┃'
+if ! [[ "${prompt_table_sep+x}" ]]; then
+    declare -g prompt_table_sep=${__prompt_table_sep_default}
+fi
+
+if ! [[ "${prompt_table_variables+x}" ]]; then
+    # TODO: consider adding checks for various python virtualenvs (virtualenv, pipenv, poetry)
+    # TODO: consider adding checks for docker environment
+    declare -ga prompt_table_variables=(
+        'TERM'
+        'color_force'
+        'DISPLAY'
+        'COLORTERM'
+        'SHLVL'
+        'tty'
+        'STY'
+        'SSH_TTY'
+        'SSH_CONNECTION'
+        'TMUX'
+        'GPG_AGENT_INFO'
+        'SSH_AUTH_SOCK'
+        'SSH_AGENT_PID'
+        'PYTHON_PIPENV'
+        'PYTHON_PIP_VERSION'
+        'PYTHON'
+        'VIRTUAL_ENV'
+    )
+fi
+
+function __prompt_table () {
+    # Creates a basic table of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
     # have a dump of sheared table data
-    # TODO: would be cool if the user could update this in "realtime". Maybe it could process a global array
-    #       of vars like ('TERM' 'DISPLAY' ...) and evaluate that. Not sure how special case like `tty`
-    #       would be handled.
-    #       Maybe associative array where key is name and value is how to retrieve the result via `eval`
-    #       e.g.
-    #           ( "TERM": "${TERM}", "tty": "$(tty)", ...)
-    #       or just expect caller to have filled in values with variables to `eval`,
-    #       e.g.
-    #           ( "TERM": "${TERM}", "tty": "${__prompt_terminal_details_tty}", ...)
+    # BUG: prints trailing column delimiters, but if .bashrc is sourced again then that is fixed
 
     declare row1=''
     declare row2=''
-    declare -r s1='┃'  # this will be used for column columns
-    declare -r s2='❚'  # this is temporary separator, will not be printed
+    declare -r s1=${prompt_table_sep}  # visible column delimiters
+    declare -r s2='❚'  # temporary separator, will not be printed
     declare -r s="${s2}${s1}"
 
-    #if ! [[ "${__prompt_info+x}" ]]; then  # TODO: beginnings of prior TODO
-    #    declare -ga __prompt_info=()
+    #declare b=''  # bold on
+    #declare bf=''  # bold off
+    #if ${__color_prompt}; then
+    #    b='\e[1m'
+    #    boff='\e[0m'
     #fi
 
-    declare b=''  # bold on
-    declare bf=''  # bold off
-    if ${__color_prompt}; then
-        b='\e[1m'
-        boff='\e[0m'
-    fi
+    declare varn=  # variable name
+    for varn in "${prompt_table_variables[@]}"; do
+        if [[ -n "${varn:-}" ]] && [[ "${!varn+x}" ]]; then
+            if [[ 'tty' = "${varn}" ]]; then  # special case
+                row1+="${varn}${s}"
+                row2+="${__prompt_table_tty}${s}"
+            else
+                row1+="${varn}${s}"
+                row2+="${!varn}${s}"
+            fi
+        fi
+    done
 
-    row1+="TERM${s}"
-    row2+="${TERM:-not set}${s}"
-    if [[ "${color_force+x}" ]]; then
-        row1+="color_force${s}"
-        row2+="${color_force}${s}"
-    fi
-    row1+="DISPLAY${s}"
-    row2+="${DISPLAY:-not set}${s}"
-    if [[ "${COLORTERM+x}" ]]; then
-        row1+="COLORTERM${s}"
-        row2+="${COLORTERM}${s}"
-    fi
-    if [[ "${SHLVL+x}" ]]; then
-        row1+="SHLVL${s}"
-        row2+="${SHLVL}${s}"
-    fi
-    row1+="tty${s}"
-    row2+="${__prompt_terminal_details_tty}${s}"
-    if [[ "${STY+x}" ]]; then
-        row1+="STY${s}"
-        row2+="${STY}${s}"
-    fi
-    if [[ "${TMUX+x}" ]]; then
-        row1+="TMUX${s}"
-        row2+="${TMUX}${s}"
-    fi
-    if [[ "${SSH_TTY+x}" ]]; then
-        row1+="SSH_TTY${s}"
-        row2+="${SSH_TTY}${s}"
-    fi
-    if [[ "${SSH_CONNECTION+x}" ]]; then
-        row1+="SSH_CONNECTION${s}"
-        row2+="${SSH_CONNECTION}${s}"
-    fi
-    if [[ "${GPG_AGENT_INFO+x}" ]]; then
-        row1+="GPG_AGENT_INFO${s}"
-        row2+="${GPG_AGENT_INFO}${s}"
-    fi
-    if [[ "${SSH_AUTH_SOCK+x}" ]]; then
-        row1+="SSH_AUTH_SOCK${s}"
-        row2+="${SSH_AUTH_SOCK}${s}"
-    fi
-    if [[ "${SSH_AGENT_PID+x}" ]]; then
-        row1+="SSH_AGENT_PID${s}"
-        row2+="${SSH_AGENT_PID}${s}"
-    fi
     # remove trailing column delimiter, can only be done in Bash versions >= 4
-    if [[ ${#row1} -gt 2 ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
-        row1=${row1::-2}
+    if [[ ${#row1} -gt $((${#s}+1)) ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
+        row1=${row1::-${#s}}
     fi
-    if [[ ${#row2} -gt 2 ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
-        row2=${row2::-2}
+    if [[ ${#row2} -gt $((${#s}+1)) ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
+        row2=${row2::-${#s}}
     fi
-
-    # safely get the columns wide. if a command fails, $cols will fallback to value 0.
-    declare -i cols=$(tput cols 2>/dev/null || true)  # try tput first; tends to be most accurate
-    if [[ ${cols} -le 0 ]]; then
-        cols=${COLUMNS:-0}  # tput failed, try environment variable COLUMNS
-    fi
-    if [[ ${cols} -le 0 ]]; then
-        cols=80  # for some reason, previous attempts failed. just set to 80
+    # avoid printing anything if there is nothing to interesting
+    if [[ ${#row1} -eq 0 ]] && [[ ${#row2} -eq 0 ]]; then
+        return 0
     fi
 
     # make attempt to print table-like output based on available programs
     # NOTE: column errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
     # TODO: consider adding color to table? this would need to be done after substring length
+    echo  # start with a newline
+    declare -ir cols=$(__window_column_count)
     if __installed column; then
         declare table=
         table=$(echo -e "${row1}\n${row2}" | column -t -s "${s2}" -c ${cols})
@@ -514,7 +569,7 @@ function __prompt_terminal_details () {
 }
         echo "${row1::${cols}}"
         echo "${row2::${cols}}"
-    else  # print without columnar alignment, a bit ugly :-(
+    else  # print without columnar alignment, it will look ugly :-(
         declare row=
         for row in "${row1}" "${row2}"; do
             if __installed tr; then
@@ -525,8 +580,6 @@ function __prompt_terminal_details () {
             fi
         done
     fi
-
-    return 0
 }
 
 # ---------------
@@ -577,29 +630,81 @@ function __prompt_git_info () {
 # assemble the prompt pieces
 #
 
+declare __prompt_strftime_format_default='%F %T'
+if ! [[ "${prompt_strftime_format+x}" ]]; then
+    prompt_strftime_format=${__prompt_strftime_format_default}
+fi
+
 function __prompt_set () {
     # set $PS1 with a bunch of good info
-    # XXX: is it possible to recheck this on every re-prompt? There are some potential infinite
-    #      loops so that would be tricky.
     if ${__color_prompt}; then
         declare color_user='32'  # green
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
             color_user='31'  # red
         fi
         PS1='
-\D{%F %T} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))\[\e[0m\]
-\[\e[36m\]$(__prompt_terminal_details)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot:-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{%F %T} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))
-$(__prompt_terminal_details) $(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))$(__prompt_table) $(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
 \u@\h:\w
 '"${prompt_bullet}"' '
     fi
 }
 __prompt_set
+
+function __prompt_live_updates () {
+    # special "live" updates that monitor special variables
+
+    declare call_eval_color=false
+    declare call___prompt_set=false
+
+    # update if necessary
+    if [[ "${color_force+x}" ]] && [[ "${__color_force_last:-}" != "${color_force:-}" ]]; then
+        call_eval_color=true
+        call___prompt_set=true
+    fi
+    declare -g __color_force_last=${color_force:-}
+
+    # if `unset prompt_table_sep` occurred then reset to default
+    if ! [[ "${prompt_table_sep+x}" ]]; then
+        prompt_table_sep=${__prompt_table_sep_default}
+    fi
+    # update if necessary
+    if [[ "${__prompt_table_sep_last:-}" != "${prompt_table_sep}" ]]; then
+        call___prompt_set=true
+    fi
+    declare -g __prompt_table_sep_last=${prompt_table_sep}
+
+    # if `unset prompt_strftime_format` occurred then reset to default
+    if ! [[ "${prompt_strftime_format+x}" ]]; then
+        prompt_strftime_format=${__prompt_strftime_format_default}
+    fi
+    # update if necessary
+    if [[ "${__prompt_strftime_format_last:-}" != "${prompt_strftime_format}" ]]; then
+        call___prompt_set=true
+    fi
+    declare -g __prompt_strftime_format_last=${prompt_strftime_format}
+
+    # if `unset prompt_bullet` occurred then reset to default
+    if ! [[ "${prompt_bullet+x}" ]]; then
+        prompt_bullet=${__prompt_bullet_default}
+    fi
+    # update if necessary
+    if [[ "${__prompt_bullet_last:-}" != "${prompt_bullet}" ]]; then
+        call___prompt_set=true
+    fi
+    declare -g __prompt_bullet_last=${prompt_bullet}
+
+    if ${call_eval_color}; then
+        eval_color
+    fi
+    if ${call___prompt_set}; then
+        __prompt_set
+    fi
+}
 
 # order is important; additional commands must between functions __prompt_last_exit_code_update and
 # __prompt_timer_stop
@@ -651,10 +756,10 @@ function __path_adds()
 
     declare path=
     if [[ -r ~/.bash_paths ]]; then
-        __processed_files[${#__processed_files[@]}]=~/.bash_paths
+        __processed_files[${#__processed_files[@]}]=$(readlink_ "${__path_dir_bashrc}/.bash_paths")
         while read -r path; do
             __path_add "${path}"
-        done < ~/.bash_paths
+        done < "${__path_dir_bashrc}/.bash_paths"
     fi
     for path in "${@}"; do
         __path_add "${path}"
@@ -668,7 +773,7 @@ __path_adds "${HOME}/bin"
 
 function __alias_safely () {
     # create alias if it does not obscure a program in the $PATH
-    if __installed "${1}"; then
+    if type "${1}" &>/dev/null; then
         return 1
     fi
     alias "${1}"="${2}"
@@ -676,17 +781,20 @@ function __alias_safely () {
 
 function __alias_check () {
     # create alias if running the alias succeeds
-    (cd ~ && ${2}) &>/dev/null || return
+    (cd ~ && (${2})) &>/dev/null || return
     alias "${1}"="${2}"
 }
 
 function __alias_safely_check () {
     # create alias if it does not obscure a program in the $PATH and running the alias succeeds
-    if __installed "${1}"; then
+    if type "${1}" &>/dev/null; then
         return 1
     fi
-    (cd ~ && ${2}) &>/dev/null || return
-    alias "${1}"="${2}"
+    if (set -o pipefail; cd ~ && (${2})) &>/dev/null; then
+        alias "${1}"="${2}"
+    else
+        return 1
+    fi
 }
 
 # -------------
@@ -695,8 +803,8 @@ function __alias_safely_check () {
 
 # enable color support of ls and also add handy aliases
 if ${__color_apps} && [[ -x /usr/bin/dircolors ]]; then
-    if test -r ~/.dircolors; then
-        eval "$(/usr/bin/dircolors -b ~/.dircolors)"
+    if test -r "${__path_dir_bashrc}/.dircolors"; then
+        eval "$(/usr/bin/dircolors -b "${__path_dir_bashrc}/.dircolors")"
     else
         eval "$(/usr/bin/dircolors -b)"
     fi
@@ -733,20 +841,22 @@ fi
 # other aliases
 # -------------
 
-__alias_safely_check l 'ls -lA'
-__alias_safely_check ll 'ls -lA'
-__alias_safely_check la 'ls -A'
+__alias_safely_check l 'ls -lAa'
+__alias_safely_check ll 'ls -lAa'
+__alias_safely_check la 'ls -Aa'
 __alias_safely_check ltr 'ls -Altr'
-__alias_safely_check whence 'type -a'  # where, of a sort
+__alias_safely whence 'type -a'  # where, of a sort
 __alias_safely_check psa 'ps -ef --forest'
+__alias_safely_check envs env_sorted
 
 if __installed git; then
     __alias_safely gitb 'git branch -avv'
     __alias_safely gitf 'git fetch -av'
     __alias_safely gits 'git status -vv'
 fi
-__alias_safely_check envs env_sorted
+
 if __installed mount sort column; then
+    # TODO: BUG: this fails to be set under Debian 9 WSL
     __alias_safely_check mnt 'mount | sort -k3 | column -t'
 fi
 
@@ -769,30 +879,29 @@ function __download_from_to () {
 }
 
 function __update_dotbashprofile () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/863a3c42a41f03729023a976bbcd97f0/raw/.bash_profile' "${HOME}/.bash_profile" "${@}"
+    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/863a3c42a41f03729023a976bbcd97f0/raw/.bash_profile' "${__path_dir_bashrc}/.bash_profile" "${@}"
 }
 
 function __update_dotbashrc () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/b92afbaff3a149e0665c0ce13d7a06a0/raw/.bashrc' "${HOME}/.bashrc" "${@}"
+    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/b92afbaff3a149e0665c0ce13d7a06a0/raw/.bashrc' "${__path_dir_bashrc}/.bashrc" "${@}"
 }
 
 function __update_dotvimrc () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/e6bece129386dacddbe2256d0e5fdca3/raw/.vimrc' "${HOME}/.vimrc" "${@}"
+    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/e6bece129386dacddbe2256d0e5fdca3/raw/.vimrc' "${__path_dir_bashrc}/.vimrc" "${@}"
 }
 
 function __update_dotscreenrc () {
-    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/4531d3ec6a2d7c574bda08ca533920e5/raw/.screenrc' "${HOME}/.screenrc" "${@}"
+    __download_from_to 'https://gist.githubusercontent.com/jtmoon79/4531d3ec6a2d7c574bda08ca533920e5/raw/.screenrc' "${__path_dir_bashrc}/.screenrc" "${@}"
 }
 
 function __update_dots () {
-    # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell environment
-    # may pass wget/curl parameters to like --no-check-certificate or --insecure
+    # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell
+    # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
     __update_dotbashprofile "${@}"
     __update_dotbashrc "${@}"
     __update_dotvimrc "${@}"
     __update_dotscreenrc "${@}"
 }
-
 
 # =========================
 # source other bashrc files
@@ -802,8 +911,8 @@ function __update_dots () {
 
 # .bashrc.local for host-specific customizations
 
-__source_file_bashrc ~/.bashrc.local
-__source_file_bashrc ~/.bash_aliases
+__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local"
+__source_file_bashrc "${__path_dir_bashrc}/.bash_aliases"
 
 if ! shopt -oq posix; then
     __source_file_bashrc /usr/share/bash-completion/bash_completion
@@ -936,12 +1045,16 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
-		${b}__update_dotbashprofile${boff}  # update ~/.bash_profile
-		${b}__update_dotbashrc${boff}       # update ~/.bashrc
-		${b}__update_dotscreenrc${boff}     # update ~/.screenrc
-		${b}__update_dotvimrc${boff}        # update ~/.vimrc
+		${b}__update_dotbashprofile${boff}  # update ${__path_dir_bashrc}/.bash_profile
+		${b}__update_dotbashrc${boff}       # update ${__path_dir_bashrc}/.bashrc
+		${b}__update_dotscreenrc${boff}     # update ${__path_dir_bashrc}/.screenrc
+		${b}__update_dotvimrc${boff}        # update ${__path_dir_bashrc}/.vimrc
 		${b}__update_dots${boff}            # update all of the above
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
+	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently,
+		$(__tab_str "$(for i in "${!prompt_table_variables[@]}"; do echo "prompt_table_variables[${i}]=${prompt_table_variables[${i}]}"; let i++; done)" 2)
+	Change table delimiter by setting ${b}prompt_table_sep${boff} (currently '${prompt_table_sep}').
+	Change PS1 strftime format (prompt date time) by setting ${b}prompt_strftime_format${boff} (currently '${prompt_strftime_format}').
 	Override prompt by changing ${b}prompt_bullet${boff} which is currently '${b}${prompt_bullet}${boff}'.
 "
 }
@@ -949,4 +1062,3 @@ ${b}Special Features of this .bashrc:${boff}
 infob
 
 set +u
-
