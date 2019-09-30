@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# install other . (dot) files in a one-liner, for fast setup of a new linux user shell environment
+# install other . (dot) files in a one-liner, for fast setup of a new Unix user shell environment
 #
 # run this file:
 #
