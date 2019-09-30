@@ -587,12 +587,13 @@ function __prompt_table () {
 }
         echo "${row1::${cols}}"
         echo "${row2::${cols}}"
-    else  # print without columnar alignment, it will look ugly :-(
+    else  # print without column alignment; a little ugly
         declare row=
         for row in "${row1}" "${row2}"; do
             if __installed tr; then
                 echo "${row::${cols}}" | tr "${s2}" '\t'
             else
+                # no column, no tr; very ugly
                 row=${row//${s2}/}
                 echo "${row::${cols}}"
             fi
