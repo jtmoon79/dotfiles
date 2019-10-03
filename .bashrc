@@ -255,7 +255,8 @@ shopt -s histappend
 # and ‘..’ must always be matched explicitly, even if dotglob is set.
 shopt -s dotglob
 # patterns which fail to match filenames during filename expansion result in an expansion error.
-shopt -s failglob
+# XXX: prints debugging messages on Debian bash 4.2, leave off
+#shopt -s failglob
 # the pattern ‘**’ used in a filename expansion context will match all files and zero or more
 # directories and subdirectories. If the pattern is followed by a ‘/’, only directories and
 # subdirectories match.
