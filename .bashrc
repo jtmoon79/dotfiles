@@ -506,10 +506,14 @@ if ! [[ "${prompt_table_variables+x}" ]]; then
     )
 fi
 
-__prompt_table_separator='❚'  # not seen, do not overwrite
+if [[ ! "${__prompt_table_separator+x}" ]]; then
+    readonly __prompt_table_separator='❚'  # not seen, do not overwrite
+fi
 
 declare -g __prompt_table_column_use=false
 function __prompt_table_column_support () {
+    # make sure column is installed and supports the characters used (old versions of column in non-Unicode
+    # environments will error on multi-byte separator characters)
     __prompt_table_column_use=false
     if __installed column && \
         (
@@ -523,7 +527,7 @@ function __prompt_table_column_support () {
 __prompt_table_column_support
 
 function __prompt_table () {
-    # Creates a basic table of interesting environment variables.
+    # Creates a basic "table" of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
     # have a dump of sheared table data
     # BUG: prints trailing column lines, but if .bashrc is sourced again then that is fixed
@@ -534,6 +538,13 @@ function __prompt_table () {
     declare -r s2=${__prompt_table_separator}  # temporary separator, will not be printed
     declare -r s="${s2}${s1}"
 
+    function __max() {
+        if [[ ${1} -gt ${2} ]]; then
+            echo -n "${1}"
+        else
+            echo -n "${2}"
+        fi
+    }
     #declare b=''  # bold on
     #declare bf=''  # bold off
     #if ${__color_prompt}; then
@@ -541,15 +552,27 @@ function __prompt_table () {
     #    boff='\e[0m'
     #fi
 
+    declare -ir cols=$(__window_column_count)
+
     declare varn=  # variable name
+    declare -i rows_len=0
     for varn in "${prompt_table_variables[@]}"; do
+        # if the rows are already too long for the window column width then do not
+        # continue appending to them
+        # XXX: assumes ${#s2} is 1 (exactly cancels out '  ' substutition that occurs below)
+        if [[ ${rows_len} -gt ${cols} ]]; then
+            break
+        fi
+        # append the variable name to row1 and variable value to row2
         if [[ -n "${varn:-}" ]] && [[ "${!varn+x}" ]]; then
             if [[ 'tty' = "${varn}" ]]; then  # special case
                 row1+="${varn}${s}"
                 row2+="${__prompt_table_tty}${s}"
+                rows_len+=$(($(__max ${#varn} ${#__prompt_table_tty}) + ${#s}))
             else
                 row1+="${varn}${s}"
                 row2+="${!varn}${s}"
+                rows_len+=$(($(__max ${#varn} $(expr length "${!varn}")) + ${#s}))
             fi
         fi
     done
@@ -567,12 +590,9 @@ function __prompt_table () {
     fi
 
     # make attempt to print table-like output based on available programs
-    # NOTE: column errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
+    # NOTE: program `column` errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
     # TODO: consider adding color to table? this would need to be done after substring length
     echo  # start with a newline
-    declare -ir cols=$(__window_column_count)
-    # make sure column is installed and supports the characters used (some environments error on
-    # multi-byte separator characters)
     if ${__prompt_table_column_use}; then
         declare table=
         table=$(echo -e "${row1}\n${row2}" | column -t -s "${s2}" -c ${cols})
