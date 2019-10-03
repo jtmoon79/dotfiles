@@ -462,6 +462,16 @@ __title_set  # call once, no need to call again
 # prompt terminal details
 # -----------------------
 
+function __prompt_table_max() {
+    # return maximum integer
+    # function name is odd so it is less likely to be overwritten
+    if [[ ${1} -gt ${2} ]]; then
+        echo -n "${1}"
+    else
+        echo -n "${2}"
+    fi
+}
+
 function __window_column_count () {
     # safely get the columns wide (if a command fails, $cols will become value 0)
     declare -i cols
@@ -538,13 +548,6 @@ function __prompt_table () {
     declare -r s2=${__prompt_table_separator}  # temporary separator, will not be printed
     declare -r s="${s2}${s1}"
 
-    function __max() {
-        if [[ ${1} -gt ${2} ]]; then
-            echo -n "${1}"
-        else
-            echo -n "${2}"
-        fi
-    }
     #declare b=''  # bold on
     #declare bf=''  # bold off
     #if ${__color_prompt}; then
@@ -568,11 +571,11 @@ function __prompt_table () {
             if [[ 'tty' = "${varn}" ]]; then  # special case
                 row1+="${varn}${s}"
                 row2+="${__prompt_table_tty}${s}"
-                rows_len+=$(($(__max ${#varn} ${#__prompt_table_tty}) + ${#s}))
+                rows_len+=$(($(__prompt_table_max ${#varn} ${#__prompt_table_tty}) + ${#s}))
             else
                 row1+="${varn}${s}"
                 row2+="${!varn}${s}"
-                rows_len+=$(($(__max ${#varn} $(expr length "${!varn}")) + ${#s}))
+                rows_len+=$(($(__prompt_table_max ${#varn} $(expr length "${!varn}")) + ${#s}))
             fi
         fi
     done
