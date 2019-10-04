@@ -498,7 +498,11 @@ __title_set_OS=${__title_set_OS:-${__OperatingSystem}}
 #__title_set_user=${USER:-}
 function __title_set () {
     # title will only accept one line of text
-    echo -en "\033]0;${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}\007"
+    declare ssh_connection=
+    if [[ "${SSH_CONNECTION+x}" ]]; then
+        ssh_connection=" (via ${SSH_CONNECTION})"
+    fi
+    echo -en "\033]0;${USER}@$(hostname) using ${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
 }
 function __title_reset () {  # can be called called in ~/.bash_logout
     # BUG: does not work in most environments
@@ -539,7 +543,7 @@ function __window_column_count () {
 
 __prompt_table_tty=$(tty 2>/dev/null || true)  # set once
 
-__prompt_table_column_default='┃'
+__prompt_table_column_default='│'  # ┃ ║ ║ │ │
 if ! [[ "${prompt_table_column+x}" ]]; then
     declare -g prompt_table_column=${__prompt_table_column_default}
 fi
