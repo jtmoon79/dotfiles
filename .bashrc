@@ -12,8 +12,9 @@
 #   - optional source from ~/.bash_paths - per-line paths to add to $PATH
 #   - safe to use in many varying Unix environments 🤞
 #
-# Designed from Debian-derived Linux. Attempts to work with other Linux and FreeBSD.
-# May be imported multiple times in one shell instance (to allow changing varioius force* switches)
+# Designed from Debian-derived Linux. Attempts to work with other Linux and Unix in varying
+# envionrments. Avoids absolute reliance on tools like `grep`, `sed`, etc. because those tools vary
+# too much or are not available.
 #
 # Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
 # Install using https://github.com/jtmoon79/dotfiles/blob/master/install.sh
@@ -117,26 +118,72 @@ export BASH_VERSION_MAJOR \
 
 function what_OS () {
     # attempt to determine what Unix Operating System this is in
+    # tips from http://whatsmyos.com/
+    # TODO: Incomplete: MinGW bash, cygwin, OpenBSD
 
     declare os='unknown'
     declare os_flavor=''
     if [[ -f /proc/version ]]; then
         os='Linux'
-        if [[ -f /etc/redhat-release ]]; then
-             os_flavor='Redhat'
+        if [[ -f /etc/os-release ]]; then
+            # three examples of /etc/os-release :
+            #
+            #   PRETTY_NAME="Raspbian GNU/Linux 9 (stretch)"
+            #   NAME="Raspbian GNU/Linux"
+            #   VERSION_ID="9"
+            #   VERSION="9 (stretch)"
+            #   ID=raspbian
+            #   ID_LIKE=debian
+            #   HOME_URL="http://www.raspbian.org/"
+            #   SUPPORT_URL="http://www.raspbian.org/RaspbianForums"
+            #   BUG_REPORT_URL="http://www.raspbian.org/RaspbianBugs"
+            #
+            #   NAME="Alpine Linux"
+            #   ID=alpine
+            #   VERSION_ID=3.10.0
+            #   PRETTY_NAME="Alpine Linux v3.10"
+            #   HOME_URL="https://alpinelinux.org/"
+            #   BUG_REPORT_URL="https://bugs.alpinelinux.org/"
+            #
+            #   NAME="Ubuntu"
+            #   VERSION="18.04.3 LTS (Bionic Beaver)"
+            #   ID=ubuntu
+            #   ID_LIKE=debian
+            #   PRETTY_NAME="Ubuntu 18.04.3 LTS"
+            #   VERSION_ID="18.04"
+            #   HOME_URL="https://www.ubuntu.com/"
+            #   SUPPORT_URL="https://help.ubuntu.com/"
+            #   BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+            #   PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+            #   VERSION_CODENAME=bionic
+            #   UBUNTU_CODENAME=bionic
+            #
+            (
+                eval $(cat /etc/os-release)
+                echo -n "${PRETTY_NAME:-${NAME}}"
+            )
+            return
+        elif [[ -f /etc/redhat-release ]]; then
+             os_flavor='Redhat '
         fi
-        echo -n "${os}"
+        echo -n "${os_flavor}${os}"
         return
     fi
 
+    os='Unix'
     declare sysctl_output
-    sysctl_output=$(sysctl -n kern.osrelease kern.ostype 2>/dev/null) && os='BSD'
-    if [[ "${sysctl_output}" = 'FreeBSD' ]]; then
-       os_flavor='FreeBSD'
+    if sysctl_output=$(sysctl -n kern.osrelease kern.ostype 2>/dev/null); then
+        os_flavor='BSD '
+        if [[ "${sysctl_output}" = 'FreeBSD' ]]; then
+            os_flavor='FreeBSD '
+        fi
+        echo -n "${os_flavor}${os}"
     fi
-    echo -n "${os} ${os_flavor}"
 
-    # TODO: what about MinGW bash? what about cygwin? what about OpenBSD?
+    if __installed showrev; then
+        os_flavor='Solaris '
+    fi
+    echo -n "${os_flavor}${os}"
 }
 __OperatingSystem=$(what_OS)
 
@@ -436,21 +483,25 @@ fi
 
 # TODO: record prior title, and then replace it when this login shell exits.
 #       currently, login to remote bash overwrites the title, but then never replaces it when it
-#       completes
+#       completes.
+#
 # TODO: consider adjusting title when ssh-ing to other places, e.g. "ssh foo@bar ..." then swap back
 #       in.
+#
 
-__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # save the current title? https://unix.stackexchange.com/a/28520/21203
+# save the current title? https://unix.stackexchange.com/a/28520/21203
+__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # BUG: does not work in most environments
 __title_set_TTY=$(tty 2>/dev/null || true)  # set this once
-__title_set_kernel=${__title_set_kernel:-Kernel $(uname -r)}
+__title_set_kernel=${__title_set_kernel:-kernel $(uname -r)}
 __title_set_OS=${__title_set_OS:-${__OperatingSystem}}
 #__title_set_hostname=$(hostname)
 #__title_set_user=${USER:-}
-function __title_set {
+function __title_set () {
     # title will only accept one line of text
-    echo -en "\033]0;${SHELL:-SHELL not set} TTY ${__title_set_TTY} ${__title_set_kernel} ${__title_set_OS}\007"
+    echo -en "\033]0;${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}\007"
 }
-function __title_reset {  # can be called called in ~/.bash_logout
+function __title_reset () {  # can be called called in ~/.bash_logout
+    # BUG: does not work in most environments
     echo -en '\033]0;'"${__title_set_prev:-}"'\007'
 }
 __title_set  # call once, no need to call again
@@ -463,7 +514,7 @@ __title_set  # call once, no need to call again
 # prompt terminal details
 # -----------------------
 
-function __prompt_table_max() {
+function __prompt_table_max () {
     # return maximum integer
     # function name is odd so it is less likely to be overwritten
     if [[ ${1} -gt ${2} ]]; then
@@ -1107,7 +1158,7 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__update_dots${boff}            # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__downloader_used).
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
-	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently,
+	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently searches for:
 		$(__tab_str "$(for i in "${!prompt_table_variables[@]}"; do echo "prompt_table_variables[${i}]=${prompt_table_variables[${i}]}"; let i++; done)" 2)
 	Change table column lines by setting ${b}prompt_table_column${boff} (currently '${prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}prompt_strftime_format${boff} (currently '${prompt_strftime_format}').
