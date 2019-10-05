@@ -331,14 +331,18 @@ if [[ -x /usr/bin/lesspipe ]]; then
     eval "$(SHELL=/bin/sh /usr/bin/lesspipe)"
 fi
 
-# ==================
-# prefer en_US.UTF-8
-# ==================
+# =================================
+# Localization - prefer en_US.UTF-8
+# =================================
 
-export LANG='en_US.UTF-8'
-export LOCALE='UTF-8'
+# TODO: check available locales, fallback to one found there?
+
+# available locales can be checked via `locale -a`
+
+export LANG=${LANG:-'en_US.UTF-8'}
+export LOCALE=${LOCALE:-'UTF-8'}
 # see https://unix.stackexchange.com/a/87763/21203
-export LC_ALL='en_US.UTF-8'
+export LC_ALL=${LC_ALL:-'en_US.UTF-8'}
 
 if __installed less; then
     # from `man less`
