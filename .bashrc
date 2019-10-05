@@ -1080,20 +1080,25 @@ function infob () {
     echo "\
 Using bash ${BASH_VERSION}, process ID $$
 "
-    # echo aliases
-    echo -e "\
-${b}Aliases in this shell (alias):${boff}
-
-	$(__replace_str "$(__replace_str "$(alias)" 'alias ' '')" '
-' '
-	')
-" >&2
 
     # echo information functions available
+    declare funcs=$(__replace_str "$(declare -F)" 'declare -f ' '	')
+    declare -i funcs_c=$(echo -n "${funcs}" | line_count)
     echo -e "\
-${b}Functions in this shell (declare -F):${boff}
+${b}functions (×${funcs_c}) in this shell (declare -F):${boff}
 
-$(__replace_str "$(declare -F)" 'declare -f ' '	')
+${funcs}
+" >&2
+
+    # echo aliases
+    declare aliases=$(__replace_str "$(__replace_str "$(alias)" 'alias ' '')" '
+' '
+	')
+    declare -i aliases_c=$(echo -n "${aliases}" | line_count)
+    echo -e "\
+${b}aliases (×${aliases_c}) in this shell (alias):${boff}
+
+	${aliases}
 " >&2
 
     # echo information about interesting enviroment variables
@@ -1122,7 +1127,7 @@ ${b}New Environment Variables:${boff}
 
     # echo $__sourced_files
     echo -e "\
-${b}Files Sourced:${boff}
+${b}Files Sourced (×${#__sourced_files[@]}):${boff}
 
 $(for src in "${__sourced_files[@]}"; do echo "	${src}"; done)
 "
@@ -1130,7 +1135,7 @@ $(for src in "${__sourced_files[@]}"; do echo "	${src}"; done)
     # echo $__processed_files if any
     if [[ ${#__processed_files[@]} -gt 0 ]]; then
         echo -e "\
-${b}Files Processed:${boff}
+${b}Files Processed (×${#__processed_files[@]}):${boff}
 
 $(for src in "${__processed_files[@]}"; do echo "	${src}"; done)
 "
@@ -1162,10 +1167,12 @@ ${b}screen Settings:${boff}
     fi
 
     # echo $PATHs
+    declare paths=$(__tab_str "${PATH}" 1 ':')
+    declare -i paths_c=$(echo -n "${paths}" | line_count)
     echo -e "\
-${b}Paths:${boff}
+${b}Paths (×${paths_c}):${boff}
 
-	$(__tab_str "${PATH}" 1 ':')
+	${paths}
 "
 
     # echo information about other users, system uptime
