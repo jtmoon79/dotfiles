@@ -260,6 +260,25 @@ function __installed () {
     done
 }
 
+function line_count () {
+    # count '\n' in stdin as parsed by `read` builtin
+    # input '' yields "0"
+    # input 'a' yields "1"
+    # input 'a\n' yields "2"
+    # input 'a\nb' yields "2"
+    # input 'a\nb\n' yields "2"
+    # input 'a\nb\nc' yields "3"
+    declare line=
+    declare -i count=0
+    while read -rs line; do
+        let count+=1
+    done
+    if [[ "${line}" != '' ]]; then
+        let count+=1
+    fi
+    echo -n "${count}"
+}
+
 function env_sorted () {
     # Print environment sorted
     # Accounts for newlines within environment values (common in $LS_COLORS)
