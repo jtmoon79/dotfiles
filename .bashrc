@@ -631,11 +631,11 @@ function __prompt_table () {
             if [[ 'tty' = "${varn}" ]]; then  # special case
                 row1+="${varn}${s}"
                 row2+="${__prompt_table_tty}${s}"
-                rows_len+=$(($(__prompt_table_max ${#varn} ${#__prompt_table_tty}) + ${#s}))
+                rows_len+=$(($(__prompt_table_max ${#varn} ${#__prompt_table_tty}) + ${#s1}))
             else
                 row1+="${varn}${s}"
                 row2+="${!varn}${s}"
-                rows_len+=$(($(__prompt_table_max ${#varn} $(expr length "${!varn}")) + ${#s}))
+                rows_len+=$(($(__prompt_table_max ${#varn} $(expr length "${!varn}")) + ${#s1}))
             fi
         fi
     done
@@ -659,7 +659,7 @@ function __prompt_table () {
     if ${__prompt_table_column_use}; then
         declare table=
         table=$(echo -e "${row1}\n${row2}" | column -t -s "${s2}" -c ${cols})
-        table=${table//  ${s1}/ ${s1}}
+        table=${table//  ${s1}/${s1}}
         # extract row1 and row2 using "back delete" and "front delete" substring manipulation
         row1=${table%%
 *}
@@ -741,6 +741,10 @@ function __prompt_set () {
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
             color_user='31'  # red
         fi
+        # BUG: not putting the $(__prompt_table) on it's own line causes oddity when resizing a window to be smaller;
+        #      the next line becomes "attached" to the $(__prompt_table) line.
+        #      However, if $(__prompt_table) is given it's own line then when $prompt_table_variables becomes unset there
+        #      will be an empty line.
         PS1='
 \D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot:-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
