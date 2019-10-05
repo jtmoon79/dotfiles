@@ -4,11 +4,13 @@
 # This files is expected to be sourced by it's companion ./.bash_profile
 #
 # Features:
-#   - turn on colors; color_force=true; . ./.bashrc
-#   - prints info about screen and tmux
-#   - attempts typical source of /usr/share/bash-completion/bash_completion
-#   - optional source from ./.bashrc.local.pre, ./.bashrc.local
+#   - prints context info on startup
+#   - prompt prints: timer, return code, datetime, table of variables (adjustable)
+#   - allows "live" modification of some prompt features
+#   - allows override of various features via ./.bashrc.local.pre
+#   - optional source from ./.bashrc.local.pre, ./.bashrc.local, ./.bashrc.local.post
 #   - optional source from ./.bash_paths - per-line paths to add to $PATH
+#   - attempts sourcing of /usr/share/bash-completion/bash_completion
 #   - safe to use in many varying Unix environments 🤞
 #
 # Designed from Debian-derived Linux. Attempts to work with other Linux and Unix in varying
@@ -18,12 +20,12 @@
 # Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
 # Install using https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
-# Tested against
+# (sometimes) tested against
 # - bash 4.x on Linux Ubuntu 18
 # - bash 4.x on Linux Debian 9
 # - bash 3.2 on FreeBSD 10
 #
-# excellent references
+# Excellent references:
 #   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
 #   https://misc.flogisoft.com/bash/tip_colors_and_formatting (http://archive.fo/NmIkP)
 #   https://shreevatsa.wordpress.com/2008/03/30/zshbash-startup-files-loading-order-bashrc-zshrc-etc/ (http://archive.fo/fktxC)
@@ -32,7 +34,7 @@
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
 #
 
-# If not running interactively, don't do anything
+# If not running interactively, do not do anything
 case "$-" in
     *i*)
         ;;
