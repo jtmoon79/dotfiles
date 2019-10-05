@@ -978,9 +978,9 @@ function __download_from_to () {
     declare -r path=${1}
     shift
     if __installed wget; then
-        wget "${@}" -O "${path}" "${url}"
+        (set -x; wget "${@}" -O "${path}" "${url}")
     elif __installed curl; then
-        curl "${@}" --output "${path}" "${url}"
+        (set -x; curl "${@}" --output "${path}" "${url}")
     else
         return 1
     fi
@@ -997,19 +997,19 @@ function __downloader_used () {
 }
 
 function __update_dotbashprofile () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${__path_dir_bashrc}/.bash_profile" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' './.bash_profile' "${@}"
 }
 
 function __update_dotbashrc () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${__path_dir_bashrc}/.bashrc" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
 }
 
 function __update_dotvimrc () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${__path_dir_bashrc}/.vimrc" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
 }
 
 function __update_dotscreenrc () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${__path_dir_bashrc}/.screenrc" "${@}"
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
 }
 
 function __update_dots () {
