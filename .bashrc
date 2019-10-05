@@ -1,15 +1,14 @@
-# ~/.bashrc
+# .bashrc
 #
 # A mish-mash of bashrc ideas that are worthwhile, some original ideas, others copied.
-# This files is expected to be sourced by it's companion ~/.bash_profile
+# This files is expected to be sourced by it's companion ./.bash_profile
 #
 # Features:
-#   - turn on colors; color_force=true; . ~/.bashrc
+#   - turn on colors; color_force=true; . ./.bashrc
 #   - prints info about screen and tmux
 #   - attempts typical source of /usr/share/bash-completion/bash_completion
-#   - optional source from ~/.bashrc.local.pre
-#   - optional source from ~/.bashrc.local
-#   - optional source from ~/.bash_paths - per-line paths to add to $PATH
+#   - optional source from ./.bashrc.local.pre, ./.bashrc.local
+#   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - safe to use in many varying Unix environments 🤞
 #
 # Designed from Debian-derived Linux. Attempts to work with other Linux and Unix in varying
@@ -55,7 +54,7 @@ declare -a __processed_files
 __processed_files=()
 
 function __path_dir_bashrc_ () {
-    # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
+    # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
     if which dirname &>/dev/null; then
@@ -101,7 +100,7 @@ function __source_file_bashrc () {
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
-__source_file_bashrc ~/.bashrc.local.pre
+__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.pre"
 
 __PATH_original=${PATH}
 
@@ -120,6 +119,8 @@ function what_OS () {
     # attempt to determine what Unix Operating System this is in
     # tips from http://whatsmyos.com/
     # TODO: Incomplete: MinGW bash, cygwin, OpenBSD
+    # TODO: this funciton is a bit of a mess and needs some consistency about
+    #       what it is aiming to do.
 
     declare os='unknown'
     declare os_flavor=''
@@ -405,9 +406,9 @@ function eval_color () {
 
     # if $color_force is defined, then set $__color_prompt according to $color_force truth
     # Force color off
-    #      color_force=false . ~/.bashrc
+    #      color_force=false . ./.bashrc
     # Force color on
-    #      color_force=true . ~/.bashrc
+    #      color_force=true . ./.bashrc
     if [[ -n "${color_force+x}" ]]; then
         if ${color_force} &>/dev/null; then
             __color_prompt=true
@@ -508,7 +509,7 @@ function __title_set () {
     fi
     echo -en "\033]0;${USER}@$(hostname) using ${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
 }
-function __title_reset () {  # can be called called in ~/.bash_logout
+function __title_reset () {  # can be called called in ./.bash_logout
     # BUG: does not work in most environments
     echo -en '\033]0;'"${__title_set_prev:-}"'\007'
 }
@@ -582,8 +583,9 @@ fi
 
 declare -g __prompt_table_column_use=false
 function __prompt_table_column_support () {
-    # make sure column is installed and supports the characters used (old versions of column in non-Unicode
-    # environments will error on multi-byte separator characters)
+    # make sure `column` is installed and supports the characters used. With old versions of
+    # `column` in non-Unicode environments or in a bad locale $LANG setting, the `column` program
+    # will error on multi-byte separator characters.
     __prompt_table_column_use=false
     if __installed column && \
         (
@@ -836,7 +838,7 @@ function __path_add () {
     # - valid executable directory
     # - not already in $PATH
 
-    declare path=${1}
+    declare -r path=${1}
     if ! ([[ -d "${path}" ]] && [[ -x "${path}" ]]); then  # must be valid executable directory
         return 1
     fi
@@ -856,24 +858,22 @@ function __path_add () {
     echo "${PS4:-}__path_add '${path}'" >&2
     export PATH=${PATH}:${path}
 }
+__path_add "${HOME}/bin"
 
-function __path_adds()
-{
-    # if ~/.bash_paths then attempt to add those paths, assuming a path per-line
-    # add any paths passed to this function
-
+function __path_add_from_file () {
+    # attempt to add paths found in the file $1, assuming a path per-line
     declare path=
-    if [[ -r ~/.bash_paths ]]; then
-        __processed_files[${#__processed_files[@]}]=$(readlink_ "${__path_dir_bashrc}/.bash_paths")
+    declare -r paths_file=${1}
+    if [[ -r "${paths_file}" ]]; then
+        __processed_files[${#__processed_files[@]}]=$(readlink_ "${paths_file}")
         while read -r path; do
             __path_add "${path}"
-        done < "${__path_dir_bashrc}/.bash_paths"
+        done < "${paths_file}"
+    else
+        return 1
     fi
-    for path in "${@}"; do
-        __path_add "${path}"
-    done
 }
-__path_adds "${HOME}/bin"
+__path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 
 # =======
 # aliases
@@ -1025,11 +1025,12 @@ function __update_dots () {
 # source other bashrc files
 # =========================
 
-# Do not source ~/.bash_profile as that will source ~/.bashrc (circular dependency)
+# Do not source ./.bash_profile as that will source ./.bashrc (circular dependency)
 
 # .bashrc.local for host-specific customizations
 
 __source_file_bashrc "${__path_dir_bashrc}/.bashrc.local"
+__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.post"
 __source_file_bashrc "${__path_dir_bashrc}/.bash_aliases"
 
 if ! shopt -oq posix; then

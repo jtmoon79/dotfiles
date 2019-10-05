@@ -82,7 +82,7 @@ function __source_file_bashprofile() {
 __sourced_files[0]=$(readlink_ "${BASH_SOURCE:-}")  # note *this* file!
 
 # useful for setting $force_multiplexer
-__source_file_bashprofile ${__path_dir_bash_profile}/.bash_profile.local
+__source_file_bashprofile "${__path_dir_bash_profile}/.bash_profile.local"
 
 # inform the local X server to allow this shell instance to launch GUI programs
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
