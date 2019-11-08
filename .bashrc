@@ -130,9 +130,122 @@ __source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.pre"
 
 __PATH_original=${PATH}
 
-# ----------------------------
+# ==============
+# PATH additions
+# ==============
+
+# add PATHs sooner so calls to `__installed` will search *all* paths the user
+# has specified
+
+function __path_add () {
+    # append path $1 to $PATH but only if it is
+    # - valid executable directory
+    # - not already in $PATH
+
+    declare -r path=${1}
+    if ! ([[ -d "${path}" ]] && [[ -x "${path}" ]]); then  # must be valid executable directory
+        return 1
+    fi
+    # test if any attempts at primitive matching find a match (substring $path within $PATH?)
+    # uses primitive substring matching and avoid =~ operator as the path $1 could have regex
+    # significant characters
+    #      test front
+    #      test back
+    #      test middle
+    if ! (     [[ "${PATH}" = "${PATH##${path}:}" ]] \
+            && [[ "${PATH}" = "${PATH%%:${path}}" ]] \
+            && [[ "${PATH}" = "${PATH/:${path}:/}" ]]
+         )
+    then
+        return 1
+    fi
+    echo "${PS4:-}__path_add '${path}'" >&2
+    export PATH=${PATH}:${path}
+}
+__path_add "${HOME}/bin"
+
+function __path_add_from_file () {
+    # attempt to add paths found in the file $1, assuming a path per-line
+    declare path=
+    declare -r paths_file=${1}
+    if [[ -r "${paths_file}" ]]; then
+        __processed_files[${#__processed_files[@]}]=$(readlink_ "${paths_file}")
+        while read -r path; do
+            __path_add "${path}"
+        done < "${paths_file}"
+    else
+        return 1
+    fi
+}
+__path_add_from_file "${__path_dir_bashrc}/.bash_paths"
+
+# -------------------------------------------------
+# search for some important installed programs once
+# -------------------------------------------------
+
+# TODO: how to implement this without itself doing path searches?
+#       ('true' and 'false' are programs in the path)
+#       oddly, running `true` is 1/10 time of running `/bin/true`.   Why is that?
+
+#declare -gA __installed_tracker_array=()
+#
+#function __installed_tracker () {
+#     # search for a program once
+#     # further calls will only do an array lookup instead of searching the filesystem.
+#     # in theory, this should be faster.
+
+#     declare -i ret=0  # return code
+#     declare prog=
+#     for prog in "${@}"; do
+#         # check if program has been searched already
+#         # note if it is not installed
+#         if [[ "${__installed_tracker_array[${prog}+x]}" ]]; then
+#             # program has been searched, what was the result?
+#             if ! ${__installed_tracker_array[${prog}]}; then
+#                 ret=1
+#             fi
+#             continue
+#         fi
+#         # if a program in $@ was not installed then return failure
+#         #if [[ ${ret} -ne 0 ]]; then
+#         #    return 1
+#         #fi
+#         if __installed "${prog}" &>/dev/null; then
+#             __installed_tracker_array["${prog}"]=true
+#         else
+#             __installed_tracker_array["${prog}"]=false
+#             ret=1
+#         fi
+#     done
+#     return ${ret}
+# }
+#__installed_tracker grep sed tr cut
+
+# search once for programs that are used per-prompting
+declare -g __installed_grep=false
+if __installed grep; then
+    __installed_grep=true
+fi
+
+declare -g __installed_tr=false
+if __installed tr; then
+    __installed_tr=true
+fi
+
+declare -g __installed_cut=false
+if __installed cut; then
+    __installed_cut=true
+fi
+
+declare -g __installed_column=false
+if __installed column; then
+    __installed_column=true
+fi
+
+
+# ============================
 # other misc. helper functions
-# ----------------------------
+# ============================
 
 # note Bash Version
 # XXX: presumes single-character versions within string like 'X.Y.…'
@@ -553,6 +666,12 @@ __title_set  # call once, no need to call again
 # assemble per-prompt commands
 # ============================
 
+# these various prompt functions that are called per-prompting are
+# written to be efficient.  Avoid searching paths or running programs
+# that are unnecessary.  Most state is within global variables. Programs
+# have related `__install_program` global variables already set to `true`
+# or `false`.
+
 # -----------------------
 # prompt terminal details
 # -----------------------
@@ -620,8 +739,9 @@ function __prompt_table_column_support () {
     # make sure `column` is installed and supports the characters used. With old versions of
     # `column` in non-Unicode environments or in a bad locale $LANG setting, the `column` program
     # will error on multi-byte separator characters.
+    # call this once
     __prompt_table_column_use=false
-    if __installed column && \
+    if ${__installed_column} && \
         (
             echo "${prompt_table_column:-}${__prompt_table_separator}" \
             | column -t -s "${__prompt_table_separator}" -c 80
@@ -708,7 +828,7 @@ function __prompt_table () {
     else  # print without column alignment; a little ugly
         declare row=
         for row in "${row1}" "${row2}"; do
-            if __installed tr; then
+            if ${__installed_tr}; then
                 echo "${row::${cols}}" | tr "${s2}" '\t'
             else
                 # no column, no tr; very ugly
@@ -723,17 +843,44 @@ function __prompt_table () {
 # prompt git info
 # ---------------
 
+declare -g __installed_git=false
+if __installed git; then
+    __installed_git=true
+fi
+
+declare -g __installed_stat=false
+if __installed stat; then
+    __installed_stat=true
+fi
+
+# consolidate to one variable
+declare -g __prompt_git_info_installed_git_stat=false
+if ${__installed_git} && ${__installed_stat}; then  # check once, save result
+    __prompt_git_info_installed_git_stat=true
+fi
+
 function __prompt_git_info () {
-    # most directories are not git repositories
-    # so make easy checks try to bail out early before getting to __git_ps1; do not let this
-    # function be a drag on the system
-    if ! __installed git stat; then
+    # a prompt line with git information
+    #
+    # Most directories are not git repositories so make easy checks try to bail
+    # out early before getting to __git_ps1; do not let this function be a drag
+    # on the system
+
+    # do the necessary programs exist?
+    if ! ${__prompt_git_info_installed_git_stat}; then
         return
     fi
+
+    # does the necessary helper function exist already?
+    if ! declare -F __git_ps1 &>/dev/null; then
+        return
+    fi
+
     # do not run `git worktree` on remote system, may take too long
     if [[ '/' != "$(stat '--format=%m' '.' 2>/dev/null)" ]]; then
         return
     fi
+
     # is this a git worktree?
     if ! git worktree list &>/dev/null; then
         return
@@ -860,56 +1007,10 @@ PROMPT_COMMAND='__prompt_last_exit_code_update; __prompt_live_updates; __prompt_
 # misc color
 # ----------
 
-if (__installed gcc || __installed 'g++') && ${__color_prompt}; then
+if (__installed gcc || __installed 'g++') && ${__color_apps}; then
     # colored GCC warnings and errors
     export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 fi
-
-# ==============
-# PATH additions
-# ==============
-
-function __path_add () {
-    # append path $1 to $PATH but only if it is
-    # - valid executable directory
-    # - not already in $PATH
-
-    declare -r path=${1}
-    if ! ([[ -d "${path}" ]] && [[ -x "${path}" ]]); then  # must be valid executable directory
-        return 1
-    fi
-    # test if any attempts at primitive matching find a match (substring $path within $PATH?)
-    # uses primitive substring matching and avoid =~ operator as the path $1 could have regex
-    # significant characters
-    #      test front
-    #      test back
-    #      test middle
-    if ! (     [[ "${PATH}" = "${PATH##${path}:}" ]] \
-            && [[ "${PATH}" = "${PATH%%:${path}}" ]] \
-            && [[ "${PATH}" = "${PATH/:${path}:/}" ]]
-         )
-    then
-        return 1
-    fi
-    echo "${PS4:-}__path_add '${path}'" >&2
-    export PATH=${PATH}:${path}
-}
-__path_add "${HOME}/bin"
-
-function __path_add_from_file () {
-    # attempt to add paths found in the file $1, assuming a path per-line
-    declare path=
-    declare -r paths_file=${1}
-    if [[ -r "${paths_file}" ]]; then
-        __processed_files[${#__processed_files[@]}]=$(readlink_ "${paths_file}")
-        while read -r path; do
-            __path_add "${path}"
-        done < "${paths_file}"
-    else
-        return 1
-    fi
-}
-__path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 
 # =======
 # aliases
@@ -993,7 +1094,7 @@ __alias_safely whence 'type -a'  # where, of a sort
 __alias_safely_check psa 'ps -ef --forest'
 __alias_safely_check envs env_sorted
 
-if __installed git; then
+if ${__installed_git}; then
     __alias_safely gitb 'git branch -avv'
     __alias_safely gitf 'git fetch -av'
     __alias_safely gits 'git status -vv'
