@@ -35,6 +35,14 @@
 #
 # TODO: change all `true` and `false` "boolean" variables to be the full path
 #       to the programs.  `true` implies a $PATH search whereas `/bin/true` does not.
+#       UPDATE: yet `/bin/true` is many times `true`. Why is that?
+#
+#               time (for i in {0..100}; do true; done)
+#                   0.002s
+#
+#
+#               time (for i in {0..100}; do /bin/true; done)
+#                   0.162s
 
 # If not running interactively, do not do anything
 case "$-" in
