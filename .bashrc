@@ -1048,7 +1048,7 @@ function __alias_safely_check () {
 
 # enable color support of ls and also add handy aliases
 if ${__color_apps} && [[ -x /usr/bin/dircolors ]]; then
-    if test -r "${__path_dir_bashrc}/.dircolors"; then
+    if [[ -r "${__path_dir_bashrc}/.dircolors" ]]; then
         eval "$(/usr/bin/dircolors -b "${__path_dir_bashrc}/.dircolors")"
     else
         eval "$(/usr/bin/dircolors -b)"
