@@ -33,6 +33,8 @@
 #   https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
 #
+# TODO: change all `true` and `false` "boolean" variables to be the full path
+#       to the programs.  `true` implies a $PATH search whereas `/bin/true` does not.
 
 # If not running interactively, do not do anything
 case "$-" in
@@ -633,7 +635,9 @@ __prompt_table_column_support
 function __prompt_table () {
     # Creates a basic "table" of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
-    # have a dump of sheared table data
+    # have a dump of shared table data.
+    # This function and functions it calls make efforts to be efficient as it is expected this
+    # function is called for every prompting.
     # BUG: prints trailing column lines, but if .bashrc is sourced again then that is fixed
 
     declare row1=''

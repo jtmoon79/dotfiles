@@ -91,6 +91,7 @@ __source_file_bashprofile "${__path_dir_bash_profile}/.bash_profile.local"
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
 if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && __installed xhost &>/dev/null; then
     # XXX: this is lax security, how to make the X server allowance more restricted?
+    #      see https://wiki.archlinux.org/index.php/Xhost#Usage
     xhost +local:
 fi
 
