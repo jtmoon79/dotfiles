@@ -1063,24 +1063,30 @@ if ${__color_apps} && [[ -x /usr/bin/dircolors ]]; then
     fi
 fi
 
-if ${__color_apps}; then
+function __alias_greps_color() {
+    # alias various forms of `grep` programs for `--color=auto`
+
+    declare grep_path=
+    if ! ${__color_apps}; then
+        return 0
+    fi
     # various grep interfaces found on Ubuntu 18
     # since each grep will be run, for stability, confine search to /usr/bin and /bin
-    for __grep_path in \
-       /usr/bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep} \
-       /bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep}
+    for grep_path in \
+    /usr/bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep} \
+    /bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep}
     do
-       __grep_base=${__grep_path##*/}  # get basename
-       # run simplest match with the grep program to make sure it understands option '--color=auto'
-       if __installed "${__grep_path}" \
-         && [[ "$(which "${__grep_base}" 2>/dev/null)" = "${__grep_path}" ]] \
-         && (echo '' | "${__grep_path}" --color=auto '' &>/dev/null); then
-           alias "${__grep_base}"="${__grep_path} --color=auto"
-       fi
+    declare grep_base=
+    grep_base=${grep_path##*/}  # get basename
+    # run simplest match with the grep program to make sure it understands option '--color=auto'
+    if __installed "${grep_path}" \
+        && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
+        && (echo '' | "${grep_path}" --color=auto '' &>/dev/null); then
+        alias "${grep_base}"="${grep_path} --color=auto"
+    fi
     done
-    unset __grep_path
-    unset __grep_base
-fi
+}
+__alias_greps_color
 
 # -------------
 # other aliases
