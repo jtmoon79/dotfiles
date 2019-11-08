@@ -1063,7 +1063,7 @@ if ${__color_apps} && [[ -x /usr/bin/dircolors ]]; then
     fi
 fi
 
-function __alias_greps_color() {
+function __alias_greps_color () {
     # alias various forms of `grep` programs for `--color=auto`
 
     declare grep_path=

@@ -31,7 +31,7 @@ function __installed () {
     return 0
 }
 
-function readlink_(){
+function readlink_ () {
     # make best attempt to use the available readlink (or realpath) but do not
     # fail if $1 is not found.
     # readlink options among different readlink implementations (GNU coreutils and BSD) vary.
@@ -67,7 +67,7 @@ function __path_dir_bash_profile_ () {
 }
 __path_dir_bash_profile=$(__path_dir_bash_profile_)
 
-function __source_file_bashprofile() {
+function __source_file_bashprofile () {
     declare sourcef=
     sourcef=$(readlink_ "${1}")
     if ! [[ -f "${sourcef}" ]]; then
