@@ -18,6 +18,9 @@ declare -a __sourced_files=()
 
 function __installed () {
     # are all passed args found in the $PATH?
+    if ! which which &>/dev/null; then
+        return 1
+    fi
 
     declare prog=
     for prog in "${@}"; do
@@ -54,7 +57,7 @@ function __path_dir_bash_profile_ () {
     # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
-    if which dirname &>/dev/null; then
+    if __installed dirname; then
         path=$(dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
@@ -86,7 +89,7 @@ __source_file_bashprofile "${__path_dir_bash_profile}/.bash_profile.local"
 
 # inform the local X server to allow this shell instance to launch GUI programs
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
-if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && which xhost &>/dev/null; then
+if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && __installed xhost &>/dev/null; then
     # XXX: this is lax security, how to make the X server allowance more restricted?
     xhost +local:
 fi
@@ -97,10 +100,10 @@ fi
 if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     # try tmux
     # added by jtmoon from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
-    if [[ "${force_multiplexer+x}" = 'tmux' ]] || (which tmux &>/dev/null && ! [[ "${force_multiplexer+x}" ]]); then
+    if [[ "${force_multiplexer+x}" = 'tmux' ]] || (__installed tmux && ! [[ "${force_multiplexer+x}" ]]); then
         # try to attach-session to detached tmux session, otherwise create new-session
         tmux_detached=
-        if (which grep && which cut) &>/dev/null; then
+        if __installed grep cut; then
             # get the tmux ID of a deattached session
             #
             # based on `tmux ls` output like:
@@ -131,12 +134,12 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
         fi
     # try screen
     # removed check [ -z "${STY+x}" ]
-    elif [[ "${force_multiplexer+x}" = 'screen' ]] || (which screen &>/dev/null && ! [[ "${force_multiplexer+x}" ]]); then
+    elif [[ "${force_multiplexer+x}" = 'screen' ]] || (__installed screen && ! [[ "${force_multiplexer+x}" ]]); then
         # try to attach to Detached session, otherwise start a new session
         screen_detached=
         # XXX: if screen does start a new instance, then `__source_file_bashprofile .bashrc` else do
         #      not how to determine ahead of time?
-        if (which grep && which tr && which cut) &>/dev/null; then
+        if __installed grep tr cut; then
             # based on `screen -list` output like:
             #
             #There are screens on:

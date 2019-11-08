@@ -48,6 +48,28 @@ set -u
 # prints an error message when the shift count exceeds the number of positional parameters
 shopt -s shift_verbose
 
+# ------------------------------
+# important helper `__installed`
+# ------------------------------
+
+# XXX: overwrites function in .bash_profile
+function __installed () {
+    if ! which which &> /dev/null; then
+        echo "WARNING: which was not found in current path. This will limit features from this '${0}'" >&2
+        echo "         Current Path:" >&2
+        echo "         ${PATH}" >&2
+        return 1
+    fi
+    # are all passed args found in the $PATH?
+    declare prog=
+    for prog in "${@}"; do
+        if ! which "${prog}" &>/dev/null; then
+            return 1
+        fi
+    done
+}
+
+
 # ---------------------------------------
 # functions for sourcing other bash files
 # ---------------------------------------
@@ -59,7 +81,7 @@ function __path_dir_bashrc_ () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
-    if which dirname &>/dev/null; then
+    if __installed dirname; then
         path=$(dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
@@ -249,17 +271,6 @@ function __tab_str () {
 }
     __replace_str "${1}" "${repl}" "
 $(for ((i = 0; i < tab_count; i++)); do echo -n '	'; done)"
-}
-
-# XXX: overwrites function in .bash_profile
-function __installed () {
-    # are all passed args found in the $PATH?
-    declare prog=
-    for prog in "${@}"; do
-        if ! which "${prog}" &>/dev/null; then
-            return 1
-        fi
-    done
 }
 
 function line_count () {
