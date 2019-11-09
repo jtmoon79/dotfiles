@@ -487,18 +487,83 @@ if [[ -x /usr/bin/lesspipe ]]; then
     eval "$(SHELL=/bin/sh /usr/bin/lesspipe)"
 fi
 
-# =================================
-# Localization - prefer en_US.UTF-8
-# =================================
+# =====================
+# Localization settings
+# =====================
 
-# TODO: check available locales, fallback to one found there?
+# from https://www.gnu.org/software/gettext/manual/html_node/Locale-Environment-Variables.html
+#
+#     When a program looks up locale dependent values, it does this according to the following
+#     environment variables, in priority order:
+#         LANGUAGE
+#         LC_ALL
+#         LC_xxx, according to selected locale category: LC_CTYPE, LC_NUMERIC, LC_TIME, LC_COLLATE, LC_MONETARY, LC_MESSAGES, ...
+#         LANG
+#
+# from https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html
+#     GNU gettext gives preference to LANGUAGE over LC_ALL and LANG for the purpose of message handling
+#
+# also see https://unix.stackexchange.com/questions/149111/what-should-i-set-my-locale-to-and-what-are-the-implications-of-doing-so/149129#149129
+#          https://unix.stackexchange.com/questions/87745/what-does-lc-all-c-do/87763#87763
 
-# available locales can be checked via `locale -a`
+function locale_get () {
+    # get an available locale, preferring $1 if passed, then preferring others
+    # for reference, a sampling of `locale -a` output on OpenSUSE 15.1 Linux
+    #
+    #     C
+    #     C.UTF-8
+    #     …
+    #     en_GB.utf8
+    #     en_US.utf8
+    #     …
+    #     POSIX
+    #     …
+    #     tt_RU@iqtelif
+    #     …
+    #     ug_CN
+    #     uk_UA
+    #     uz_UZ
+    #     uz_UZ@cyrillic
+    #     uz_UZ.utf8
+    #
 
-export LANG=${LANG:-'en_US.UTF-8'}
+    declare locales=
+    if ! __installed locale || ! locales=$(locale -a 2>/dev/null); then
+        # a fallback value likely to be valid on constrained systems (i.e. Alpine Linux)
+        echo -n 'C.UTF-8'
+        return 1
+    fi
+
+    if [[ "${1+x}" ]] && [[ "${locales}" =~ "${1}" ]]; then
+        echo -n "${1}"
+        return
+    fi
+    declare locale=
+    for locale in \
+        'en_US.utf8' \
+        'en_US.UTF-8' \
+        'en_GB.utf8' \
+        'en_GB.UTF-8' \
+        'en_US' \
+        'C.UTF-8'
+    do
+        if [[ "${locales}" =~ "${locale}" ]]; then
+            echo -n "${locale}"
+            return
+        fi
+    done
+    # undesirable fallback: uses ASCII, better than nothing
+    echo -n 'POSIX'
+}
+
 export LOCALE=${LOCALE:-'UTF-8'}
-# see https://unix.stackexchange.com/a/87763/21203
-export LC_ALL=${LC_ALL:-'en_US.UTF-8'}
+__locale_get=$(locale_get)
+export LANG=${LANG:-${__locale_get}}
+export LC_ALL=${LC_ALL:-${__locale_get}}  # see https://unix.stackexchange.com/a/87763/21203
+# $LANG affect can be seen with code:
+#
+#     for locale in $(locale -a); do (export LANG=$locale; echo -en "$locale\t"; date); done
+#
 
 if __installed less; then
     # from `man less`
