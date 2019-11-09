@@ -727,7 +727,9 @@ function __title_set () {
     if [[ "${SSH_CONNECTION+x}" ]]; then
         ssh_connection=" (via ${SSH_CONNECTION})"
     fi
-    echo -en "\033]0;${USER}@$(hostname) using ${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
+    declare user_=${USER:-$(whoami)}  # MinGW bash may not set $USER
+    declare host_=${HOSTNAME:-$(hostname)}  # some bash may not set $HOSTNAME
+    echo -en "\033]0;${user_}@${host_} using ${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
 }
 function __title_reset () {  # can be called called in ./.bash_logout
     # BUG: does not work in most environments
