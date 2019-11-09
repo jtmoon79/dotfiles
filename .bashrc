@@ -1262,7 +1262,7 @@ fi
 #       But how to diff input from stdin? Creating temporary files to feed to diff is too risky for
 #       a startup script.
 
-function infob () {
+function bashrc_start_info () {
     # echo information about this shell instance for the user with pretty formatting and indentation
 
     declare __env_1_now=$(env_sorted)
@@ -1402,6 +1402,6 @@ ${b}Special Features of this .bashrc:${boff}
 "
 }
 
-infob
+bashrc_start_info
 
 set +u
