@@ -106,11 +106,11 @@ if ! [[ -d "${__path_dir_bashrc}" ]]; then
     __path_dir_bashrc=~
 fi
 
-# function readlink_ *should* be defined in companion .bash_profile. But in case was not defined,
-# create a stub fallback function
-if ! type -t readlink_ &>/dev/null; then
-    function readlink_ () {
-        echo -n "${1}"
+# function readlink_portable *should* be defined in companion .bash_profile. But in case was not defined,
+# create a stub function
+if ! type -t readlink_portable &>/dev/null; then
+    function readlink_portable () {
+        echo -n "${@}"
     }
 fi
 
@@ -118,10 +118,10 @@ fi
 if ! [[ "${__sourced_files+x}" ]]; then
     declare -a __sourced_files=()
 fi
-__sourced_files[${#__sourced_files[@]}]=$(readlink_ "${BASH_SOURCE:-}")  # note this file!
+__sourced_files[${#__sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
 
 function __source_file_bashrc () {
-    declare sourcef=$(readlink_ "${1}")
+    declare sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
        return
     fi

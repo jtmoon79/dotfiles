@@ -31,7 +31,7 @@ function __installed () {
     return 0
 }
 
-function readlink_ () {
+function readlink_portable () {
     # make best attempt to use the available readlink (or realpath) but do not
     # fail if $1 is not found.
     # readlink options among different readlink implementations (GNU coreutils and BSD) vary.
@@ -39,17 +39,17 @@ function readlink_ () {
     # using it.
     declare out=
     # GNU coreutils readlink supports '-e'
-    if __installed readlink && out=$(readlink -n -e -- "${1}"  2>/dev/null); then
+    if __installed readlink && out=$(readlink -n -e -- "${@}"  2>/dev/null); then
         echo -n "${out}"
     # BSD readlink supports '-f'
-    elif __installed readlink && out=$(readlink -n -f -- "${1}"  2>/dev/null); then
+    elif __installed readlink && out=$(readlink -n -f -- "${@}"  2>/dev/null); then
         echo -n "${out}"
-    # old versions of readlink may not have '-n'
-    elif __installed readlink && out=$(readlink -e -- "${1}" 2>/dev/null); then
+    # old versions of readlink may not support '-n'
+    elif __installed readlink && out=$(readlink -e -- "${@}" 2>/dev/null); then
         echo -n "${out}"
     # nothing has worked, just echo
     else
-        echo -n "${1}"
+        echo -n "${@}"
     fi
 }
 
@@ -69,7 +69,7 @@ __path_dir_bash_profile=$(__path_dir_bash_profile_)
 
 function __source_file_bashprofile () {
     declare sourcef=
-    sourcef=$(readlink_ "${1}")
+    sourcef=$(readlink_portable "${1}")
     if ! [[ -f "${sourcef}" ]]; then
         return 1
     fi
@@ -82,7 +82,7 @@ function __source_file_bashprofile () {
     __sourced_files[${#__sourced_files[@]}]=${sourcef}
 }
 
-__sourced_files[0]=$(readlink_ "${BASH_SOURCE:-}")  # note *this* file!
+__sourced_files[0]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
 
 # useful for setting $force_multiplexer
 __source_file_bashprofile "${__path_dir_bash_profile}/.bash_profile.local"
