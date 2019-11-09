@@ -878,7 +878,7 @@ function __prompt_table () {
     if [[ ${#row2} -gt $((${#s}+1)) ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
         row2=${row2::-${#s}}
     fi
-    # avoid printing anything if there is nothing to interesting
+    # if there is nothing to print then return
     if [[ ${#row1} -eq 0 ]] && [[ ${#row2} -eq 0 ]]; then
         return 0
     fi
