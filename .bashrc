@@ -586,7 +586,7 @@ fi
 # NOTE: Colors should be 8-bit as it's the most portable
 #       see https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
-function eval_color () {
+function __color_eval () {
 
     # set a fancy prompt
     __color=false
@@ -640,7 +640,7 @@ function eval_color () {
     fi
 
 }
-eval_color
+__color_eval
 
 # -------------
 # prompt chroot
@@ -1019,13 +1019,13 @@ __prompt_set
 function __prompt_live_updates () {
     # special "live" updates that monitor special variables
 
-    declare call_eval_color=false
+    declare call___color_eval=false
     declare call___prompt_set=false
     declare call___prompt_table_column_support=false
 
     # update if necessary
     if [[ "${color_force+x}" ]] && [[ "${__color_force_last:-}" != "${color_force:-}" ]]; then
-        call_eval_color=true
+        call___color_eval=true
         call___prompt_set=true
     fi
     declare -g __color_force_last=${color_force:-}
@@ -1061,8 +1061,8 @@ function __prompt_live_updates () {
     fi
     declare -g __prompt_bullet_last=${prompt_bullet}
 
-    if ${call_eval_color}; then
-        eval_color
+    if ${call___color_eval}; then
+        __color_eval
     fi
     if ${call___prompt_set}; then
         __prompt_set
