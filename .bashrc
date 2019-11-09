@@ -928,10 +928,13 @@ if __installed stat; then
     __installed_stat=true
 fi
 
-# consolidate to one variable
-declare -g __prompt_git_info_installed_git_stat=false
-if ${__installed_git} && ${__installed_stat}; then  # check once, save result
-    __prompt_git_info_installed_git_stat=true
+# check `stat` works as expected as it can vary among Unixes
+# consolidate checks to one variable
+declare -g __prompt_git_info_git_stat=false
+if ${__installed_git} \
+   && ${__installed_stat} \
+   && [[ "$(stat '--format=%m' '/' 2>/dev/null)" = '/' ]]; then
+    __prompt_git_info_git_stat=true
 fi
 
 function __prompt_git_info () {
@@ -942,7 +945,7 @@ function __prompt_git_info () {
     # on the system
 
     # do the necessary programs exist?
-    if ! ${__prompt_git_info_installed_git_stat}; then
+    if ! ${__prompt_git_info_git_stat}; then
         return
     fi
 
@@ -952,7 +955,7 @@ function __prompt_git_info () {
     fi
 
     # do not run `git worktree` on remote system, may take too long
-    if [[ '/' != "$(stat '--format=%m' '.' 2>/dev/null)" ]]; then
+    if [[ '/' != "$(stat '--format=%m' "${PWD}" 2>/dev/null)" ]]; then
         return
     fi
 
