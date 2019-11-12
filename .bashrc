@@ -177,7 +177,7 @@ function __path_add_from_file () {
     declare path=
     declare -r paths_file=${1}
     if [[ -r "${paths_file}" ]]; then
-        __processed_files[${#__processed_files[@]}]=$(readlink_ "${paths_file}")
+        __processed_files[${#__processed_files[@]}]=$(readlink_portable "${paths_file}")
         while read -r path; do
             __path_add "${path}"
         done < "${paths_file}"
