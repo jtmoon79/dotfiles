@@ -870,6 +870,8 @@ function __prompt_table () {
             else
                 row1+="${varn}${s}"
                 row2+="${!varn}${s}"
+                # XXX: cannot get string length via `${#!varn}` so use `expr length ...`
+                #      unforunately, bash 3.x does not support `expr length`
                 rows_len+=$(($(__prompt_table_max ${#varn} $(expr length "${!varn}")) + ${#s1}))
             fi
         fi
