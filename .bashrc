@@ -829,6 +829,14 @@ function __prompt_table_column_support () {
 }
 __prompt_table_column_support
 
+function __prompt_table_expr_length () {
+    # XXX: workaround for getting string length from `${#!var}`. Normally would
+    #      use `${#!var}` or `expr length "${!var}"`.
+    #      Bash 4.x does not support `${#!var}`
+    #      Bash 3.x does not support `expr length ...` operation.
+    echo -n "${#1}"
+}
+
 function __prompt_table () {
     # Creates a basic "table" of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
@@ -870,9 +878,8 @@ function __prompt_table () {
             else
                 row1+="${varn}${s}"
                 row2+="${!varn}${s}"
-                # XXX: cannot get string length via `${#!varn}` so use `expr length ...`
-                #      unforunately, bash 3.x does not support `expr length`
-                rows_len+=$(($(__prompt_table_max ${#varn} $(expr length "${!varn}")) + ${#s1}))
+                # XXX: bash does not support string length via "${#!varn}", so call workaround helper
+                rows_len+=$(($(__prompt_table_max ${#varn} $(__prompt_table_expr_length "${!varn}")) + ${#s1}))
             fi
         fi
     done
