@@ -43,6 +43,8 @@
 #
 #               time (for i in {0..100}; do /bin/true; done)
 #                   0.162s
+#
+# XXX: `declare -g` is not recognized by bash 3.x
 
 # If not running interactively, do not do anything
 case "$-" in
@@ -195,7 +197,7 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #       ('true' and 'false' are programs in the path)
 #       oddly, running `true` is 1/10 time of running `/bin/true`.   Why is that?
 
-#declare -gA __installed_tracker_array=()
+#declare -A __installed_tracker_array=()
 #
 #function __installed_tracker () {
 #     # search for a program once
@@ -230,22 +232,22 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #__installed_tracker grep sed tr cut
 
 # search once for programs that are used per-prompting
-declare -g __installed_grep=false
+__installed_grep=false
 if __installed grep; then
     __installed_grep=true
 fi
 
-declare -g __installed_tr=false
+__installed_tr=false
 if __installed tr; then
     __installed_tr=true
 fi
 
-declare -g __installed_cut=false
+__installed_cut=false
 if __installed cut; then
     __installed_cut=true
 fi
 
-declare -g __installed_column=false
+__installed_column=false
 if __installed column; then
     __installed_column=true
 fi
@@ -699,7 +701,7 @@ function __prompt_last_exit_code_show () {
 declare __prompt_bullet_default='‣'  # $ ‣ •
 # make sure $prompt_bullet is set
 if ! [[ "${prompt_bullet+x}" ]]; then
-    declare -g prompt_bullet=${__prompt_bullet_default}
+    prompt_bullet=${__prompt_bullet_default}
 fi
 
 # -------------------
@@ -778,13 +780,13 @@ __prompt_table_tty=$(tty 2>/dev/null || true)  # set once
 
 __prompt_table_column_default='│'  # ┃ ║ ║ │ │
 if ! [[ "${prompt_table_column+x}" ]]; then
-    declare -g prompt_table_column=${__prompt_table_column_default}
+    prompt_table_column=${__prompt_table_column_default}
 fi
 
 if ! [[ "${prompt_table_variables+x}" ]]; then
     # TODO: consider adding checks for various python virtualenvs (virtualenv, pipenv, poetry)
     # TODO: consider adding checks for docker environment
-    declare -ga prompt_table_variables=(
+    declare -a prompt_table_variables=(
         'TERM'
         'color_force'
         'DISPLAY'
@@ -809,7 +811,7 @@ if [[ ! "${__prompt_table_separator+x}" ]]; then
     readonly __prompt_table_separator='❚'  # not seen, do not overwrite
 fi
 
-declare -g __prompt_table_column_use=false
+__prompt_table_column_use=false
 function __prompt_table_column_support () {
     # make sure `column` is installed and supports the characters used. With old versions of
     # `column` in non-Unicode environments or in a bad locale $LANG setting, the `column` program
@@ -918,19 +920,19 @@ function __prompt_table () {
 # prompt git info
 # ---------------
 
-declare -g __installed_git=false
+__installed_git=false
 if __installed git; then
     __installed_git=true
 fi
 
-declare -g __installed_stat=false
+__installed_stat=false
 if __installed stat; then
     __installed_stat=true
 fi
 
 # check `stat` works as expected as it can vary among Unixes
 # consolidate checks to one variable
-declare -g __prompt_git_info_git_stat=false
+__prompt_git_info_git_stat=false
 if ${__installed_git} \
    && ${__installed_stat} \
    && [[ "$(stat '--format=%m' '/' 2>/dev/null)" = '/' ]]; then
@@ -1033,7 +1035,7 @@ function __prompt_live_updates () {
         call___color_eval=true
         call___prompt_set=true
     fi
-    declare -g __color_force_last=${color_force:-}
+    __color_force_last=${color_force:-}  # global
 
     # if `unset prompt_table_column` occurred then reset to default
     if ! [[ "${prompt_table_column+x}" ]]; then
@@ -1044,7 +1046,7 @@ function __prompt_live_updates () {
         call___prompt_set=true
         call___prompt_table_column_support=true
     fi
-    declare -g __prompt_table_column_last=${prompt_table_column}
+    __prompt_table_column_last=${prompt_table_column}  # global
 
     # if `unset prompt_strftime_format` occurred then reset to default
     if ! [[ "${prompt_strftime_format+x}" ]]; then
@@ -1054,7 +1056,7 @@ function __prompt_live_updates () {
     if [[ "${__prompt_strftime_format_last:-}" != "${prompt_strftime_format}" ]]; then
         call___prompt_set=true
     fi
-    declare -g __prompt_strftime_format_last=${prompt_strftime_format}
+    __prompt_strftime_format_last=${prompt_strftime_format}  # global
 
     # if `unset prompt_bullet` occurred then reset to default
     if ! [[ "${prompt_bullet+x}" ]]; then
@@ -1064,7 +1066,7 @@ function __prompt_live_updates () {
     if [[ "${__prompt_bullet_last:-}" != "${prompt_bullet}" ]]; then
         call___prompt_set=true
     fi
-    declare -g __prompt_bullet_last=${prompt_bullet}
+    __prompt_bullet_last=${prompt_bullet}  # global
 
     if ${call___color_eval}; then
         __color_eval
