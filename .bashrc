@@ -51,7 +51,11 @@ case "$-" in
     *i*)
         ;;
     *)
-        return
+        if [[ "true" = "${__FORCE_INTERACTIVE:-}" ]]; then
+            echo 'Warning: Forcing Interactive Mode! This is only meant for self-testing.' 1>&2
+        else
+            return
+        fi
         ;;
 esac
 
