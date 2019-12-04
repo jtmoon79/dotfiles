@@ -11,10 +11,10 @@
 #   - optional source from ./.bashrc.local.pre, ./.bashrc.local, ./.bashrc.local.post
 #   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - attempts sourcing of /usr/share/bash-completion/bash_completion
-#   - safe to use in many varying Unix environments 🤞
+#   - safe to use in many varying Unix environments 🤞 (see test.sh)
 #
 # Designed from Debian-derived Linux. Attempts to work with other Linux and Unix in varying
-# envionrments. Avoids absolute reliance on tools like `grep`, `sed`, etc. because those tools vary
+# environments. Avoids reliance on tools like `grep`, `sed`, etc. because those tools vary
 # too much or are not available.
 #
 # Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
@@ -24,6 +24,7 @@
 # - bash 4.x on Linux Ubuntu 18
 # - bash 4.x on Linux Debian 9
 # - bash 3.2 on FreeBSD 10
+# - bash images in test.sh on docker
 #
 # Excellent references:
 #   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
@@ -35,16 +36,16 @@
 #
 # TODO: change all `true` and `false` "boolean" variables to be the full path
 #       to the programs.  `true` implies a $PATH search whereas `/bin/true` does not.
-#       UPDATE: yet `/bin/true` is many times `true`. Why is that?
+#       UPDATE: yet `/bin/true` is many times slower than `true`. Why is that?
 #
 #               time (for i in {0..100}; do true; done)
 #                   0.002s
-#
 #
 #               time (for i in {0..100}; do /bin/true; done)
 #                   0.162s
 #
 # XXX: `declare -g` is not recognized by bash 3.x
+#
 
 # If not running interactively, do not do anything
 case "$-" in
@@ -847,7 +848,7 @@ function __prompt_table () {
     # have a dump of shared table data.
     # This function and functions it calls make efforts to be efficient as it is expected this
     # function is called for every prompting.
-    # BUG: prints trailing column lines, but if .bashrc is sourced again then that is fixed
+    # XXX: this function gets slow on low-horsepower hosts. Probably needs some optimization work.
 
     declare row1=''
     declare row2=''
@@ -901,7 +902,7 @@ function __prompt_table () {
     fi
 
     # make attempt to print table-like output based on available programs
-    # NOTE: program `column` errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
+    # XXX: program `column` errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
     # TODO: consider adding color to table? this would need to be done after substring length
     echo  # start with a newline
     if ${__prompt_table_column_use}; then
@@ -1209,6 +1210,7 @@ fi
 # ============
 
 function __download_from_to () {
+    # XXX: .bash_profile has __download_to_from :-/
     declare -r url=${1}
     shift
     declare -r path=${1}
