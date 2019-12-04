@@ -1167,17 +1167,17 @@ function __alias_greps_color () {
     # various grep interfaces found on Ubuntu 18
     # since each grep will be run, for stability, confine search to /usr/bin and /bin
     for grep_path in \
-    /usr/bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep} \
-    /bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep}
+        /usr/bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep} \
+        /bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep}
     do
-    declare grep_base=
-    grep_base=${grep_path##*/}  # get basename
-    # run simplest match with the grep program to make sure it understands option '--color=auto'
-    if __installed "${grep_path}" \
-        && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
-        && (echo '' | "${grep_path}" --color=auto '' &>/dev/null); then
-        alias "${grep_base}"="${grep_path} --color=auto"
-    fi
+        declare grep_base=
+        grep_base=${grep_path##*/}  # get basename
+        # run simplest match with the grep program to make sure it understands option '--color=auto'
+        if __installed "${grep_path}" \
+            && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
+            && (echo '' | "${grep_path}" --color=auto '' &>/dev/null); then
+            alias "${grep_base}"="${grep_path} --color=auto"
+        fi
     done
 }
 __alias_greps_color
