@@ -1242,6 +1242,10 @@ function __update_dotbashrc () {
     __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
 }
 
+function __update_dotbashlogout () {
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
+}
+
 function __update_dotvimrc () {
     __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
 }
@@ -1255,6 +1259,7 @@ function __update_dots () {
     # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
     __update_dotbashprofile "${@}"
     __update_dotbashrc "${@}"
+    __update_dotbashlogout "${@}"
     __update_dotvimrc "${@}"
     __update_dotscreenrc "${@}"
 }
@@ -1411,6 +1416,7 @@ ${b}Special Features of this .bashrc:${boff}
 	Update a dot file by calling one of the functions:
 		${b}__update_dotbashprofile${boff}  # update ${__path_dir_bashrc}/.bash_profile
 		${b}__update_dotbashrc${boff}       # update ${__path_dir_bashrc}/.bashrc
+		${b}__update_dotbashlogout${boff}   # update ${__path_dir_bashrc}/.bash_logout
 		${b}__update_dotscreenrc${boff}     # update ${__path_dir_bashrc}/.screenrc
 		${b}__update_dotvimrc${boff}        # update ${__path_dir_bashrc}/.vimrc
 		${b}__update_dots${boff}            # update all of the above
