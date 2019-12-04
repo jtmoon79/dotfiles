@@ -46,3 +46,4 @@ fi
 if which vim &>/dev/null; then
     download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${@}"
 fi
+
