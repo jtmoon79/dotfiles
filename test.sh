@@ -7,7 +7,6 @@ set -u
 
 cd "$(dirname -- "${0}")"
 
-# images at https://hub.docker.com/_/bash
 HOST_TMP=/tmp/bashrc-test-$(date '+%Y%m%dT%H%M%S')
 mkdir -vp "${HOST_TMP}"
 
@@ -18,6 +17,7 @@ trap exit_ EXIT
 
 CONT_TMP=${HOST_TMP}
 
+# images at https://hub.docker.com/_/bash
 images=(
     'bash:3.2'
     'bash:4.0'
