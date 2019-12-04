@@ -702,7 +702,7 @@ function __prompt_last_exit_code_show () {
     echo -en "${__prompt_last_exit_code_banner:-}"
 }
 
-declare __prompt_bullet_default='‣'  # $ ‣ •
+declare __prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢
 # make sure $prompt_bullet is set
 if ! [[ "${prompt_bullet+x}" ]]; then
     prompt_bullet=${__prompt_bullet_default}
