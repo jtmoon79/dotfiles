@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+#
+# this file is an experiment and can be ignored.
 
 set -e
 set -u
