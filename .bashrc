@@ -1424,4 +1424,6 @@ ${b}Special Features of this .bashrc:${boff}
 
 bashrc_start_info
 
+__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.post"
+
 set +u
