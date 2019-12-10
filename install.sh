@@ -17,9 +17,9 @@ function download () {
     # $1 download to
     # $2 download from
     # function parameters beyond $2 will be passed to wget or curl as options
-    declare to_=${1}
+    declare -r to_=${1}
     shift
-    declare from_=${1}
+    declare -r from_=${1}
     shift
     if which wget &>/dev/null; then
         (
