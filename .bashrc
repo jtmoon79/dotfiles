@@ -1242,8 +1242,13 @@ function __update_dotbashrc () {
     __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
 }
 
-function __update_dotbashlogout () {
+function __update_dotbash_logout () {
     __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
+}
+
+function __update_dotbash () {
+    # install bash dot files in a one-liner
+    __update_dotbashprofile && __update_dotbashrc && __update_dotbash_logout
 }
 
 function __update_dotvimrc () {
@@ -1257,9 +1262,7 @@ function __update_dotscreenrc () {
 function __update_dots () {
     # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell
     # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
-    __update_dotbashprofile "${@}"
-    __update_dotbashrc "${@}"
-    __update_dotbashlogout "${@}"
+    __update_dotbash "${@}"
     __update_dotvimrc "${@}"
     __update_dotscreenrc "${@}"
 }
@@ -1414,11 +1417,17 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
+<<<<<<< HEAD
 		${b}__update_dotbashprofile${boff}  # update ${__path_dir_bashrc}/.bash_profile
 		${b}__update_dotbashrc${boff}       # update ${__path_dir_bashrc}/.bashrc
 		${b}__update_dotbashlogout${boff}   # update ${__path_dir_bashrc}/.bash_logout
 		${b}__update_dotscreenrc${boff}     # update ${__path_dir_bashrc}/.screenrc
 		${b}__update_dotvimrc${boff}        # update ${__path_dir_bashrc}/.vimrc
+=======
+		${b}__update_dotbash${boff}         # update '${__path_dir_bashrc}/.bash_profile' '${__path_dir_bashrc}/.bashrc' '${__path_dir_bashrc}/.bash_logout'
+		${b}__update_dotscreenrc${boff}     # update '${__path_dir_bashrc}/.screenrc'
+		${b}__update_dotvimrc${boff}        # update '${__path_dir_bashrc}/.vimrc'
+>>>>>>> Add __update_dotbash_logout __update_dotbash
 		${b}__update_dots${boff}            # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__downloader_used).
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
