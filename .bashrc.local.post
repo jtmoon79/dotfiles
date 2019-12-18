@@ -1,0 +1,28 @@
+# .bashrc.local.post
+#
+# sample .bashrc.local.post
+#
+# function `prompt_table_variable_add` is defined in .bashrc
+
+# Python
+prompt_table_variable_add 'PYTHON_PIPENV'
+prompt_table_variable_add 'PYTHON_PIP_VERSION'
+prompt_table_variable_add 'PYTHON'
+prompt_table_variable_add 'VIRTUAL_ENV'
+prompt_table_variable_add 'Py_DEBUG'
+
+# GNU screen
+prompt_table_variable_add 'SYSSCREENRC'
+prompt_table_variable_add 'LOCKPRG'
+prompt_table_variable_add 'SCREENCAP'
+prompt_table_variable_add 'WINDOW'
+
+# tmux
+prompt_table_variable_add 'TMUX'
+prompt_table_variable_add 'TMUX_TMPDIR'
+prompt_table_variable_add 'EDITOR'
+prompt_table_variable_add 'VISUAL'
+
+# locale
+prompt_table_variable_add 'LC_CTYPE'
+prompt_table_variable_add 'LC_ALL'
