@@ -33,9 +33,11 @@
 #   https://github.com/webpro/awesome-dotfiles (http://archive.fo/WuiJW)
 #   https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
+#   http://git.savannah.gnu.org/cgit/bash.git/tree/
 #
 # TODO: change all `true` and `false` "boolean" variables to be the full path
-#       to the programs.  `true` implies a $PATH search whereas `/bin/true` does not.
+#       to the programs.  `true` implies a $PATH search whereas `/bin/true` does
+#       not.
 #       UPDATE: yet `/bin/true` is many times slower than `true`. Why is that?
 #
 #               time (for i in {0..100}; do true; done)
@@ -44,7 +46,24 @@
 #               time (for i in {0..100}; do /bin/true; done)
 #                   0.162s
 #
-# XXX: `declare -g` is not recognized by bash 3.x
+# XXX: bash <4.2 cannot declare empty arrays via "empty array" syntax
+#
+#          array=()
+#
+#      bash <4.2 interprets that as a subshell invocation.
+#      to be backward-compatible, arrays are declared like
+#
+#          array[0]=
+#          unset array[0]
+#
+# XXX: `declare -g` is not recognized by bash <=4.1, so globals cannot be
+#      be declared within functions. globals are noted by comment.
+#
+# XXX: there would be more readonly variables but that causes difficulties
+#      if this .bashrc is read for an additional time (like running a new
+#      `bash -l` within a current `bash -l`). Declaring an already existing
+#      `readonly` variable is an error. Some tedium is necessary to do so
+#      without an error. This file refrains from use of `readonly`.
 #
 
 # If not running interactively, do not do anything
@@ -61,6 +80,12 @@ case "$-" in
 esac
 
 set -u
+
+# note Bash Version
+declare -i BASH_VERSION_MAJOR=${BASH_VERSINFO[0]}
+declare -i BASH_VERSION_MINOR=${BASH_VERSINFO[1]}
+export BASH_VERSION_MAJOR \
+       BASH_VERSION_MINOR
 
 # prints an error message when the shift count exceeds the number of positional parameters
 shopt -s shift_verbose
@@ -91,8 +116,9 @@ function __installed () {
 # functions for sourcing other bash files
 # ---------------------------------------
 
-declare -a __processed_files
-__processed_files=()
+# XXX: backward-compatible array declaration
+__processed_files[0]=''  # global array
+unset __processed_files[0]
 
 function __path_dir_bashrc_ () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
@@ -107,7 +133,7 @@ function __path_dir_bashrc_ () {
     echo -n "${path}"
 }
 
-declare __path_dir_bashrc
+#__path_dir_bashrc=
 __path_dir_bashrc=$(__path_dir_bashrc_)
 if ! [[ -d "${__path_dir_bashrc}" ]]; then
     __path_dir_bashrc=~
@@ -202,7 +228,7 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #       ('true' and 'false' are programs in the path)
 #       oddly, running `true` is 1/10 time of running `/bin/true`.   Why is that?
 
-#declare -A __installed_tracker_array=()
+#__installed_tracker_array=()
 #
 #function __installed_tracker () {
 #     # search for a program once
@@ -237,22 +263,22 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #__installed_tracker grep sed tr cut
 
 # search once for programs that are used per-prompting
-__installed_grep=false
+__installed_grep=false  # global
 if __installed grep; then
     __installed_grep=true
 fi
 
-__installed_tr=false
+__installed_tr=false  # global
 if __installed tr; then
     __installed_tr=true
 fi
 
-__installed_cut=false
+__installed_cut=false  # global
 if __installed cut; then
     __installed_cut=true
 fi
 
-__installed_column=false
+__installed_column=false  # global
 if __installed column; then
     __installed_column=true
 fi
@@ -261,13 +287,6 @@ fi
 # ============================
 # other misc. helper functions
 # ============================
-
-# note Bash Version
-# XXX: presumes single-character versions within string like 'X.Y.…'
-declare -i BASH_VERSION_MAJOR=${BASH_VERSION:0:1}  # e.g. '4' in '4.2.10(1)-release'
-declare -i BASH_VERSION_MINOR=${BASH_VERSION:2:1}  # e.g. '2' in '4.2.10(1)-release'
-export BASH_VERSION_MAJOR \
-       BASH_VERSION_MINOR
 
 function what_OS () {
     # attempt to determine what Unix Operating System this is in
@@ -703,7 +722,7 @@ function __prompt_last_exit_code_show () {
     echo -en "${__prompt_last_exit_code_banner:-}"
 }
 
-declare __prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢
+__prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢ (global)
 # make sure $prompt_bullet is set
 if ! [[ "${prompt_bullet+x}" ]]; then
     prompt_bullet=${__prompt_bullet_default}
@@ -722,10 +741,10 @@ fi
 #
 
 # save the current title? https://unix.stackexchange.com/a/28520/21203
-__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # BUG: does not work in most environments
-__title_set_TTY=$(tty 2>/dev/null || true)  # set this once
-__title_set_kernel=${__title_set_kernel:-kernel $(uname -r)}
-__title_set_OS=${__title_set_OS:-${__OperatingSystem}}
+__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global BUG: does not work in most environments
+__title_set_TTY=$(tty 2>/dev/null || true)  # global, set this once
+__title_set_kernel=${__title_set_kernel:-kernel $(uname -r)}  # global
+__title_set_OS=${__title_set_OS:-${__OperatingSystem}}  # global
 #__title_set_hostname=$(hostname)
 #__title_set_user=${USER:-}
 function __title_set () {
@@ -781,42 +800,41 @@ function __window_column_count () {
     echo -n ${cols}
 }
 
-__prompt_table_tty=$(tty 2>/dev/null || true)  # set once
+__prompt_table_tty=$(tty 2>/dev/null || true)  # global, set once
 
-__prompt_table_column_default='│'  # ┃ ║ ║ │ │
+__prompt_table_column_default='│'  # ┃ ║ ║ │ │ (global)
 if ! [[ "${prompt_table_column+x}" ]]; then
-    prompt_table_column=${__prompt_table_column_default}
+    prompt_table_column=${__prompt_table_column_default}  # global
 fi
 
 if ! [[ "${prompt_table_variables+x}" ]]; then
-    # TODO: consider adding checks for various python virtualenvs (virtualenv, pipenv, poetry)
-    # TODO: consider adding checks for docker environment
-    declare -a prompt_table_variables=(
-        'TERM'
-        'color_force'
-        'DISPLAY'
-        'COLORTERM'
-        'SHLVL'
-        'tty'
-        'STY'
-        'SSH_TTY'
-        'SSH_CONNECTION'
-        'TMUX'
-        'GPG_AGENT_INFO'
-        'SSH_AUTH_SOCK'
-        'SSH_AGENT_PID'
-        'PYTHON_PIPENV'
-        'PYTHON_PIP_VERSION'
-        'PYTHON'
-        'VIRTUAL_ENV'
-    )
+    # XXX: backward-compatible array declaration
+    prompt_table_variables[0]=''  # global array
+    unset prompt_table_variables[0]
 fi
+
+function prompt_table_variable_add () {
+    prompt_table_variables[${#prompt_table_variables[@]}]=${1}
+}
+
+prompt_table_variable_add 'TERM'
+prompt_table_variable_add 'color_force'
+prompt_table_variable_add 'DISPLAY'
+prompt_table_variable_add 'COLORTERM'
+prompt_table_variable_add 'SHLVL'
+prompt_table_variable_add 'tty'
+prompt_table_variable_add 'STY'
+prompt_table_variable_add 'SSH_TTY'
+prompt_table_variable_add 'SSH_CONNECTION'
+prompt_table_variable_add 'GPG_AGENT_INFO'
+prompt_table_variable_add 'SSH_AUTH_SOCK'
+prompt_table_variable_add 'SSH_AGENT_PID'
 
 if [[ ! "${__prompt_table_separator+x}" ]]; then
     readonly __prompt_table_separator='❚'  # not seen, do not overwrite
 fi
 
-__prompt_table_column_use=false
+__prompt_table_column_use=false  # global
 function __prompt_table_column_support () {
     # make sure `column` is installed and supports the characters used. With old versions of
     # `column` in non-Unicode environments or in a bad locale $LANG setting, the `column` program
@@ -864,7 +882,6 @@ function __prompt_table () {
     #fi
 
     declare -ir cols=$(__window_column_count)
-
     declare varn=  # variable name
     declare -i rows_len=0
     for varn in "${prompt_table_variables[@]}"; do
@@ -900,7 +917,6 @@ function __prompt_table () {
     if [[ ${#row1} -eq 0 ]] && [[ ${#row2} -eq 0 ]]; then
         return 0
     fi
-
     # make attempt to print table-like output based on available programs
     # XXX: program `column` errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
     # TODO: consider adding color to table? this would need to be done after substring length
@@ -934,19 +950,19 @@ function __prompt_table () {
 # prompt git info
 # ---------------
 
-__installed_git=false
+__installed_git=false  # global
 if __installed git; then
     __installed_git=true
 fi
 
-__installed_stat=false
+__installed_stat=false  # global
 if __installed stat; then
     __installed_stat=true
 fi
 
 # check `stat` works as expected as it can vary among Unixes
 # consolidate checks to one variable
-__prompt_git_info_git_stat=false
+__prompt_git_info_git_stat=false  # global
 if ${__installed_git} \
    && ${__installed_stat} \
    && [[ "$(stat '--format=%m' '/' 2>/dev/null)" = '/' ]]; then
@@ -1008,7 +1024,7 @@ function __prompt_git_info () {
 # assemble the prompt pieces
 #
 
-declare __prompt_strftime_format_default='%F %T'
+__prompt_strftime_format_default='%F %T'  # global
 if ! [[ "${prompt_strftime_format+x}" ]]; then
     prompt_strftime_format=${__prompt_strftime_format_default}
 fi
@@ -1037,6 +1053,12 @@ function __prompt_set () {
 }
 __prompt_set
 
+# __prompt_live_updates variables that must be globals
+__color_force_last=  # global
+__prompt_table_column_last=  # global
+__prompt_strftime_format_last=  # global
+__prompt_bullet_last=  # global
+
 function __prompt_live_updates () {
     # special "live" updates that monitor special variables
 
@@ -1053,7 +1075,7 @@ function __prompt_live_updates () {
 
     # if `unset prompt_table_column` occurred then reset to default
     if ! [[ "${prompt_table_column+x}" ]]; then
-        prompt_table_column=${__prompt_table_column_default}
+        prompt_table_column=${__prompt_table_column_default}  # global
     fi
     # update if necessary
     if [[ "${__prompt_table_column_last:-}" != "${prompt_table_column}" ]]; then
@@ -1201,7 +1223,7 @@ if ${__installed_git}; then
 fi
 
 if __installed mount sort column; then
-    # TODO: BUG: this fails to be set under Debian 9 WSL
+    # TODO: BUG: this fails to be set under Debian 9 WSL depite success when run manually
     __alias_safely_check mnt 'mount | sort -k3 | column -t'
 fi
 
@@ -1274,10 +1296,9 @@ function __update_dots () {
 # Do not source ./.bash_profile as that will source this ./.bashrc (circular dependency)
 
 # .bashrc.local for host-specific customizations
-
 __source_file_bashrc "${__path_dir_bashrc}/.bashrc.local"
-__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.post"
 __source_file_bashrc "${__path_dir_bashrc}/.bash_aliases"
+__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
     __source_file_bashrc /usr/share/bash-completion/bash_completion
@@ -1315,7 +1336,7 @@ Using bash ${BASH_VERSION}, process ID $$
 ${b}functions (×${funcs_c}) in this shell (declare -F):${boff}
 
 ${funcs}
-" >&2
+"
 
     # echo aliases
     declare aliases=$(__replace_str "$(__replace_str "$(alias)" 'alias ' '')" '
@@ -1326,7 +1347,7 @@ ${funcs}
 ${b}aliases (×${aliases_c}) in this shell (alias):${boff}
 
 	${aliases}
-" >&2
+"
 
     # echo information about interesting enviroment variables
     echo -e "\
@@ -1417,9 +1438,10 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
-		${b}__update_dotbash_profile${boff}  # update ${__path_dir_bashrc}/.bash_profile
+		${b}__update_dotbash_profile${boff} # update ${__path_dir_bashrc}/.bash_profile
 		${b}__update_dotbashrc${boff}       # update ${__path_dir_bashrc}/.bashrc
-		${b}__update_dotbashlogout${boff}   # update ${__path_dir_bashrc}/.bash_logout
+		${b}__update_dotbash_logout${boff}  # update ${__path_dir_bashrc}/.bash_logout
+		${b}__update_dotbash${boff}         # update prior .bash files
 		${b}__update_dotscreenrc${boff}     # update ${__path_dir_bashrc}/.screenrc
 		${b}__update_dotvimrc${boff}        # update ${__path_dir_bashrc}/.vimrc
 		${b}__update_dots${boff}            # update all of the above
@@ -1433,8 +1455,6 @@ ${b}Special Features of this .bashrc:${boff}
 "
 }
 
-bashrc_start_info
-
-__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.post"
+bashrc_start_info >&2
 
 set +u
