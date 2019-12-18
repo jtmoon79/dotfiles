@@ -21,18 +21,27 @@ CONT_TMP=${HOST_TMP}
 images=(
     'bash:3.2'
     'bash:4.0'
+    'bash:4.1'
+    'bash:4.2'
     'bash:4.3'
     'bash:4.4'
-    'bash:5'
+    'bash:5.0'
 )
 
 for image in "${images[@]}"; do
     test_pass=${HOST_TMP}/${image//:/_}
     (
     set -x
-    docker run -e '__FORCE_INTERACTIVE=true' -v "${HOST_TMP}:${CONT_TMP}" -v "${PWD}:/root" --rm -it "${image}" sh -c "
+    docker run \
+               -e '__FORCE_INTERACTIVE=true' \
+               -e 'color_force=true' \
+               -v "${HOST_TMP}:${CONT_TMP}" \
+               -v "${PWD}:/root" \
+               --rm \
+               -it "${image}" \
+               sh -c "
         set -x;
-        echo 'echo \"\${PS1}\"; touch \"${test_pass}\"; exit' | bash --login;
+        echo 'echo \"PS1:\"; echo \"\${PS1}\"; eval echo \"\\\"\${PS1}\\\"\"; touch \"${test_pass}\"; exit' | bash --login;
 "
     )
     echo >&2
