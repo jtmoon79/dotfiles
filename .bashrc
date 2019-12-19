@@ -660,22 +660,47 @@ fi
 # prompt timer
 # ------------
 
+__prompt_timer_epoch=false
+function __prompt_timer_epoch_set () {
+    __prompt_timer_epoch=false
+    if [[ "${EPOCHREALTIME+x}" ]]; then
+        __prompt_timer_epoch=true
+    fi
+}
+__prompt_timer_epoch_set
+
 # idea from http://archive.fo/SYU2A
 # It is important that __prompt_timer_stop is the last command in the
 # $PROMPT_COMMAND.  If there are other commands after it then those
 # will be executed and their execution might cause __prompt_timer_start to be
-# called again.
-# The setting and unset of __prompt_timer_cur is to workaround internecine subshells that occur per
-# PROMPT_COMMAND
+# called again. The setting and unset of __prompt_timer_cur is to workaround
+# internecine subshells that occur per PROMPT_COMMAND.  Subshells should not be
+# spawned in __prompt_timer_start or __prompt_timer_stop.
 function __prompt_timer_start () {
-    __prompt_timer_cur=${__prompt_timer_cur:-${SECONDS:-0}}
+    if ${__prompt_timer_epoch}; then
+        __prompt_timer_cur=${__prompt_timer_cur:-${EPOCHREALTIME}}
+    else
+        __prompt_timer_cur=${__prompt_timer_cur:-${SECONDS:-0}}
+    fi
 }
+__prompt_timer_start
+
 function __prompt_timer_stop () {
     # use $__prompt_timer_show for display
-    __prompt_timer_show=$((${SECONDS:-0} - __prompt_timer_cur))
+    if ${__prompt_timer_epoch}; then
+        __prompt_timer_show=$(((${EPOCHREALTIME//.} - ${__prompt_timer_cur//.}) / 1000))
+    else
+        __prompt_timer_show=$((${SECONDS:-0} - __prompt_timer_cur))
+    fi
     unset __prompt_timer_cur
 }
 trap '__prompt_timer_start' DEBUG
+
+if ${__prompt_timer_epoch}; then
+    __prompt_timer_units='ms'
+else
+    __prompt_timer_units='s'
+fi
 
 # ---------------------
 # prompt last exit code
@@ -1145,12 +1170,12 @@ function __prompt_set () {
         #      However, if $(__prompt_table) is given it's own line then when $prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot:-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))$(__prompt_table)$(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))$(__prompt_table)$(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
 \u@\h:\w
 '"${prompt_bullet}"' '
     fi
