@@ -263,27 +263,6 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 # }
 #__installed_tracker grep sed tr cut
 
-# search once for programs that are used per-prompting
-__installed_grep=false  # global
-if __installed grep; then
-    __installed_grep=true
-fi
-
-__installed_tr=false  # global
-if __installed tr; then
-    __installed_tr=true
-fi
-
-__installed_cut=false  # global
-if __installed cut; then
-    __installed_cut=true
-fi
-
-__installed_column=false  # global
-if __installed column; then
-    __installed_column=true
-fi
-
 # ============================
 # other misc. helper functions
 # ============================
@@ -856,27 +835,6 @@ if [[ ! "${__prompt_table_separator+x}" ]]; then
     readonly __prompt_table_separator=$(character 127)  # 127 is unprintable `Delete` character
 fi
 
-# TODO: remove this, not used anymore
-__prompt_table_column_use=false  # global
-function __prompt_table_column_support () {
-    # make sure `column` is installed and supports the characters used. With old versions of
-    # `column` in non-Unicode environments or in a bad locale $LANG setting, the `column` program
-    # will error on multi-byte separator characters.
-    # call this once
-    __prompt_table_column_use=false
-    if ${__installed_column} && \
-        (
-            echo "${prompt_table_column:-}${__prompt_table_separator}" \
-            | column -t -s "${__prompt_table_separator}" -c 80
-        ) &>/dev/null
-    then
-        __prompt_table_column_use=true
-    fi
-}
-__prompt_table_column_support
-
-
-
 function __prompt_table_expr_length () {
     # XXX: workaround for getting string length from `${#!var}`. Normally would
     #      use `${#!var}` or `expr length "${!var}"`.
@@ -1014,7 +972,7 @@ function __prompt_table () {
     declare row2=''
     declare -r s1=${prompt_table_column}  # visible columns
     declare -r s2=${__prompt_table_separator}  # temporary separator, will not be printed
-    declare -r s="${s2}${s1}"
+    declare -r s21="${s2}${s1}"
 
     #declare b=''  # bold on
     #declare bf=''  # bold off
@@ -1025,44 +983,50 @@ function __prompt_table () {
 
     declare -ir cols=$(__window_column_count)
     declare varn=  # variable name
-    declare cs1=
-    declare cs2=
-    declare -i v1l=
-    declare -i v2l=
-    declare -i rows_len=0
+    declare vare=  # $varn evaluated
+    declare fs1=  # filler space row 1
+    declare fs2=  # filler space row 2
+    declare -i v1l=  # varn length
+    declare -i v2l=  # vare length
+    declare -i rows_len=0  # rows max length
     for varn in "${prompt_table_variables[@]}"; do
-        # if the rows are already too long for the window column width then do not
-        # continue appending to them
+        # if the rows are already too long for the window column width then do
+        # not continue appending to them
         # XXX: assumes ${#s2} is 1 (exactly cancels out '  ' substutition that occurs below)
         if [[ ${rows_len} -gt ${cols} ]]; then
             break
         fi
-        # append the variable name to row1 and variable value to row2
-        if [[ -n "${varn:-}" ]] && [[ "${!varn+x}" ]]; then
-            if [[ 'tty' = "${varn}" ]]; then  # special case
-                row1+="${varn}${s}"
-                row2+="${__prompt_table_tty}${s}"
-                rows_len+=$(($(__prompt_table_max ${#varn} ${#__prompt_table_tty}) + ${#s1}))
-            else
-                v1l=${#varn}
-                # XXX: bash does not support string length via "${#!varn}", so
-                # call workaround helper `__prompt_table_expr_length`
-                v2l=$(__prompt_table_expr_length "${!varn}")
-                if [[ ${v1l} -gt ${v2l} ]]; then
-                    cs1=''
-                    cs2=$(__prompt_table_blank_n_alias $((${v1l} - ${v2l})))
-                elif [[ ${v1l} -lt ${v2l} ]]; then
-                    cs1=$(__prompt_table_blank_n_alias $((${v2l} - ${v1l})))
-                    cs2=''
-                else
-                    cs1=''
-                    cs2=''
-                fi
-                row1+="${varn}${cs1}${s}"
-                row2+="${!varn}${cs2}${s}"
-                rows_len+=$(($(__prompt_table_max ${v1l} ${v2l}) + ${#s1}))
+        # skip blank names or undefined values
+        if [[ -z "${varn-}" ]] || [[ ! "${!varn+x}" ]]; then
+            if [[ "${varn-}" != 'tty' ]]; then  # special case
+                continue
             fi
         fi
+
+        # append the variable name to row1 and variable value to row2
+        if [[ 'tty' = "${varn}" ]]; then  # special case
+            vare=${__prompt_table_tty}
+        else
+            vare=${!varn}
+        fi
+        v1l=${#varn}
+        v2l=${#vare}
+        if [[ ${v1l} -gt ${v2l} ]]; then
+            fs1=''
+            fs2=$(__prompt_table_blank_n_alias $((${v1l} - ${v2l})))
+            rows_len+=${v1l}
+        elif [[ ${v1l} -lt ${v2l} ]]; then
+            fs1=$(__prompt_table_blank_n_alias $((${v2l} - ${v1l})))
+            fs2=''
+            rows_len+=${v2l}
+        else
+            fs1=''
+            fs2=''
+            rows_len+=${v1l}
+        fi
+        row1+="${varn}${fs1}${s21}"
+        row2+="${vare}${fs2}${s21}"
+        rows_len+=${#s1}
     done
 
     # remove trailing column lines, can only be done in Bash versions >= 4
@@ -1077,36 +1041,13 @@ function __prompt_table () {
         return 0
     fi
     # make attempt to print table-like output based on available programs
-    # XXX: program `column` errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
     # TODO: consider adding color to table? this would need to be done after substring length
-    # TODO: remove use of `column` with a function.
-    # TODO: compare time of use with `column` and without
-    #       time (for i in seq 0 1000; do (  __prompt_table_column_use=true ; __prompt_table;); done &>/dev/null)
-    #       time (for i in seq 0 1000; do (  __prompt_table_column_use=false ; __prompt_table;); done &>/dev/null)
+    # XXX: it is faster to do this with `tr` and `column` but more portable this way
     echo  # start with a newline
-    if ${__prompt_table_column_use}; then
-        declare table=
-        table=$(echo -e "${row1}\n${row2}" | column -t -s "${s2}" -c ${cols})
-        table=${table//  ${s1}/${s1}}
-        # extract row1 and row2 using "back delete" and "front delete" substring manipulation
-        row1=${table%%
-*}
-        row2=${table##*
-}
-        echo "${row1::${cols}}"
-        echo "${row2::${cols}}"
-    else  # print without column alignment; a little ugly
-        declare row=
-        for row in "${row1}" "${row2}"; do
-            if ${__installed_tr}; then
-                echo "${row::${cols}}" | tr "${s2}" ' '
-            else
-                # no column, no tr; very ugly
-                row=${row//${s2}/}
-                echo "${row::${cols}}"
-            fi
-        done
-    fi
+    row1=${row1//${s2}/}
+    echo "${row1::${cols}}"
+    row2=${row2//${s2}/}
+    echo "${row2::${cols}}"
 }
 
 # ---------------
@@ -1209,7 +1150,7 @@ function __prompt_set () {
 '"${prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))$(__prompt_table) $(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show}s; $(__prompt_last_exit_code_show))$(__prompt_table)$(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
 \u@\h:\w
 '"${prompt_bullet}"' '
     fi
@@ -1227,7 +1168,6 @@ function __prompt_live_updates () {
 
     declare call___color_eval=false
     declare call___prompt_set=false
-    declare call___prompt_table_column_support=false
 
     # update if necessary
     if [[ "${color_force+x}" ]] && [[ "${__color_force_last:-}" != "${color_force:-}" ]]; then
@@ -1243,7 +1183,6 @@ function __prompt_live_updates () {
     # update if necessary
     if [[ "${__prompt_table_column_last:-}" != "${prompt_table_column}" ]]; then
         call___prompt_set=true
-        call___prompt_table_column_support=true
     fi
     __prompt_table_column_last=${prompt_table_column}  # global
 
@@ -1272,9 +1211,6 @@ function __prompt_live_updates () {
     fi
     if ${call___prompt_set}; then
         __prompt_set
-    fi
-    if ${call___prompt_table_column_support}; then
-        __prompt_table_column_support
     fi
 }
 
@@ -1482,6 +1418,12 @@ fi
 
 function bashrc_start_info () {
     # echo information about this shell instance for the user with pretty formatting and indentation
+
+    # allow skipping __bashrc_start_info by __bashrc_start_info=false
+    # helpful for manual testing
+    if [[ "${__bashrc_start_info+x}" ]] && ! ${__bashrc_start_info}; then
+        return
+    fi
 
     declare __env_1_now=$(env_sorted)
     declare b=''
