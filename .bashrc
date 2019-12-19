@@ -855,11 +855,6 @@ function character() {
     printf "\\$(printf '%03o' "${1}")"
 }
 
-if [[ ! "${__prompt_table_separator+x}" ]]; then
-    # not seen, do not overwrite
-    readonly __prompt_table_separator=$(character 127)  # 127 is unprintable `Delete` character
-fi
-
 function __prompt_table_expr_length () {
     # XXX: workaround for getting string length from `${#!var}`. Normally would
     #      use `${#!var}` or `expr length "${!var}"`.
@@ -996,16 +991,12 @@ function __prompt_table () {
     declare row1=''
     declare row2=''
     declare -r s1=${prompt_table_column}  # visible columns
-    declare -r s2=${__prompt_table_separator}  # temporary separator, will not be printed
-    declare -r s21="${s2}${s1}"
-
     #declare b=''  # bold on
     #declare bf=''  # bold off
     #if ${__color_prompt}; then
     #    b='\e[1m'
     #    boff='\e[0m'
     #fi
-
     declare -ir cols=$(__window_column_count)
     declare varn=  # variable name
     declare vare=  # $varn evaluated
@@ -1017,7 +1008,6 @@ function __prompt_table () {
     for varn in "${prompt_table_variables[@]}"; do
         # if the rows are already too long for the window column width then do
         # not continue appending to them
-        # XXX: assumes ${#s2} is 1 (exactly cancels out '  ' substutition that occurs below)
         if [[ ${rows_len} -gt ${cols} ]]; then
             break
         fi
@@ -1039,39 +1029,30 @@ function __prompt_table () {
         if [[ ${v1l} -gt ${v2l} ]]; then
             fs1=''
             fs2=$(__prompt_table_blank_n_alias $((${v1l} - ${v2l})))
-            rows_len+=${v1l}
+            rows_len+=${v1l}+${#s1}
         elif [[ ${v1l} -lt ${v2l} ]]; then
             fs1=$(__prompt_table_blank_n_alias $((${v2l} - ${v1l})))
             fs2=''
-            rows_len+=${v2l}
+            rows_len+=${v2l}+${#s1}
         else
             fs1=''
             fs2=''
-            rows_len+=${v1l}
+            rows_len+=${v1l}+${#s1}
         fi
-        row1+="${varn}${fs1}${s21}"
-        row2+="${vare}${fs2}${s21}"
-        rows_len+=${#s1}
+        row1+="${varn}${fs1}${s1}"
+        row2+="${vare}${fs2}${s1}"
     done
 
-    # remove trailing column lines, can only be done in Bash versions >= 4
-    if [[ ${#row1} -gt $((${#s}+1)) ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
-        row1=${row1::-${#s}}
-    fi
-    if [[ ${#row2} -gt $((${#s}+1)) ]] && [[ ${BASH_VERSION_MAJOR} -ge 4 ]]; then
-        row2=${row2::-${#s}}
-    fi
     # if there is nothing to print then return
-    if [[ ${#row1} -eq 0 ]] && [[ ${#row2} -eq 0 ]]; then
+    if [[ ${#row1} -lt ${#s1} ]] && [[ ${#row2} -lt ${#s1} ]]; then
         return 0
     fi
+
     # make attempt to print table-like output based on available programs
     # TODO: consider adding color to table? this would need to be done after substring length
     # XXX: it is faster to do this with `tr` and `column` but more portable this way
     echo  # start with a newline
-    row1=${row1//${s2}/}
     echo "${row1::${cols}}"
-    row2=${row2//${s2}/}
     echo "${row2::${cols}}"
 }
 
