@@ -34,6 +34,7 @@
 #   https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
 #   http://git.savannah.gnu.org/cgit/bash.git/tree/
+#   https://wiki.bash-hackers.org/commands/builtin/printf (http://archive.ph/wip/jDPjC)
 #
 # TODO: change all `true` and `false` "boolean" variables to be the full path
 #       to the programs.  `true` implies a $PATH search whereas `/bin/true` does
@@ -282,7 +283,6 @@ __installed_column=false  # global
 if __installed column; then
     __installed_column=true
 fi
-
 
 # ============================
 # other misc. helper functions
@@ -814,6 +814,15 @@ if ! [[ "${prompt_table_variables+x}" ]]; then
 fi
 
 function prompt_table_variable_add () {
+    # do not add variable already present in $prompt_table_variables
+    # otherwise repeated invocations of .bashrc create a huge
+    # $prompt_table_variables
+    declare -i i=0
+    for ((; i < ${#prompt_table_variables[@]}; ++i)); do
+        if [[ "${prompt_table_variables[${i}]}" == "${1}" ]]; then
+            return
+        fi
+    done
     prompt_table_variables[${#prompt_table_variables[@]}]=${1}
 }
 
@@ -830,10 +839,24 @@ prompt_table_variable_add 'GPG_AGENT_INFO'
 prompt_table_variable_add 'SSH_AUTH_SOCK'
 prompt_table_variable_add 'SSH_AGENT_PID'
 
+# ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
+function ordinal() {
+    # pass a single-character string, prints the numeric ordinal value
+    (LC_CTYPE=C printf '%d' "'${1:0:1}")
+}
+
+function character() {
+    # pass a number, prints the character
+    [ "${1}" -lt 256 ] || return 1
+    printf "\\$(printf '%03o' "${1}")"
+}
+
 if [[ ! "${__prompt_table_separator+x}" ]]; then
-    readonly __prompt_table_separator='❚'  # not seen, do not overwrite
+    # not seen, do not overwrite
+    readonly __prompt_table_separator=$(character 127)  # 127 is unprintable `Delete` character
 fi
 
+# TODO: remove this, not used anymore
 __prompt_table_column_use=false  # global
 function __prompt_table_column_support () {
     # make sure `column` is installed and supports the characters used. With old versions of
@@ -852,12 +875,131 @@ function __prompt_table_column_support () {
 }
 __prompt_table_column_support
 
+
+
 function __prompt_table_expr_length () {
     # XXX: workaround for getting string length from `${#!var}`. Normally would
     #      use `${#!var}` or `expr length "${!var}"`.
     #      Bash 4.x does not support `${#!var}`
     #      Bash 3.x does not support `expr length ...` operation.
     echo -n "${#1}"
+}
+
+# XXX: the following `__prompt_table_blank_n_` are various implementations of
+#      such. Only one is used but others remain for sake of comparison.
+
+function __prompt_table_blank_n_printf1 () {
+    # copied from https://stackoverflow.com/a/22048085/471376
+    # XXX: presumes `seq`
+    #printf '%0.s ' {1..${1}}  # does not correctly expand
+    printf '%0.s ' $(seq 1 ${1})
+}
+
+function __prompt_table_blank_n_printf2 () {
+    # copied from https://stackoverflow.com/a/5801221/471376
+    printf "%${1}s" ' '
+}
+
+function __prompt_table_blank_n_for_echo () {
+    # copied from https://stackoverflow.com/a/5801221/471376
+    declare -i i=0
+    for ((; i<${1}; i++)) {
+        echo -ne ' '
+    }
+}
+
+function __prompt_table_blank_n_awk () {
+    # copied from https://stackoverflow.com/a/23978009/471376
+    # XXX: presumes `awk`
+    awk "BEGIN { while (c++ < ${1}) printf \" \" ; }"
+}
+
+function __prompt_table_blank_n_yes_head () {
+    # copied from https://stackoverflow.com/a/5799335/471376
+    # XXX: `yes` `head` (LOL!)
+    echo -n "$(yes ' ' | head -n${1})"
+}
+
+function __prompt_table_blank_n_head_zero () {
+    # copied from https://stackoverflow.com/a/16617155/471376
+    # XXX: presumes `head` and `tr`
+    head -c ${1} /dev/zero | tr '\0' ' '
+}
+
+# XXX: hacky method to quickly print blanks without relying on installed programs
+#      or expensive loops
+__prompt_table_blank_n_buffer='                                                                                                                                                                        '
+function __prompt_table_blank_n_longstr () {
+    echo -ne "${__prompt_table_blank_n_buffer:0:${1}}"
+}
+
+function __prompt_table_blank_n () {
+    # wrapper to preferred method
+    __prompt_table_blank_n_printf2 ${1}
+}
+
+# alias to preferred method
+alias __prompt_table_blank_n_alias=__prompt_table_blank_n_printf2
+
+function __prompt_table_blank_n_test_all () {
+    declare -ir len=10
+    echo "${PS4-} time 1000 iterations of each, length ${len}"
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_printf1 ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_printf1 ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_printf2 ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_printf2 ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_for_echo ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_for_echo ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_awk ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_awk ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_head_zero ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_head_zero ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_longstr ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_longstr ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n ${len}
+        done &>/dev/null
+    )
+
+    echo -e "\n${PS4-} __prompt_table_blank_n_alias ${len}"
+    time (
+        for i in {1..1000}; do
+            __prompt_table_blank_n_alias ${len}
+        done &>/dev/null
+    )
 }
 
 function __prompt_table () {
@@ -883,6 +1025,10 @@ function __prompt_table () {
 
     declare -ir cols=$(__window_column_count)
     declare varn=  # variable name
+    declare cs1=
+    declare cs2=
+    declare -i v1l=
+    declare -i v2l=
     declare -i rows_len=0
     for varn in "${prompt_table_variables[@]}"; do
         # if the rows are already too long for the window column width then do not
@@ -898,10 +1044,23 @@ function __prompt_table () {
                 row2+="${__prompt_table_tty}${s}"
                 rows_len+=$(($(__prompt_table_max ${#varn} ${#__prompt_table_tty}) + ${#s1}))
             else
-                row1+="${varn}${s}"
-                row2+="${!varn}${s}"
-                # XXX: bash does not support string length via "${#!varn}", so call workaround helper
-                rows_len+=$(($(__prompt_table_max ${#varn} $(__prompt_table_expr_length "${!varn}")) + ${#s1}))
+                v1l=${#varn}
+                # XXX: bash does not support string length via "${#!varn}", so
+                # call workaround helper `__prompt_table_expr_length`
+                v2l=$(__prompt_table_expr_length "${!varn}")
+                if [[ ${v1l} -gt ${v2l} ]]; then
+                    cs1=''
+                    cs2=$(__prompt_table_blank_n_alias $((${v1l} - ${v2l})))
+                elif [[ ${v1l} -lt ${v2l} ]]; then
+                    cs1=$(__prompt_table_blank_n_alias $((${v2l} - ${v1l})))
+                    cs2=''
+                else
+                    cs1=''
+                    cs2=''
+                fi
+                row1+="${varn}${cs1}${s}"
+                row2+="${!varn}${cs2}${s}"
+                rows_len+=$(($(__prompt_table_max ${v1l} ${v2l}) + ${#s1}))
             fi
         fi
     done
@@ -920,6 +1079,10 @@ function __prompt_table () {
     # make attempt to print table-like output based on available programs
     # XXX: program `column` errors when piped as in `printf '%s\n%s' ... | column ...`. Use `echo`.
     # TODO: consider adding color to table? this would need to be done after substring length
+    # TODO: remove use of `column` with a function.
+    # TODO: compare time of use with `column` and without
+    #       time (for i in seq 0 1000; do (  __prompt_table_column_use=true ; __prompt_table;); done &>/dev/null)
+    #       time (for i in seq 0 1000; do (  __prompt_table_column_use=false ; __prompt_table;); done &>/dev/null)
     echo  # start with a newline
     if ${__prompt_table_column_use}; then
         declare table=
@@ -936,7 +1099,7 @@ function __prompt_table () {
         declare row=
         for row in "${row1}" "${row2}"; do
             if ${__installed_tr}; then
-                echo "${row::${cols}}" | tr "${s2}" '\t'
+                echo "${row::${cols}}" | tr "${s2}" ' '
             else
                 # no column, no tr; very ugly
                 row=${row//${s2}/}
