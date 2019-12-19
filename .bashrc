@@ -489,16 +489,16 @@ shopt -s dotglob
 # the pattern ‘**’ used in a filename expansion context will match all files and zero or more
 # directories and subdirectories. If the pattern is followed by a ‘/’, only directories and
 # subdirectories match.
-shopt -s globstar
+shopt -s globstar 2>/dev/null  # not always available
 # Bash attempts spelling correction on directory names during word completion if the directory name
 # initially supplied does not exist.
-shopt -s dirspell
+shopt -s dirspell 2>/dev/null  # not always available
 
 # the following *should* be enabled by default, but be certain because they are important
 shopt -s promptvars
 shopt -s progcomp
-shopt -s progcomp_alias
-shopt -s complete_fullquote
+shopt -s progcomp_alias 2>/dev/null  # not always available
+shopt -s complete_fullquote 2>/dev/null  # not always available
 
 # ---------------
 # misc...
