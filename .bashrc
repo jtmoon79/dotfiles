@@ -1431,6 +1431,10 @@ function __update_dotbash_logout () {
     __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
 }
 
+function __update_dotbashrclocalpost () {
+    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.local.post' './.bashrc.local.post' "${@}"
+}
+
 function __update_dotbash () {
     # install bash dot files in a one-liner
     __update_dotbash_profile && __update_dotbashrc && __update_dotbash_logout
@@ -1601,12 +1605,13 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
-		${b}__update_dotbash_profile${boff} # update ${__path_dir_bashrc}/.bash_profile
-		${b}__update_dotbashrc${boff}       # update ${__path_dir_bashrc}/.bashrc
-		${b}__update_dotbash_logout${boff}  # update ${__path_dir_bashrc}/.bash_logout
+		${b}__update_dotbash_profile${boff} # update ./.bash_profile
+		${b}__update_dotbashrc${boff}       # update ./.bashrc
+		${b}__update_dotbash_logout${boff}  # update ./.bash_logout
 		${b}__update_dotbash${boff}         # update prior .bash files
-		${b}__update_dotscreenrc${boff}     # update ${__path_dir_bashrc}/.screenrc
-		${b}__update_dotvimrc${boff}        # update ${__path_dir_bashrc}/.vimrc
+		${b}__update_dotbashrclocalpost${boff} # update ./.bashrc.local.post
+		${b}__update_dotscreenrc${boff}     # update ./.screenrc
+		${b}__update_dotvimrc${boff}        # update ./.vimrc
 		${b}__update_dots${boff}            # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__downloader_used).
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
