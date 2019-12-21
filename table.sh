@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# this file is an experiment and can be ignored.
+# This file is just an experiment.
 
 set -e
 set -u
@@ -86,7 +86,7 @@ function table()
         echo -n ${nc}
     }
 
-    __line_str() {
+    function __line_str() {
         # $1 string line number, $2 string
         # echo the line at line number within $2
         declare -r nl='
@@ -365,6 +365,11 @@ function columnb ()
     fi
     #echo >&2
 }
+
+if (return 0 2>/dev/null); then  # from https://stackoverflow.com/a/28776166/471376
+    # this is being sourced, skip tests
+    return 0
+fi
 
 echo 'GOOD CASES'
 
