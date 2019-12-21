@@ -1,30 +1,36 @@
 # .bashrc
 #
-# A mish-mash of bashrc ideas that are worthwhile, some original ideas, others copied.
-# This files is expected to be sourced by it's companion ./.bash_profile
+# A mish-mash of bashrc ideas that are worthwhile, some original ideas, others
+# copied. This file is expected to be sourced by it's companion ./.bash_profile
+# Howver, it does support multiple source in the same shell instance.
 #
 # Features:
 #   - prints context info on startup
-#   - prompt prints: timer, return code, datetime, table of variables (adjustable)
+#   - prompt prints: timer, return code, datetime,
+#     table of variables (adjustable), git prompt line.
+#   - attempts to set LOCALE to best choice of UTF-8
 #   - allows "live" modification of some prompt features
-#   - allows override of various features via ./.bashrc.local.pre
+#   - allows override of various features via ./.bashrc.local.pre, e.g.
+#     color, tables of variables, prompt parts, etc.
 #   - optional source from ./.bashrc.local.pre, ./.bashrc.local, ./.bashrc.local.post
 #   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - attempts sourcing of /usr/share/bash-completion/bash_completion
-#   - safe to use in many varying Unix environments 🤞 (see test.sh)
-#
-# Designed from Debian-derived Linux. Attempts to work with other Linux and Unix in varying
-# environments. Avoids reliance on tools like `grep`, `sed`, etc. because those tools vary
-# too much or are not available.
+#   - fast to install: see companion install.sh at source repository.
+#   - fast to update: see __update_bash* functions.
+#   - safe to use in many varying Unix environments 🤞 (see docker-tests.sh)
 #
 # Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
 # Install using https://github.com/jtmoon79/dotfiles/blob/master/install.sh
+#
+# Designed from Debian-derived Linux. Attempts to work with other Linux and Unix
+# in varying environments. Avoids reliance on tools like `grep`, `sed`, etc.
+# because those tools vary too much or are not available.
 #
 # (sometimes) tested against
 # - bash 4.x on Linux Ubuntu 18
 # - bash 4.x on Linux Debian 9
 # - bash 3.2 on FreeBSD 10
-# - bash images in test.sh on docker
+# - bash docker images within docker-tests.sh
 #
 # Excellent references:
 #   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
@@ -41,30 +47,43 @@
 #       not.
 #       UPDATE: yet `/bin/true` is many times slower than `true`. Why is that?
 #
-#               time (for i in {0..100}; do true; done)
-#                   0.002s
+#               $ time (for i in {0..100}; do true; done)
+#               0.002s
 #
-#               time (for i in {0..100}; do /bin/true; done)
-#                   0.162s
+#               $ time (for i in {0..100}; do /bin/true; done)
+#               0.162s
+#
+#       UPDATE: `true` is a bash built-in, just not well documented. From
+#               `man bash`, the clue is this sentence:
+#
+#                   The :, true, false, and test builtins do not accept options
+#                   and do not treat -- specially
+#
+#                Otherwise, `true` and `false` have no man page entry.
+#                Also:
+#
+#                   $ command -V true
+#                   true is a shell builtin
+#
+#                   $ time (for i in {0..100}; do $(which true); done)
+#                   2.602s
 #
 # XXX: bash <4.2 cannot declare empty arrays via "empty array" syntax
 #
-#          array=()
+#          $ array=()
 #
 #      bash <4.2 interprets that as a subshell invocation.
-#      to be backward-compatible, arrays are declared like
+#      To be backward-compatible, arrays are declared like
 #
-#          array[0]=
-#          unset array[0]
+#          $ array[0]=
+#          $ unset array[0]
 #
-# XXX: `declare -g` is not recognized by bash <=4.1, so globals cannot be
-#      be declared within functions. globals are noted by comment.
+# XXX: `declare -g` is not recognized by bash <=4.1.
 #
 # XXX: there would be more readonly variables but that causes difficulties
-#      if this .bashrc is read for an additional time (like running a new
-#      `bash -l` within a current `bash -l`). Declaring an already existing
-#      `readonly` variable is an error. Some tedium is necessary to do so
-#      without an error. This file refrains from use of `readonly`.
+#      if this .bashrc is read for an additional time. Declaring an already
+#      existing `readonly` variable is an error. Some tedium is necessary to do
+#      so without an error. This file refrains from use of `readonly`.
 #
 
 # If not running interactively, do not do anything
@@ -273,6 +292,7 @@ function what_OS () {
     # TODO: Incomplete: MinGW bash, cygwin, OpenBSD
     # TODO: this funciton is a bit of a mess and needs some consistency about
     #       what it is aiming to do.
+    # TODO: this funciton could be replaced by $OSTYPE
 
     declare os='unknown'
     declare os_flavor=''
@@ -343,9 +363,11 @@ __OperatingSystem=$(what_OS)
 function __replace_str () {
     # Given string $1, replace substring $2 with string $3 then echo the result.
     #
-    # This function is the most portable method for doing such. Programs like `sed` and `awk`
-    # vary too much or may not be available. Often, a bash substring replacement
-    # (e.g. `${foo//abc/123}`) suffices but bash 3.2 does not recognize '\t' as tab character.
+    # This function is the most portable method for doing such. Programs like
+    # `sed` and `awk` vary too much or may not be available. Often, a bash
+    # substring replacement
+    # (e.g. `${foo//abc/123}`) suffices but bash 3.2 does not recognize '\t' as
+    # tab character.
     #
     # tested variations on implemention of this with function using command:
     #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __replace_str "${table}" "  " " " >/dev/null; done;'
