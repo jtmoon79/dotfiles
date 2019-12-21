@@ -95,7 +95,7 @@ case "$-" in
     *i*)
         ;;
     *)
-        if [[ "true" = "${__FORCE_INTERACTIVE:-}" ]]; then
+        if [[ "true" = "${__FORCE_INTERACTIVE-}" ]]; then
             echo 'Warning: Forcing Interactive Mode! This is only meant for self-testing.' 1>&2
         else
             return
@@ -185,7 +185,7 @@ function __source_file_bashrc () {
     if [[ ! -r "${sourcef}" ]]; then
         return 1  # file exists but is not readable
     fi
-    echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+    echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
     __sourced_files[${#__sourced_files[@]}]=${sourcef}
     source "${sourcef}"
 }
@@ -224,7 +224,7 @@ function __path_add () {
     then
         return 1
     fi
-    echo "${PS4:-}__path_add '${path}'" >&2
+    echo "${PS4-}__path_add '${path}'" >&2
     export PATH=${PATH}:${path}
 }
 __path_add "${HOME}/bin"
@@ -336,8 +336,9 @@ function what_OS () {
             #   UBUNTU_CODENAME=bionic
             #
             (
+                # shellcheck disable=SC2046
                 eval $(cat /etc/os-release)
-                echo -n "${PRETTY_NAME:-${NAME}}"
+                echo -n "${PRETTY_NAME-${NAME}}"
             )
             return
         elif [[ -f /etc/redhat-release ]]; then
@@ -420,8 +421,8 @@ function __tab_str () {
     # prepend tabs after each newline
     # optional $1 is tab count
     # optional $2 is replacement string
-    declare -ri tab_count=${2:-1}
-    declare -r repl=${3:-
+    declare -ri tab_count=${2-1}
+    declare -r repl=${3-
 }
     __replace_str "${1}" "${repl}" "
 $(for ((i = 0; i < tab_count; i++)); do echo -n '	'; done)"
@@ -587,10 +588,10 @@ function locale_get () {
     echo -n 'POSIX'
 }
 
-export LOCALE=${LOCALE:-'UTF-8'}
+export LOCALE=${LOCALE-'UTF-8'}
 __locale_get=$(locale_get)
-export LANG=${LANG:-${__locale_get}}
-export LC_ALL=${LC_ALL:-${__locale_get}}  # see https://unix.stackexchange.com/a/87763/21203
+export LANG=${LANG-${__locale_get}}
+export LC_ALL=${LC_ALL-${__locale_get}}  # see https://unix.stackexchange.com/a/87763/21203
 # $LANG affect can be seen with code:
 #
 #     for locale in $(locale -a); do (export LANG=$locale; echo -en "$locale\t"; date); done
@@ -626,7 +627,7 @@ function __color_eval () {
             __color=true
             ;;
         *)
-            case "${COLORTERM:-}" in  # if $TERM=xterm then $COLORTERM should be set
+            case "${COLORTERM-}" in  # if $TERM=xterm then $COLORTERM should be set
                 *color*)
                     __color=true
                     ;;
@@ -678,7 +679,7 @@ __color_eval
 # -------------
 
 # set variable identifying the current chroot (used in the prompt below)
-if [[ -z "${debian_chroot:-}" ]] && [[ -r /etc/debian_chroot ]]; then
+if [[ -z "${debian_chroot-}" ]] && [[ -r /etc/debian_chroot ]]; then
     debian_chroot=$(cat /etc/debian_chroot)
 fi
 
@@ -749,7 +750,7 @@ function __prompt_last_exit_code_update () {
 }
 
 function __prompt_last_exit_code_show () {
-    echo -en "${__prompt_last_exit_code_banner:-}"
+    echo -en "${__prompt_last_exit_code_banner-}"
 }
 
 __prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢ (global)
@@ -773,23 +774,23 @@ fi
 # save the current title? https://unix.stackexchange.com/a/28520/21203
 __title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global BUG: does not work in most environments
 __title_set_TTY=$(tty 2>/dev/null || true)  # global, set this once
-__title_set_kernel=${__title_set_kernel:-kernel $(uname -r)}  # global
-__title_set_OS=${__title_set_OS:-${__OperatingSystem}}  # global
+__title_set_kernel=${__title_set_kernel-kernel $(uname -r)}  # global
+__title_set_OS=${__title_set_OS-${__OperatingSystem}}  # global
 #__title_set_hostname=$(hostname)
-#__title_set_user=${USER:-}
+#__title_set_user=${USER-}
 function __title_set () {
     # title will only accept one line of text
     declare ssh_connection=
     if [[ "${SSH_CONNECTION+x}" ]]; then
         ssh_connection=" (via ${SSH_CONNECTION})"
     fi
-    declare user_=${USER:-$(whoami)}  # MinGW bash may not set $USER
-    declare host_=${HOSTNAME:-$(hostname)}  # some bash may not set $HOSTNAME
-    echo -en "\033]0;${user_}@${host_} using ${SHELL:-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
+    declare user_=${USER-$(whoami)}  # MinGW bash may not set $USER
+    declare host_=${HOSTNAME-$(hostname)}  # some bash may not set $HOSTNAME
+    echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
 }
 function __title_reset () {  # can be called called in ./.bash_logout
     # BUG: does not work in most environments
-    echo -en '\033]0;'"${__title_set_prev:-}"'\007'
+    echo -en '\033]0;'"${__title_set_prev-}"'\007'
 }
 __title_set  # call once, no need to call again
 
@@ -1177,12 +1178,12 @@ function __prompt_set () {
         #      However, if $(__prompt_table) is given it's own line then when $prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))$(__prompt_table)$(__prompt_git_info)${debian_chroot:+(${debian_chroot:-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))$(__prompt_table)$(__prompt_git_info)${debian_chroot:+(${debian_chroot-})}
 \u@\h:\w
 '"${prompt_bullet}"' '
     fi
@@ -1202,18 +1203,18 @@ function __prompt_live_updates () {
     declare call___prompt_set=false
 
     # update if necessary
-    if [[ "${color_force+x}" ]] && [[ "${__color_force_last:-}" != "${color_force:-}" ]]; then
+    if [[ "${color_force+x}" ]] && [[ "${__color_force_last-}" != "${color_force-}" ]]; then
         call___color_eval=true
         call___prompt_set=true
     fi
-    __color_force_last=${color_force:-}  # global
+    __color_force_last=${color_force-}  # global
 
     # if `unset prompt_table_column` occurred then reset to default
     if ! [[ "${prompt_table_column+x}" ]]; then
         prompt_table_column=${__prompt_table_column_default}  # global
     fi
     # update if necessary
-    if [[ "${__prompt_table_column_last:-}" != "${prompt_table_column}" ]]; then
+    if [[ "${__prompt_table_column_last-}" != "${prompt_table_column}" ]]; then
         call___prompt_set=true
     fi
     __prompt_table_column_last=${prompt_table_column}  # global
@@ -1223,7 +1224,7 @@ function __prompt_live_updates () {
         prompt_strftime_format=${__prompt_strftime_format_default}
     fi
     # update if necessary
-    if [[ "${__prompt_strftime_format_last:-}" != "${prompt_strftime_format}" ]]; then
+    if [[ "${__prompt_strftime_format_last-}" != "${prompt_strftime_format}" ]]; then
         call___prompt_set=true
     fi
     __prompt_strftime_format_last=${prompt_strftime_format}  # global
@@ -1233,7 +1234,7 @@ function __prompt_live_updates () {
         prompt_bullet=${__prompt_bullet_default}
     fi
     # update if necessary
-    if [[ "${__prompt_bullet_last:-}" != "${prompt_bullet}" ]]; then
+    if [[ "${__prompt_bullet_last-}" != "${prompt_bullet}" ]]; then
         call___prompt_set=true
     fi
     __prompt_bullet_last=${prompt_bullet}  # global
@@ -1501,15 +1502,15 @@ ${b}New Environment Variables:${boff}
 	HISTTIMEFORMAT='${HISTTIMEFORMAT}'
 	LANG='${LANG}'
 	LC_ALL='${LC_ALL}'
-	LOCALE='${LOCALE:-NOT SET}'
+	LOCALE='${LOCALE-NOT SET}'
 	BASH_VERSION_MAJOR='${BASH_VERSION_MAJOR}'
 	BASH_VERSION_MINOR='${BASH_VERSION_MINOR}'
-	debian_chroot='${debian_chroot:-NOT SET}'
-	prompt_bullet='${prompt_bullet:-NOT SET}'
-	color_force=${color_force:-NOT SET}
-	__color=${__color:-NOT SET}
-	__color_prompt=${__color_prompt:-NOT SET}
-	__color_apps=${__color_apps:-NOT SET}
+	debian_chroot='${debian_chroot-NOT SET}'
+	prompt_bullet='${prompt_bullet-NOT SET}'
+	color_force=${color_force-NOT SET}
+	__color=${__color-NOT SET}
+	__color_prompt=${__color_prompt-NOT SET}
+	__color_apps=${__color_apps-NOT SET}
 	__OperatingSystem='${__OperatingSystem}'
 	__env_0_original=… (too large to print)
 "
@@ -1531,7 +1532,7 @@ $(for src in "${__processed_files[@]}"; do echo "	${src}"; done)
     fi
 
     # echo multiplexer server status
-    if [[ -n "${TMUX:-}" ]] && __installed tmux; then
+    if [[ -n "${TMUX-}" ]] && __installed tmux; then
         echo -e "\
 ${b}tmux Settings:${boff}
 
@@ -1539,7 +1540,8 @@ ${b}tmux Settings:${boff}
 	tmux sessions:
 		$(__tab_str "$(tmux list-sessions)" 2)
 "
-    elif [[ -n "${STY:-}" ]] && __installed screen; then
+    elif [[ -n "${STY-}" ]] && __installed screen; then
+        # shellcheck disable=SC2155
         declare __screen_list=$(screen -list 2>/dev/null)
         if __installed tail; then
             __screen_list=$(echo -n "${__screen_list}" | tail -n +2)
