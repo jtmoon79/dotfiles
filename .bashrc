@@ -19,6 +19,9 @@
 #   - fast to update: see __update_bash* functions.
 #   - safe to use in many varying Unix environments 🤞 (see docker-tests.sh)
 #
+# Anti-Features:
+#   - not POSIX compliant!
+#
 # Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
 # Install using https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
@@ -36,6 +39,7 @@
 #   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
 #   https://misc.flogisoft.com/bash/tip_colors_and_formatting (http://archive.fo/NmIkP)
 #   https://shreevatsa.wordpress.com/2008/03/30/zshbash-startup-files-loading-order-bashrc-zshrc-etc/ (http://archive.fo/fktxC)
+#   http://www.solipsys.co.uk/new/BashInitialisationFiles.html (http://archive.ph/CUzSH)
 #   https://github.com/webpro/awesome-dotfiles (http://archive.fo/WuiJW)
 #   https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
