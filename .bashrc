@@ -178,6 +178,7 @@ fi
 __sourced_files[${#__sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
 
 function __source_file_bashrc () {
+    # shellcheck disable=SC2155
     declare sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
        return
@@ -187,12 +188,14 @@ function __source_file_bashrc () {
     fi
     echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
     __sourced_files[${#__sourced_files[@]}]=${sourcef}
+    # shellcheck disable=SC1090
     source "${sourcef}"
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
 __source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.pre"
 
+# shellcheck disable=SC2034
 __PATH_original=${PATH}
 
 # ==============
@@ -465,6 +468,7 @@ function env_sorted () {
     )
 }
 # Record original environment variables for later diff
+# shellcheck disable=SC2034
 __env_0_original=$(env_sorted)
 
 # ===============
@@ -566,7 +570,8 @@ function locale_get () {
         return 1
     fi
 
-    if [[ "${1+x}" ]] && [[ "${locales}" =~ "${1}" ]]; then
+    # shellcheck disable=SC2120
+    if [[ "${1+x}" ]] && [[ "${locales}" =~ ${1} ]]; then
         echo -n "${1}"
         return
     fi
@@ -661,6 +666,7 @@ function __color_eval () {
     #      color_force=false . ./.bashrc
     # Force color on
     #      color_force=true . ./.bashrc
+    # shellcheck disable=SC2154
     if [[ -n "${color_force+x}" ]]; then
         if ${color_force} &>/dev/null; then
             __color_prompt=true
@@ -781,6 +787,7 @@ __title_set_OS=${__title_set_OS-${__OperatingSystem}}  # global
 function __title_set () {
     # title will only accept one line of text
     declare ssh_connection=
+    # shellcheck disable=SC2153
     if [[ "${SSH_CONNECTION+x}" ]]; then
         ssh_connection=" (via ${SSH_CONNECTION})"
     fi
@@ -897,6 +904,7 @@ function __prompt_table_blank_n_printf1 () {
     # copied from https://stackoverflow.com/a/22048085/471376
     # XXX: presumes `seq`
     #printf '%0.s ' {1..${1}}  # does not correctly expand
+    # shellcheck disable=SC2046
     printf '%0.s ' $(seq 1 ${1})
 }
 
@@ -940,7 +948,7 @@ function __prompt_table_blank_n_longstr () {
 
 function __prompt_table_blank_n () {
     # wrapper to preferred method
-    __prompt_table_blank_n_printf2 ${1}
+    __prompt_table_blank_n_printf2 "${1}"
 }
 
 # alias to preferred method
@@ -1024,6 +1032,7 @@ function __prompt_table () {
     #    b='\e[1m'
     #    boff='\e[0m'
     #fi
+    # shellcheck disable=SC2155
     declare -ir cols=$(__window_column_count)
     declare varn=  # variable name
     declare vare=  # $varn evaluated
@@ -1146,6 +1155,7 @@ function __prompt_git_info () {
 
     # change to red if repository non-clean; check for literal substring '*='
     if ${__color_prompt}; then
+        # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]]; then
             out='\e[31m'"${out}"'\e[0m'
         elif [[ "${out}" =~ '<)' ]]; then
@@ -1559,6 +1569,7 @@ ${b}screen Settings:${boff}
 
     # echo $PATHs
     declare paths=$(__tab_str "${PATH}" 1 ':')
+    # shellcheck disable=SC2155
     declare -i paths_c=$(echo -n "${paths}" | line_count)
     echo -e "\
 ${b}Paths (×${paths_c}):${boff}
