@@ -53,4 +53,3 @@ for image in "${images[@]}"; do
 done
 
 echo "Successfully tested using images ${images[*]}" >&2
-
