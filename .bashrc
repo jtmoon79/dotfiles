@@ -584,7 +584,7 @@ function locale_get () {
         'en_US' \
         'C.UTF-8'
     do
-        if [[ "${locales}" =~ "${locale}" ]]; then
+        if [[ "${locales}" =~ ${locale} ]]; then
             echo -n "${locale}"
             return
         fi
@@ -1064,10 +1064,10 @@ function __prompt_table () {
         v2l=${#vare}
         if [[ ${v1l} -gt ${v2l} ]]; then
             fs1=''
-            fs2=$(__prompt_table_blank_n_alias $((${v1l} - ${v2l})))
+            fs2=$(__prompt_table_blank_n_alias $((v1l - v2l)))
             rows_len+=${v1l}+${#s1}
         elif [[ ${v1l} -lt ${v2l} ]]; then
-            fs1=$(__prompt_table_blank_n_alias $((${v2l} - ${v1l})))
+            fs1=$(__prompt_table_blank_n_alias $((v2l - v1l)))
             fs2=''
             rows_len+=${v2l}+${#s1}
         else
