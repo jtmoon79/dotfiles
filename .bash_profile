@@ -4,15 +4,31 @@
 #   https://github.com/jtmoon79/dotfiles/blob/master/.bash_profile
 #
 # Features:
-#   - tested in a variety of environments; Debian, openSUSE, FreeBSD using various bash versions
+#   - tested in a variety of environments; Debian, openSUSE,
+#     FreeBSD using various bash versions
 #   - attempts to play well with screen or tmux
 #   - handles graphical and non-graphical environments
+#
+# Anti-Features:
+#   - not POSIX compliant!
+#
+# Works best with companion .bashrc.
 #
 # XXX: this calls multiplexers backwards
 #      this file is processed by bash instance and which in-turn starts a multiplexer instance
 #      this should occur in the opposite way; start a multiplexer instance and then start a bash
 #      instance. But is that even *reasonably* possible?
 #
+
+# If not running interactively, do not print.
+__bash_profile_verbose=false
+case "$-" in
+    *i*)
+        __bash_profile_verbose=true
+        ;;
+    *)
+        ;;
+esac
 
 declare -a __sourced_files=()
 
@@ -77,7 +93,9 @@ function __source_file_bashprofile () {
         return 1  # file exists but is not readable
     fi
     # help the user understand what is happening
-    echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+    if ${__bash_profile_verbose}; then
+        echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+    fi
     source "${sourcef}"
     __sourced_files[${#__sourced_files[@]}]=${sourcef}
 }
