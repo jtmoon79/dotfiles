@@ -626,7 +626,7 @@ fi
 function __color_eval () {
 
     # set a fancy prompt
-    __color=false
+    declare __color=false
     case "${TERM}" in
         *color)
             __color=true
