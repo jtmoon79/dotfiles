@@ -1608,14 +1608,14 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
-		${b}__update_dotbash_profile${boff} # update ./.bash_profile
-		${b}__update_dotbashrc${boff}       # update ./.bashrc
-		${b}__update_dotbash_logout${boff}  # update ./.bash_logout
-		${b}__update_dotbash${boff}         # update prior .bash files
-		${b}__update_dotbashrclocalpost${boff} # update ./.bashrc.local.post
-		${b}__update_dotscreenrc${boff}     # update ./.screenrc
-		${b}__update_dotvimrc${boff}        # update ./.vimrc
-		${b}__update_dots${boff}            # update all of the above
+		${b}__update_dotbash_profile${boff}  # update ./.bash_profile
+		${b}__update_dotbashrc${boff}        # update ./.bashrc
+		${b}__update_dotbash_logout${boff}   # update ./.bash_logout
+		${b}__update_dotbash${boff}          # update prior .bash files
+		${b}__update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
+		${b}__update_dotscreenrc${boff}      # update ./.screenrc
+		${b}__update_dotvimrc${boff}         # update ./.vimrc
+		${b}__update_dots${boff}             # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__downloader_used).
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
 	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently searches for:
