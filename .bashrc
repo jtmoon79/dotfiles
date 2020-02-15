@@ -114,6 +114,21 @@ esac
 
 set -u
 
+# function readlink_portable *should* be defined in companion .bash_profile. But in case was not defined,
+# create a stub function
+if ! type -t readlink_portable &>/dev/null; then
+    function readlink_portable () {
+        echo -n "${@}"
+    }
+fi
+
+# protect again initialization files that source in a loop
+if [[ "${__bashrc_initialized+x}" ]] \
+  && [[ "${__bashrc_initialized:-}" = "$(readlink_portable "${BASH_SOURCE:-}")" ]]; then
+    echo "Skip duplicate initialization of '${__bashrc_initialized}'" >&2
+    return
+fi
+
 # note Bash Version
 declare -i BASH_VERSION_MAJOR=${BASH_VERSINFO[0]}
 declare -i BASH_VERSION_MINOR=${BASH_VERSINFO[1]}
@@ -170,14 +185,6 @@ function __path_dir_bashrc_ () {
 __path_dir_bashrc=$(__path_dir_bashrc_)
 if ! [[ -d "${__path_dir_bashrc}" ]]; then
     __path_dir_bashrc=~
-fi
-
-# function readlink_portable *should* be defined in companion .bash_profile. But in case was not defined,
-# create a stub function
-if ! type -t readlink_portable &>/dev/null; then
-    function readlink_portable () {
-        echo -n "${@}"
-    }
 fi
 
 # .bash_profile may have already created $__sourced_files, only create if not already created
@@ -1620,5 +1627,7 @@ ${b}Special Features of this .bashrc:${boff}
 }
 
 bashrc_start_info >&2
+
+export __bashrc_initialized=$(readlink_portable "${BASH_SOURCE:-}")
 
 set +u
