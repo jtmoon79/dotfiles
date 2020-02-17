@@ -226,7 +226,7 @@ function __bashrc_path_add () {
     # - not already in $PATH
 
     declare -r path=${1}
-    if ! ([[ -d "${path}" ]] && [[ -x "${path}" ]]); then  # must be valid executable directory
+    if [[ ! -d "${path}" ]] || [[ ! -x "${path}" ]]; then  # must be valid executable directory
         return 1
     fi
     # test if any attempts at primitive matching find a match (substring $path within $PATH?)
@@ -235,6 +235,7 @@ function __bashrc_path_add () {
     #      test front
     #      test back
     #      test middle
+    # TODO: do not do this in a subshell
     if ! (     [[ "${PATH}" = "${PATH##${path}:}" ]] \
             && [[ "${PATH}" = "${PATH%%:${path}}" ]] \
             && [[ "${PATH}" = "${PATH/:${path}:/}" ]]
@@ -638,7 +639,7 @@ fi
 # NOTE: Colors should be 8-bit as it's the most portable
 #       see https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
-function __bashrc_color_eval () {
+function __bashrc_prompt_color_eval () {
 
     # set a fancy prompt
     declare __bashrc_color=false
@@ -655,7 +656,7 @@ function __bashrc_color_eval () {
     esac
 
     # default to no color or escape sequences
-    __bashrc_color_prompt=false
+    __bashrc_prompt_color=false
     __bashrc_color_apps=false
 
     if ${__bashrc_color}; then
@@ -663,20 +664,20 @@ function __bashrc_color_eval () {
             # We have color support; assume it's compliant with ECMA-48
             # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
             # a case would tend to support setf rather than setaf.)
-            __bashrc_color_prompt=true
+            __bashrc_prompt_color=true
             __bashrc_color_apps=true
         elif [[ -x /usr/bin/tput ]] && [[ "${__bashrc_OperatingSystem}" =~ 'FreeBSD' ]]; then
            # tput setaf always fails in FreeBSD 10, just try for color
            # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=210858
-            __bashrc_color_prompt=true
+            __bashrc_prompt_color=true
             __bashrc_color_apps=true
         else
-            __bashrc_color_prompt=false
+            __bashrc_prompt_color=false
             __bashrc_color_apps=false
         fi
     fi
 
-    # if $color_force is defined, then set $__bashrc_color_prompt according to $color_force truth
+    # if $color_force is defined, then set $__bashrc_prompt_color according to $color_force truth
     # Force color off
     #      color_force=false . ./.bashrc
     # Force color on
@@ -684,16 +685,16 @@ function __bashrc_color_eval () {
     # shellcheck disable=SC2154
     if [[ -n "${color_force+x}" ]]; then
         if ${color_force} &>/dev/null; then
-            __bashrc_color_prompt=true
+            __bashrc_prompt_color=true
             __bashrc_color_apps=true
         else
-            __bashrc_color_prompt=false
+            __bashrc_prompt_color=false
             __bashrc_color_apps=false
         fi
     fi
 
 }
-__bashrc_color_eval
+__bashrc_prompt_color_eval
 
 # -------------
 # prompt chroot
@@ -762,7 +763,7 @@ function __bashrc_prompt_last_exit_code_update () {
     if [[ ${last_exit} -eq 0 ]]; then
         __bashrc_prompt_last_exit_code_banner="return code ${last_exit}"  # normal
     else  # non-zero exit code
-        if ${__bashrc_color_prompt}; then
+        if ${__bashrc_prompt_color}; then
             __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
         else
             __bashrc_prompt_last_exit_code_banner="‼ return code ${last_exit}"  # prepend
@@ -825,6 +826,20 @@ __bashrc_title_set  # call once, no need to call again
 # that are unnecessary.  Most state is within global variables. Programs
 # have related `__install_program` global variables already set to `true`
 # or `false`.
+
+__bashrc_prompt_color_user_default='32'  # green
+if [[ ! "${__bashrc_prompt_color_user+x}" ]]; then
+    __bashrc_prompt_color_user=${__bashrc_prompt_color_user_default}
+fi
+__bashrc_prompt_color_user_root_default='31'  # red
+if [[ ! "${__bashrc_prompt_color_user_root+x}" ]]; then
+    __bashrc_prompt_color_user_root=${__bashrc_prompt_color_user_root_default}
+fi
+__bashrc_prompt_color_dateline_default='37'  # light grey
+if [[ ! "${__bashrc_prompt_color_dateline+x}" ]]; then
+    __bashrc_prompt_color_dateline=${__bashrc_prompt_color_dateline_default}
+fi
+
 
 # -----------------------
 # prompt terminal details
@@ -1043,7 +1058,7 @@ function __bashrc_prompt_table () {
     declare -r s1=${prompt_table_column}  # visible columns
     #declare b=''  # bold on
     #declare bf=''  # bold off
-    #if ${__bashrc_color_prompt}; then
+    #if ${__bashrc_prompt_color}; then
     #    b='\e[1m'
     #    boff='\e[0m'
     #fi
@@ -1162,14 +1177,14 @@ function __bashrc_prompt_git_info () {
     out+="$(export GIT_PS1_SHOWDIRTYSTATE=1
             export GIT_PS1_SHOWSTASHSTATE=1
             export GIT_PS1_SHOWUPSTREAM=1
-            if ${__bashrc_color_prompt}; then
+            if ${__bashrc_prompt_color}; then
                 export GIT_PS1_SHOWCOLORHINTS=1
             fi
            __git_ps1 2>/dev/null)" || true
     #out+="$(git rev-parse --symbolic-full-name HEAD) $()"
 
     # change to red if repository non-clean; check for literal substring '*='
-    if ${__bashrc_color_prompt}; then
+    if ${__bashrc_prompt_color}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]]; then
             out='\e[31m'"${out}"'\e[0m'
@@ -1193,17 +1208,17 @@ fi
 
 function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
-    if ${__bashrc_color_prompt}; then
-        declare color_user='32'  # green
+    if ${__bashrc_prompt_color}; then
+        declare color_user=${__bashrc_prompt_color_user}
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
-            color_user='31'  # red
+            color_user=${__bashrc_prompt_color_user_root}
         fi
         # BUG: not putting the $(__bashrc_prompt_table) on it's own line causes oddity when resizing a window to be smaller;
         #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${bash_prompt_bullet}"'\[\033[00m\] '
     else
@@ -1216,7 +1231,7 @@ function __bashrc_prompt_set () {
 __bashrc_prompt_set
 
 # __bashrc_prompt_live_updates variables that must be globals
-__bashrc_color_force_last=  # global
+__bashrc_prompt_color_force_last=  # global
 __bashrc_prompt_table_column_last=  # global
 __bashrc_prompt_strftime_format_last=  # global
 __bashrc_prompt_bullet_last=  # global
@@ -1224,15 +1239,45 @@ __bashrc_prompt_bullet_last=  # global
 function __bashrc_prompt_live_updates () {
     # special "live" updates that monitor special variables
 
-    declare call___bashrc_color_eval=false
+    declare call___bashrc_prompt_color_eval=false
     declare call___bashrc_prompt_set=false
 
     # update if necessary
-    if [[ "${color_force+x}" ]] && [[ "${__bashrc_color_force_last-}" != "${color_force-}" ]]; then
-        call___bashrc_color_eval=true
+    if [[ "${color_force+x}" ]] && [[ "${__bashrc_prompt_color_force_last-}" != "${color_force-}" ]]; then
+        call___bashrc_prompt_color_eval=true
         call___bashrc_prompt_set=true
     fi
-    __bashrc_color_force_last=${color_force-}  # global
+    __bashrc_prompt_color_force_last=${color_force-}  # global
+
+    # if `unset __bashrc_prompt_color_user` occurred then reset to default
+    if ! [[ "${__bashrc_prompt_color_user+x}" ]]; then
+        __bashrc_prompt_color_user=${__bashrc_prompt_color_user_default}  # global
+    fi
+    # update if necessary
+    if [[ "${__bashrc_prompt_color_user_last-}" != "${__bashrc_prompt_color_user}" ]]; then
+        call___bashrc_prompt_set=true
+    fi
+    __bashrc_prompt_color_user_last=${__bashrc_prompt_color_user}  # global
+
+    # if `unset __bashrc_prompt_color_user_root` occurred then reset to default
+    if ! [[ "${__bashrc_prompt_color_user_root+x}" ]]; then
+        __bashrc_prompt_color_user_root=${__bashrc_prompt_color_user_root_default}  # global
+    fi
+    # update if necessary
+    if [[ "${__bashrc_prompt_color_user_root_last-}" != "${__bashrc_prompt_color_user_root}" ]]; then
+        call___bashrc_prompt_set=true
+    fi
+    __bashrc_prompt_color_user_root_last=${__bashrc_prompt_color_user_root}  # global
+
+    # if `unset __bashrc_prompt_color_dateline` occurred then reset to default
+    if ! [[ "${__bashrc_prompt_color_dateline+x}" ]]; then
+        __bashrc_prompt_color_dateline=${__bashrc_prompt_color_dateline_default}  # global
+    fi
+    # update if necessary
+    if [[ "${__bashrc_prompt_color_dateline_last-}" != "${__bashrc_prompt_color_dateline}" ]]; then
+        call___bashrc_prompt_set=true
+    fi
+    __bashrc_prompt_color_dateline_last=${__bashrc_prompt_color_dateline}  # global
 
     # if `unset prompt_table_column` occurred then reset to default
     if ! [[ "${prompt_table_column+x}" ]]; then
@@ -1264,8 +1309,8 @@ function __bashrc_prompt_live_updates () {
     fi
     __bashrc_prompt_bullet_last=${bash_prompt_bullet}  # global
 
-    if ${call___bashrc_color_eval}; then
-        __bashrc_color_eval
+    if ${call___bashrc_prompt_color_eval}; then
+        __bashrc_prompt_color_eval
     fi
     if ${call___bashrc_prompt_set}; then
         __bashrc_prompt_set
@@ -1486,7 +1531,7 @@ function bashrc_start_info () {
     declare __env_1_now=$(env_sorted)
     declare b=''
     declare boff=''
-    if ${__bashrc_color_prompt}; then
+    if ${__bashrc_prompt_color}; then
         b='\e[1m'
         boff='\e[0m'
     fi
@@ -1534,7 +1579,7 @@ ${b}New Environment Variables:${boff}
 	bash_prompt_bullet='${bash_prompt_bullet-NOT SET}'
 	color_force=${color_force-NOT SET}
 	__bashrc_color=${__bashrc_color-NOT SET}
-	__bashrc_color_prompt=${__bashrc_color_prompt-NOT SET}
+	__bashrc_prompt_color=${__bashrc_prompt_color-NOT SET}
 	__bashrc_color_apps=${__bashrc_color_apps-NOT SET}
 	__bashrc_OperatingSystem='${__bashrc_OperatingSystem}'
 	__bashrc_env_0_original=… (too large to print)
