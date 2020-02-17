@@ -16,7 +16,7 @@
 #   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - attempts sourcing of /usr/share/bash-completion/bash_completion
 #   - fast to install: see companion install.sh at source repository.
-#   - fast to update: see __update_bash* functions.
+#   - fast to update: see __bashrc_update_bash* functions.
 #   - safe to use in many varying Unix environments 🤞 (see docker-tests.sh)
 #
 # Anti-Features:
@@ -104,15 +104,13 @@ case "$-" in
     *i*)
         ;;
     *)
-        if [[ "true" = "${__FORCE_INTERACTIVE-}" ]]; then
+        if [[ "true" = "${__bashrc_FORCE_INTERACTIVE-}" ]]; then
             echo 'Warning: Forcing Interactive Mode! This is only meant for self-testing.' 1>&2
         else
             return
         fi
         ;;
 esac
-
-set -u
 
 # function readlink_portable *should* be defined in companion .bash_profile. But in case was not defined,
 # create a stub function
@@ -123,8 +121,9 @@ if ! type -t readlink_portable &>/dev/null; then
 fi
 
 # protect again initialization files that source in a loop
+__bashrc_initialized_flag=$(readlink_portable "${BASH_SOURCE:-}" 2>/dev/null)
 if [[ "${__bashrc_initialized+x}" ]] \
-  && [[ "${__bashrc_initialized:-}" = "$(readlink_portable "${BASH_SOURCE:-}")" ]]; then
+  && [[ "${__bashrc_initialized:-}" = "${__bashrc_initialized_flag}" ]]; then
     echo "Skip duplicate initialization of '${__bashrc_initialized}'" >&2
     return
 fi
@@ -165,10 +164,10 @@ function __installed () {
 # ---------------------------------------
 
 # XXX: backward-compatible array declaration
-__processed_files[0]=''  # global array
-unset __processed_files[0]
+__bash_processed_files[0]=''  # global array
+unset __bash_processed_files[0]
 
-function __path_dir_bashrc_ () {
+function __bashrc_path_dir_bashrc_ () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
@@ -181,19 +180,19 @@ function __path_dir_bashrc_ () {
     echo -n "${path}"
 }
 
-#__path_dir_bashrc=
-__path_dir_bashrc=$(__path_dir_bashrc_)
-if ! [[ -d "${__path_dir_bashrc}" ]]; then
-    __path_dir_bashrc=~
+#__bashrc_path_dir_bashrc=
+__bashrc_path_dir_bashrc=$(__bashrc_path_dir_bashrc_)
+if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
+    __bashrc_path_dir_bashrc=~
 fi
 
-# .bash_profile may have already created $__sourced_files, only create if not already created
-if ! [[ "${__sourced_files+x}" ]]; then
-    declare -a __sourced_files=()
+# .bash_profile may have already created $__bash_sourced_files, only create if not already created
+if ! [[ "${__bash_sourced_files+x}" ]]; then
+    declare -a __bash_sourced_files=()
 fi
-__sourced_files[${#__sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
+__bash_sourced_files[${#__bash_sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
 
-function __source_file_bashrc () {
+function __bashrc_source_file () {
     # shellcheck disable=SC2155
     declare sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
@@ -203,16 +202,16 @@ function __source_file_bashrc () {
         return 1  # file exists but is not readable
     fi
     echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
-    __sourced_files[${#__sourced_files[@]}]=${sourcef}
+    __bash_sourced_files[${#__bash_sourced_files[@]}]=${sourcef}
     # shellcheck disable=SC1090
     source "${sourcef}"
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
-__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.pre"
+__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
 
 # shellcheck disable=SC2034
-__PATH_original=${PATH}
+__bashrc_PATH_original=${PATH}
 
 # ==============
 # PATH additions
@@ -221,7 +220,7 @@ __PATH_original=${PATH}
 # add PATHs sooner so calls to `__installed` will search *all* paths the user
 # has specified
 
-function __path_add () {
+function __bashrc_path_add () {
     # append path $1 to $PATH but only if it is
     # - valid executable directory
     # - not already in $PATH
@@ -243,25 +242,25 @@ function __path_add () {
     then
         return 1
     fi
-    echo "${PS4-}__path_add '${path}'" >&2
+    echo "${PS4-}__bashrc_path_add '${path}'" >&2
     export PATH=${PATH}:${path}
 }
-__path_add "${HOME}/bin"
+__bashrc_path_add "${HOME}/bin"
 
-function __path_add_from_file () {
+function __bashrc_path_add_from_file () {
     # attempt to add paths found in the file $1, assuming a path per-line
     declare path=
     declare -r paths_file=${1}
     if [[ -r "${paths_file}" ]]; then
-        __processed_files[${#__processed_files[@]}]=$(readlink_portable "${paths_file}")
+        __bash_processed_files[${#__bash_processed_files[@]}]=$(readlink_portable "${paths_file}")
         while read -r path; do
-            __path_add "${path}"
+            __bashrc_path_add "${path}"
         done < "${paths_file}"
     else
         return 1
     fi
 }
-__path_add_from_file "${__path_dir_bashrc}/.bash_paths"
+__bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 
 # -------------------------------------------------
 # search for some important installed programs once
@@ -271,9 +270,9 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #       ('true' and 'false' are programs in the path)
 #       oddly, running `true` is 1/10 time of running `/bin/true`.   Why is that?
 
-#__installed_tracker_array=()
+#__bashrc_installed_tracker_array=()
 #
-#function __installed_tracker () {
+#function __bashrc_installed_tracker () {
 #     # search for a program once
 #     # further calls will only do an array lookup instead of searching the filesystem.
 #     # in theory, this should be faster.
@@ -283,9 +282,9 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #     for prog in "${@}"; do
 #         # check if program has been searched already
 #         # note if it is not installed
-#         if [[ "${__installed_tracker_array[${prog}+x]}" ]]; then
+#         if [[ "${__bashrc_installed_tracker_array[${prog}+x]}" ]]; then
 #             # program has been searched, what was the result?
-#             if ! ${__installed_tracker_array[${prog}]}; then
+#             if ! ${__bashrc_installed_tracker_array[${prog}]}; then
 #                 ret=1
 #             fi
 #             continue
@@ -295,15 +294,15 @@ __path_add_from_file "${__path_dir_bashrc}/.bash_paths"
 #         #    return 1
 #         #fi
 #         if __installed "${prog}" &>/dev/null; then
-#             __installed_tracker_array["${prog}"]=true
+#             __bashrc_installed_tracker_array["${prog}"]=true
 #         else
-#             __installed_tracker_array["${prog}"]=false
+#             __bashrc_installed_tracker_array["${prog}"]=false
 #             ret=1
 #         fi
 #     done
 #     return ${ret}
 # }
-#__installed_tracker grep sed tr cut
+#__bashrc_installed_tracker grep sed tr cut
 
 # ============================
 # other misc. helper functions
@@ -382,9 +381,9 @@ function what_OS () {
     fi
     echo -n "${os_flavor}${os}"
 }
-__OperatingSystem=$(what_OS)
+__bashrc_OperatingSystem=$(what_OS)
 
-function __replace_str () {
+function __bashrc_replace_str () {
     # Given string $1, replace substring $2 with string $3 then echo the result.
     #
     # This function is the most portable method for doing such. Programs like
@@ -394,7 +393,7 @@ function __replace_str () {
     # tab character.
     #
     # tested variations on implemention of this with function using command:
-    #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __replace_str "${table}" "  " " " >/dev/null; done;'
+    #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __bashrc_replace_str "${table}" "  " " " >/dev/null; done;'
     #
 
     if [[ ${#} != 3 ]]; then
@@ -436,14 +435,14 @@ function __replace_str () {
     echo -n "${out}"
 }
 
-function __tab_str () {
+function __bashrc_tab_str () {
     # prepend tabs after each newline
     # optional $1 is tab count
     # optional $2 is replacement string
     declare -ri tab_count=${2-1}
     declare -r repl=${3-
 }
-    __replace_str "${1}" "${repl}" "
+    __bashrc_replace_str "${1}" "${repl}" "
 $(for ((i = 0; i < tab_count; i++)); do echo -n '	'; done)"
 }
 
@@ -485,7 +484,7 @@ function env_sorted () {
 }
 # Record original environment variables for later diff
 # shellcheck disable=SC2034
-__env_0_original=$(env_sorted)
+__bashrc_env_0_original=$(env_sorted)
 
 # ===============
 # history control
@@ -639,45 +638,45 @@ fi
 # NOTE: Colors should be 8-bit as it's the most portable
 #       see https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
-function __color_eval () {
+function __bashrc_color_eval () {
 
     # set a fancy prompt
-    declare __color=false
+    declare __bashrc_color=false
     case "${TERM}" in
         *color)
-            __color=true
+            __bashrc_color=true
             ;;
         *)
             case "${COLORTERM-}" in  # if $TERM=xterm then $COLORTERM should be set
                 *color*)
-                    __color=true
+                    __bashrc_color=true
                     ;;
             esac
     esac
 
     # default to no color or escape sequences
-    __color_prompt=false
-    __color_apps=false
+    __bashrc_color_prompt=false
+    __bashrc_color_apps=false
 
-    if ${__color}; then
+    if ${__bashrc_color}; then
         if [[ -x /usr/bin/tput ]] && /usr/bin/tput setaf 1 &>/dev/null; then
             # We have color support; assume it's compliant with ECMA-48
             # (ISO/IEC-6429). (Lack of such support is extremely rare, and such
             # a case would tend to support setf rather than setaf.)
-            __color_prompt=true
-            __color_apps=true
-        elif [[ -x /usr/bin/tput ]] && [[ "${__OperatingSystem}" =~ 'FreeBSD' ]]; then
+            __bashrc_color_prompt=true
+            __bashrc_color_apps=true
+        elif [[ -x /usr/bin/tput ]] && [[ "${__bashrc_OperatingSystem}" =~ 'FreeBSD' ]]; then
            # tput setaf always fails in FreeBSD 10, just try for color
            # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=210858
-            __color_prompt=true
-            __color_apps=true
+            __bashrc_color_prompt=true
+            __bashrc_color_apps=true
         else
-            __color_prompt=false
-            __color_apps=false
+            __bashrc_color_prompt=false
+            __bashrc_color_apps=false
         fi
     fi
 
-    # if $color_force is defined, then set $__color_prompt according to $color_force truth
+    # if $color_force is defined, then set $__bashrc_color_prompt according to $color_force truth
     # Force color off
     #      color_force=false . ./.bashrc
     # Force color on
@@ -685,100 +684,100 @@ function __color_eval () {
     # shellcheck disable=SC2154
     if [[ -n "${color_force+x}" ]]; then
         if ${color_force} &>/dev/null; then
-            __color_prompt=true
-            __color_apps=true
+            __bashrc_color_prompt=true
+            __bashrc_color_apps=true
         else
-            __color_prompt=false
-            __color_apps=false
+            __bashrc_color_prompt=false
+            __bashrc_color_apps=false
         fi
     fi
 
 }
-__color_eval
+__bashrc_color_eval
 
 # -------------
 # prompt chroot
 # -------------
 
 # set variable identifying the current chroot (used in the prompt below)
-if [[ -z "${debian_chroot-}" ]] && [[ -r /etc/debian_chroot ]]; then
-    debian_chroot=$(cat /etc/debian_chroot)
+if [[ -z "${__bashrc_debian_chroot-}" ]] && [[ -r /etc/debian_chroot ]]; then
+    __bashrc_debian_chroot=$(cat /etc/debian_chroot)
 fi
 
 # ------------
 # prompt timer
 # ------------
 
-__prompt_timer_epoch=false
-function __prompt_timer_epoch_set () {
-    __prompt_timer_epoch=false
+__bashrc_prompt_timer_epoch=false
+function __bashrc_prompt_timer_epoch_set () {
+    __bashrc_prompt_timer_epoch=false
     if [[ "${EPOCHREALTIME+x}" ]]; then
-        __prompt_timer_epoch=true
+        __bashrc_prompt_timer_epoch=true
     fi
 }
-__prompt_timer_epoch_set
+__bashrc_prompt_timer_epoch_set
 
 # idea from http://archive.fo/SYU2A
-# It is important that __prompt_timer_stop is the last command in the
+# It is important that __bashrc_prompt_timer_stop is the last command in the
 # $PROMPT_COMMAND.  If there are other commands after it then those
-# will be executed and their execution might cause __prompt_timer_start to be
-# called again. The setting and unset of __prompt_timer_cur is to workaround
+# will be executed and their execution might cause __bashrc_prompt_timer_start to be
+# called again. The setting and unset of __bashrc_prompt_timer_cur is to workaround
 # internecine subshells that occur per PROMPT_COMMAND.  Subshells should not be
-# spawned in __prompt_timer_start or __prompt_timer_stop.
-function __prompt_timer_start () {
-    if ${__prompt_timer_epoch}; then
-        __prompt_timer_cur=${__prompt_timer_cur:-${EPOCHREALTIME}}
+# spawned in __bashrc_prompt_timer_start or __bashrc_prompt_timer_stop.
+function __bashrc_prompt_timer_start () {
+    if ${__bashrc_prompt_timer_epoch}; then
+        __bashrc_prompt_timer_cur=${__bashrc_prompt_timer_cur:-${EPOCHREALTIME}}
     else
-        __prompt_timer_cur=${__prompt_timer_cur:-${SECONDS:-0}}
+        __bashrc_prompt_timer_cur=${__bashrc_prompt_timer_cur:-${SECONDS:-0}}
     fi
 }
-__prompt_timer_start
+__bashrc_prompt_timer_start
 
-function __prompt_timer_stop () {
-    # use $__prompt_timer_show for display
-    if ${__prompt_timer_epoch}; then
-        __prompt_timer_show=$(((${EPOCHREALTIME//.} - ${__prompt_timer_cur//.}) / 1000))
+function __bashrc_prompt_timer_stop () {
+    # use $__bashrc_prompt_timer_show for display
+    if ${__bashrc_prompt_timer_epoch}; then
+        __bashrc_prompt_timer_show=$(((${EPOCHREALTIME//.} - ${__bashrc_prompt_timer_cur//.}) / 1000))
     else
-        __prompt_timer_show=$((${SECONDS:-0} - __prompt_timer_cur))
+        __bashrc_prompt_timer_show=$((${SECONDS:-0} - __bashrc_prompt_timer_cur))
     fi
-    unset __prompt_timer_cur
+    unset __bashrc_prompt_timer_cur
 }
-trap '__prompt_timer_start' DEBUG
+trap '__bashrc_prompt_timer_start' DEBUG
 
-if ${__prompt_timer_epoch}; then
-    __prompt_timer_units='ms'
+if ${__bashrc_prompt_timer_epoch}; then
+    __bashrc_prompt_timer_units='ms'
 else
-    __prompt_timer_units='s'
+    __bashrc_prompt_timer_units='s'
 fi
 
 # ---------------------
 # prompt last exit code
 # ---------------------
 
-function __prompt_last_exit_code_update () {
+function __bashrc_prompt_last_exit_code_update () {
     # this function must run first within
     # $PROMPT_COMMAND or else last exit code will be overwritten
     declare -ir last_exit=$?  # first save this value
-    __prompt_last_exit_code_banner=
+    __bashrc_prompt_last_exit_code_banner=
     if [[ ${last_exit} -eq 0 ]]; then
-        __prompt_last_exit_code_banner="return code ${last_exit}"  # normal
+        __bashrc_prompt_last_exit_code_banner="return code ${last_exit}"  # normal
     else  # non-zero exit code
-        if ${__color_prompt}; then
-            __prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
+        if ${__bashrc_color_prompt}; then
+            __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
         else
-            __prompt_last_exit_code_banner="‼ return code ${last_exit}"  # prepend
+            __bashrc_prompt_last_exit_code_banner="‼ return code ${last_exit}"  # prepend
         fi
     fi
 }
 
-function __prompt_last_exit_code_show () {
-    echo -en "${__prompt_last_exit_code_banner-}"
+function __bashrc_prompt_last_exit_code_show () {
+    echo -en "${__bashrc_prompt_last_exit_code_banner-}"
 }
 
-__prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢ (global)
-# make sure $prompt_bullet is set
-if ! [[ "${prompt_bullet+x}" ]]; then
-    prompt_bullet=${__prompt_bullet_default}
+__bashrc_prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢ (global)
+# make sure $bash_prompt_bullet is set
+if ! [[ "${bash_prompt_bullet+x}" ]]; then
+    bash_prompt_bullet=${__bashrc_prompt_bullet_default}
 fi
 
 # -------------------
@@ -794,13 +793,13 @@ fi
 #
 
 # save the current title? https://unix.stackexchange.com/a/28520/21203
-__title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global BUG: does not work in most environments
-__title_set_TTY=$(tty 2>/dev/null || true)  # global, set this once
-__title_set_kernel=${__title_set_kernel-kernel $(uname -r)}  # global
-__title_set_OS=${__title_set_OS-${__OperatingSystem}}  # global
-#__title_set_hostname=$(hostname)
-#__title_set_user=${USER-}
-function __title_set () {
+__bashrc_title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global BUG: does not work in most environments
+__bashrc_title_set_TTY=$(tty 2>/dev/null || true)  # global, set this once
+__bashrc_title_set_kernel=${__bashrc_title_set_kernel-kernel $(uname -r)}  # global
+__bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem}}  # global
+#__bashrc_title_set_hostname=$(hostname)
+#__bashrc_title_set_user=${USER-}
+function __bashrc_title_set () {
     # title will only accept one line of text
     declare ssh_connection=
     # shellcheck disable=SC2153
@@ -809,13 +808,13 @@ function __title_set () {
     fi
     declare user_=${USER-$(whoami)}  # MinGW bash may not set $USER
     declare host_=${HOSTNAME-$(hostname)}  # some bash may not set $HOSTNAME
-    echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__title_set_TTY} hosted by ${__title_set_OS} running ${__title_set_kernel}${ssh_connection}\007"
+    echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__bashrc_title_set_TTY} hosted by ${__bashrc_title_set_OS} running ${__bashrc_title_set_kernel}${ssh_connection}\007"
 }
-function __title_reset () {  # can be called called in ./.bash_logout
+function __bashrc_title_reset () {  # can be called called in ./.bash_logout
     # BUG: does not work in most environments
-    echo -en '\033]0;'"${__title_set_prev-}"'\007'
+    echo -en '\033]0;'"${__bashrc_title_set_prev-}"'\007'
 }
-__title_set  # call once, no need to call again
+__bashrc_title_set  # call once, no need to call again
 
 # ============================
 # assemble per-prompt commands
@@ -831,7 +830,7 @@ __title_set  # call once, no need to call again
 # prompt terminal details
 # -----------------------
 
-function __prompt_table_max () {
+function __bashrc_prompt_table_max () {
     # return maximum integer
     # function name is odd so it is less likely to be overwritten
     if [[ ${1} -gt ${2} ]]; then
@@ -841,7 +840,7 @@ function __prompt_table_max () {
     fi
 }
 
-function __window_column_count () {
+function __bashrc_window_column_count () {
     # safely get the columns wide (if a command fails, $cols will become value 0)
     declare -i cols
     cols=${COLUMNS:-0}
@@ -854,44 +853,44 @@ function __window_column_count () {
     echo -n ${cols}
 }
 
-__prompt_table_tty=$(tty 2>/dev/null || true)  # global, set once
+__bashrc_prompt_table_tty=$(tty 2>/dev/null || true)  # global, set once
 
-__prompt_table_column_default='│'  # ┃ ║ ║ │ │ (global)
+__bashrc_prompt_table_column_default='│'  # ┃ ║ ║ │ │ (global)
 if ! [[ "${prompt_table_column+x}" ]]; then
-    prompt_table_column=${__prompt_table_column_default}  # global
+    prompt_table_column=${__bashrc_prompt_table_column_default}  # global
 fi
 
-if ! [[ "${prompt_table_variables+x}" ]]; then
+if ! [[ "${bash_prompt_table_variables+x}" ]]; then
     # XXX: backward-compatible array declaration
-    prompt_table_variables[0]=''  # global array
-    unset prompt_table_variables[0]
+    bash_prompt_table_variables[0]=''  # global array
+    unset bash_prompt_table_variables[0]
 fi
 
-function prompt_table_variable_add () {
-    # do not add variable already present in $prompt_table_variables
+function bash_prompt_table_variable_add () {
+    # do not add variable already present in $bash_prompt_table_variables
     # otherwise repeated invocations of .bashrc create a huge
-    # $prompt_table_variables
+    # $bash_prompt_table_variables
     declare -i i=0
-    for ((; i < ${#prompt_table_variables[@]}; ++i)); do
-        if [[ "${prompt_table_variables[${i}]}" == "${1}" ]]; then
+    for ((; i < ${#bash_prompt_table_variables[@]}; ++i)); do
+        if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
             return
         fi
     done
-    prompt_table_variables[${#prompt_table_variables[@]}]=${1}
+    bash_prompt_table_variables[${#bash_prompt_table_variables[@]}]=${1}
 }
 
-prompt_table_variable_add 'TERM'
-prompt_table_variable_add 'color_force'
-prompt_table_variable_add 'DISPLAY'
-prompt_table_variable_add 'COLORTERM'
-prompt_table_variable_add 'SHLVL'
-prompt_table_variable_add 'tty'
-prompt_table_variable_add 'STY'
-prompt_table_variable_add 'SSH_TTY'
-prompt_table_variable_add 'SSH_CONNECTION'
-prompt_table_variable_add 'GPG_AGENT_INFO'
-prompt_table_variable_add 'SSH_AUTH_SOCK'
-prompt_table_variable_add 'SSH_AGENT_PID'
+bash_prompt_table_variable_add 'TERM'
+bash_prompt_table_variable_add 'color_force'
+bash_prompt_table_variable_add 'DISPLAY'
+bash_prompt_table_variable_add 'COLORTERM'
+bash_prompt_table_variable_add 'SHLVL'
+bash_prompt_table_variable_add 'tty'
+bash_prompt_table_variable_add 'STY'
+bash_prompt_table_variable_add 'SSH_TTY'
+bash_prompt_table_variable_add 'SSH_CONNECTION'
+bash_prompt_table_variable_add 'GPG_AGENT_INFO'
+bash_prompt_table_variable_add 'SSH_AUTH_SOCK'
+bash_prompt_table_variable_add 'SSH_AGENT_PID'
 
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal() {
@@ -905,7 +904,7 @@ function character() {
     printf "\\$(printf '%03o' "${1}")"
 }
 
-function __prompt_table_expr_length () {
+function __bashrc_prompt_table_expr_length () {
     # XXX: workaround for getting string length from `${#!var}`. Normally would
     #      use `${#!var}` or `expr length "${!var}"`.
     #      Bash 4.x does not support `${#!var}`
@@ -913,10 +912,10 @@ function __prompt_table_expr_length () {
     echo -n "${#1}"
 }
 
-# XXX: the following `__prompt_table_blank_n_` are various implementations of
+# XXX: the following `__bashrc_prompt_table_blank_n_` are various implementations of
 #      such. Only one is used but others remain for sake of comparison.
 
-function __prompt_table_blank_n_printf1 () {
+function __bashrc_prompt_table_blank_n_printf1 () {
     # copied from https://stackoverflow.com/a/22048085/471376
     # XXX: presumes `seq`
     #printf '%0.s ' {1..${1}}  # does not correctly expand
@@ -924,12 +923,12 @@ function __prompt_table_blank_n_printf1 () {
     printf '%0.s ' $(seq 1 ${1})
 }
 
-function __prompt_table_blank_n_printf2 () {
+function __bashrc_prompt_table_blank_n_printf2 () {
     # copied from https://stackoverflow.com/a/5801221/471376
     printf "%${1}s" ' '
 }
 
-function __prompt_table_blank_n_for_echo () {
+function __bashrc_prompt_table_blank_n_for_echo () {
     # copied from https://stackoverflow.com/a/5801221/471376
     declare -i i=0
     for ((; i<${1}; i++)) {
@@ -937,19 +936,19 @@ function __prompt_table_blank_n_for_echo () {
     }
 }
 
-function __prompt_table_blank_n_awk () {
+function __bashrc_prompt_table_blank_n_awk () {
     # copied from https://stackoverflow.com/a/23978009/471376
     # XXX: presumes `awk`
     awk "BEGIN { while (c++ < ${1}) printf \" \" ; }"
 }
 
-function __prompt_table_blank_n_yes_head () {
+function __bashrc_prompt_table_blank_n_yes_head () {
     # copied from https://stackoverflow.com/a/5799335/471376
     # XXX: `yes` `head` (LOL!)
     echo -n "$(yes ' ' | head -n${1})"
 }
 
-function __prompt_table_blank_n_head_zero () {
+function __bashrc_prompt_table_blank_n_head_zero () {
     # copied from https://stackoverflow.com/a/16617155/471376
     # XXX: presumes `head` and `tr`
     head -c ${1} /dev/zero | tr '\0' ' '
@@ -957,81 +956,81 @@ function __prompt_table_blank_n_head_zero () {
 
 # XXX: hacky method to quickly print blanks without relying on installed programs
 #      or expensive loops
-__prompt_table_blank_n_buffer='                                                                                                                                                                        '
-function __prompt_table_blank_n_longstr () {
-    echo -ne "${__prompt_table_blank_n_buffer:0:${1}}"
+__bashrc_prompt_table_blank_n_buffer='                                                                                                                                                                        '
+function __bashrc_prompt_table_blank_n_longstr () {
+    echo -ne "${__bashrc_prompt_table_blank_n_buffer:0:${1}}"
 }
 
-function __prompt_table_blank_n () {
+function __bashrc_prompt_table_blank_n () {
     # wrapper to preferred method
-    __prompt_table_blank_n_printf2 "${1}"
+    __bashrc_prompt_table_blank_n_printf2 "${1}"
 }
 
 # alias to preferred method
-alias __prompt_table_blank_n_alias=__prompt_table_blank_n_printf2
+alias __bashrc_prompt_table_blank_n_alias=__bashrc_prompt_table_blank_n_printf2
 
-function __prompt_table_blank_n_test_all () {
+function __bashrc_prompt_table_blank_n_test_all () {
     declare -ir len=10
     echo "${PS4-} time 1000 iterations of each, length ${len}"
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_printf1 ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_printf1 ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_printf1 ${len}
+            __bashrc_prompt_table_blank_n_printf1 ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_printf2 ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_printf2 ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_printf2 ${len}
+            __bashrc_prompt_table_blank_n_printf2 ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_for_echo ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_for_echo ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_for_echo ${len}
+            __bashrc_prompt_table_blank_n_for_echo ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_awk ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_awk ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_awk ${len}
+            __bashrc_prompt_table_blank_n_awk ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_head_zero ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_head_zero ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_head_zero ${len}
+            __bashrc_prompt_table_blank_n_head_zero ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_longstr ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_longstr ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_longstr ${len}
+            __bashrc_prompt_table_blank_n_longstr ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n ${len}
+            __bashrc_prompt_table_blank_n ${len}
         done &>/dev/null
     )
 
-    echo -e "\n${PS4-} __prompt_table_blank_n_alias ${len}"
+    echo -e "\n${PS4-} __bashrc_prompt_table_blank_n_alias ${len}"
     time (
         for i in {1..1000}; do
-            __prompt_table_blank_n_alias ${len}
+            __bashrc_prompt_table_blank_n_alias ${len}
         done &>/dev/null
     )
 }
 
-function __prompt_table () {
+function __bashrc_prompt_table () {
     # Creates a basic "table" of interesting environment variables.
     # Adds some safety for terminal column width so a narrow terminal does not
     # have a dump of shared table data.
@@ -1044,12 +1043,12 @@ function __prompt_table () {
     declare -r s1=${prompt_table_column}  # visible columns
     #declare b=''  # bold on
     #declare bf=''  # bold off
-    #if ${__color_prompt}; then
+    #if ${__bashrc_color_prompt}; then
     #    b='\e[1m'
     #    boff='\e[0m'
     #fi
     # shellcheck disable=SC2155
-    declare -ir cols=$(__window_column_count)
+    declare -ir cols=$(__bashrc_window_column_count)
     declare varn=  # variable name
     declare vare=  # $varn evaluated
     declare fs1=  # filler space row 1
@@ -1057,7 +1056,7 @@ function __prompt_table () {
     declare -i v1l=  # varn length
     declare -i v2l=  # vare length
     declare -i rows_len=0  # rows max length
-    for varn in "${prompt_table_variables[@]}"; do
+    for varn in "${bash_prompt_table_variables[@]}"; do
         # if the rows are already too long for the window column width then do
         # not continue appending to them
         if [[ ${rows_len} -gt ${cols} ]]; then
@@ -1072,7 +1071,7 @@ function __prompt_table () {
 
         # append the variable name to row1 and variable value to row2
         if [[ 'tty' = "${varn}" ]]; then  # special case
-            vare=${__prompt_table_tty}
+            vare=${__bashrc_prompt_table_tty}
         else
             vare=${!varn}
         fi
@@ -1080,10 +1079,10 @@ function __prompt_table () {
         v2l=${#vare}
         if [[ ${v1l} -gt ${v2l} ]]; then
             fs1=''
-            fs2=$(__prompt_table_blank_n_alias $((v1l - v2l)))
+            fs2=$(__bashrc_prompt_table_blank_n_alias $((v1l - v2l)))
             rows_len+=${v1l}+${#s1}
         elif [[ ${v1l} -lt ${v2l} ]]; then
-            fs1=$(__prompt_table_blank_n_alias $((v2l - v1l)))
+            fs1=$(__bashrc_prompt_table_blank_n_alias $((v2l - v1l)))
             fs2=''
             rows_len+=${v2l}+${#s1}
         else
@@ -1112,26 +1111,26 @@ function __prompt_table () {
 # prompt git info
 # ---------------
 
-__installed_git=false  # global
+__bashrc_installed_git=false  # global
 if __installed git; then
-    __installed_git=true
+    __bashrc_installed_git=true
 fi
 
-__installed_stat=false  # global
+__bashrc_installed_stat=false  # global
 if __installed stat; then
-    __installed_stat=true
+    __bashrc_installed_stat=true
 fi
 
 # check `stat` works as expected as it can vary among Unixes
 # consolidate checks to one variable
-__prompt_git_info_git_stat=false  # global
-if ${__installed_git} \
-   && ${__installed_stat} \
+__bashrc_prompt_git_info_git_stat=false  # global
+if ${__bashrc_installed_git} \
+   && ${__bashrc_installed_stat} \
    && [[ "$(stat '--format=%m' '/' 2>/dev/null)" = '/' ]]; then
-    __prompt_git_info_git_stat=true
+    __bashrc_prompt_git_info_git_stat=true
 fi
 
-function __prompt_git_info () {
+function __bashrc_prompt_git_info () {
     # a prompt line with git information
     #
     # Most directories are not git repositories so make easy checks try to bail
@@ -1139,7 +1138,7 @@ function __prompt_git_info () {
     # on the system
 
     # do the necessary programs exist?
-    if ! ${__prompt_git_info_git_stat}; then
+    if ! ${__bashrc_prompt_git_info_git_stat}; then
         return
     fi
 
@@ -1163,14 +1162,14 @@ function __prompt_git_info () {
     out+="$(export GIT_PS1_SHOWDIRTYSTATE=1
             export GIT_PS1_SHOWSTASHSTATE=1
             export GIT_PS1_SHOWUPSTREAM=1
-            if ${__color_prompt}; then
+            if ${__bashrc_color_prompt}; then
                 export GIT_PS1_SHOWCOLORHINTS=1
             fi
            __git_ps1 2>/dev/null)" || true
     #out+="$(git rev-parse --symbolic-full-name HEAD) $()"
 
     # change to red if repository non-clean; check for literal substring '*='
-    if ${__color_prompt}; then
+    if ${__bashrc_color_prompt}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]]; then
             out='\e[31m'"${out}"'\e[0m'
@@ -1187,101 +1186,101 @@ function __prompt_git_info () {
 # assemble the prompt pieces
 #
 
-__prompt_strftime_format_default='%F %T'  # global
+__bashrc_prompt_strftime_format_default='%F %T'  # global
 if ! [[ "${prompt_strftime_format+x}" ]]; then
-    prompt_strftime_format=${__prompt_strftime_format_default}
+    prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
 fi
 
-function __prompt_set () {
+function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
-    if ${__color_prompt}; then
+    if ${__bashrc_color_prompt}; then
         declare color_user='32'  # green
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
             color_user='31'  # red
         fi
-        # BUG: not putting the $(__prompt_table) on it's own line causes oddity when resizing a window to be smaller;
-        #      the next line becomes "attached" to the $(__prompt_table) line.
-        #      However, if $(__prompt_table) is given it's own line then when $prompt_table_variables becomes unset there
+        # BUG: not putting the $(__bashrc_prompt_table) on it's own line causes oddity when resizing a window to be smaller;
+        #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
+        #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__prompt_table)\[\e[32m\]$(__prompt_git_info)\[\e[0m\]${debian_chroot:+(${debian_chroot-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
-'"${prompt_bullet}"'\[\033[00m\] '
+'"${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__prompt_timer_show-0}${__prompt_timer_units}; $(__prompt_last_exit_code_show))$(__prompt_table)$(__prompt_git_info)${debian_chroot:+(${debian_chroot-})}
+\D{'"${prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)$(__bashrc_prompt_git_info)${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \u@\h:\w
-'"${prompt_bullet}"' '
+'"${bash_prompt_bullet}"' '
     fi
 }
-__prompt_set
+__bashrc_prompt_set
 
-# __prompt_live_updates variables that must be globals
-__color_force_last=  # global
-__prompt_table_column_last=  # global
-__prompt_strftime_format_last=  # global
-__prompt_bullet_last=  # global
+# __bashrc_prompt_live_updates variables that must be globals
+__bashrc_color_force_last=  # global
+__bashrc_prompt_table_column_last=  # global
+__bashrc_prompt_strftime_format_last=  # global
+__bashrc_prompt_bullet_last=  # global
 
-function __prompt_live_updates () {
+function __bashrc_prompt_live_updates () {
     # special "live" updates that monitor special variables
 
-    declare call___color_eval=false
-    declare call___prompt_set=false
+    declare call___bashrc_color_eval=false
+    declare call___bashrc_prompt_set=false
 
     # update if necessary
-    if [[ "${color_force+x}" ]] && [[ "${__color_force_last-}" != "${color_force-}" ]]; then
-        call___color_eval=true
-        call___prompt_set=true
+    if [[ "${color_force+x}" ]] && [[ "${__bashrc_color_force_last-}" != "${color_force-}" ]]; then
+        call___bashrc_color_eval=true
+        call___bashrc_prompt_set=true
     fi
-    __color_force_last=${color_force-}  # global
+    __bashrc_color_force_last=${color_force-}  # global
 
     # if `unset prompt_table_column` occurred then reset to default
     if ! [[ "${prompt_table_column+x}" ]]; then
-        prompt_table_column=${__prompt_table_column_default}  # global
+        prompt_table_column=${__bashrc_prompt_table_column_default}  # global
     fi
     # update if necessary
-    if [[ "${__prompt_table_column_last-}" != "${prompt_table_column}" ]]; then
-        call___prompt_set=true
+    if [[ "${__bashrc_prompt_table_column_last-}" != "${prompt_table_column}" ]]; then
+        call___bashrc_prompt_set=true
     fi
-    __prompt_table_column_last=${prompt_table_column}  # global
+    __bashrc_prompt_table_column_last=${prompt_table_column}  # global
 
     # if `unset prompt_strftime_format` occurred then reset to default
     if ! [[ "${prompt_strftime_format+x}" ]]; then
-        prompt_strftime_format=${__prompt_strftime_format_default}
+        prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
     fi
     # update if necessary
-    if [[ "${__prompt_strftime_format_last-}" != "${prompt_strftime_format}" ]]; then
-        call___prompt_set=true
+    if [[ "${__bashrc_prompt_strftime_format_last-}" != "${prompt_strftime_format}" ]]; then
+        call___bashrc_prompt_set=true
     fi
-    __prompt_strftime_format_last=${prompt_strftime_format}  # global
+    __bashrc_prompt_strftime_format_last=${prompt_strftime_format}  # global
 
-    # if `unset prompt_bullet` occurred then reset to default
-    if ! [[ "${prompt_bullet+x}" ]]; then
-        prompt_bullet=${__prompt_bullet_default}
+    # if `unset bash_prompt_bullet` occurred then reset to default
+    if ! [[ "${bash_prompt_bullet+x}" ]]; then
+        bash_prompt_bullet=${__bashrc_prompt_bullet_default}
     fi
     # update if necessary
-    if [[ "${__prompt_bullet_last-}" != "${prompt_bullet}" ]]; then
-        call___prompt_set=true
+    if [[ "${__bashrc_prompt_bullet_last-}" != "${bash_prompt_bullet}" ]]; then
+        call___bashrc_prompt_set=true
     fi
-    __prompt_bullet_last=${prompt_bullet}  # global
+    __bashrc_prompt_bullet_last=${bash_prompt_bullet}  # global
 
-    if ${call___color_eval}; then
-        __color_eval
+    if ${call___bashrc_color_eval}; then
+        __bashrc_color_eval
     fi
-    if ${call___prompt_set}; then
-        __prompt_set
+    if ${call___bashrc_prompt_set}; then
+        __bashrc_prompt_set
     fi
 }
 
-# order is important; additional commands must between functions __prompt_last_exit_code_update and
-# __prompt_timer_stop
-PROMPT_COMMAND='__prompt_last_exit_code_update; __prompt_live_updates; __prompt_timer_stop'
+# order is important; additional commands must between functions __bashrc_prompt_last_exit_code_update and
+# __bashrc_prompt_timer_stop
+PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_timer_stop'
 
 # ----------
 # misc color
 # ----------
 
-if (__installed gcc || __installed 'g++') && ${__color_apps}; then
+if (__installed gcc || __installed 'g++') && ${__bashrc_color_apps}; then
     # colored GCC warnings and errors
     export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 fi
@@ -1290,7 +1289,7 @@ fi
 # aliases
 # =======
 
-function __alias_safely () {
+function __bashrc_alias_safely () {
     # create alias if it does not obscure a program in the $PATH
     if type "${1}" &>/dev/null; then
         return 1
@@ -1298,13 +1297,13 @@ function __alias_safely () {
     alias "${1}"="${2}"
 }
 
-function __alias_check () {
+function __bashrc_alias_check () {
     # create alias if running the alias succeeds
     (cd ~ && (${2})) &>/dev/null || return
     alias "${1}"="${2}"
 }
 
-function __alias_safely_check () {
+function __bashrc_alias_safely_check () {
     # create alias if it does not obscure a program in the $PATH and running the alias succeeds
     if type "${1}" &>/dev/null; then
         return 1
@@ -1321,27 +1320,27 @@ function __alias_safely_check () {
 # -------------
 
 # enable color support of ls and also add handy aliases
-if ${__color_apps} && [[ -x /usr/bin/dircolors ]]; then
-    if [[ -r "${__path_dir_bashrc}/.dircolors" ]]; then
-        eval "$(/usr/bin/dircolors -b "${__path_dir_bashrc}/.dircolors")"
+if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
+    if [[ -r "${__bashrc_path_dir_bashrc}/.dircolors" ]]; then
+        eval "$(/usr/bin/dircolors -b "${__bashrc_path_dir_bashrc}/.dircolors")"
     else
         eval "$(/usr/bin/dircolors -b)"
     fi
 
-    __alias_check ls 'ls --color=auto'
+    __bashrc_alias_check ls 'ls --color=auto'
     if __installed dir; then
-        __alias_check dir 'dir --color=auto'
+        __bashrc_alias_check dir 'dir --color=auto'
     fi
     if __installed vdir; then
-        __alias_check vdir 'vdir --color=auto'
+        __bashrc_alias_check vdir 'vdir --color=auto'
     fi
 fi
 
-function __alias_greps_color () {
+function __bashrc_alias_greps_color () {
     # alias various forms of `grep` programs for `--color=auto`
 
     declare grep_path=
-    if ! ${__color_apps}; then
+    if ! ${__bashrc_color_apps}; then
         return 0
     fi
     # various grep interfaces found on Ubuntu 18
@@ -1360,36 +1359,36 @@ function __alias_greps_color () {
         fi
     done
 }
-__alias_greps_color
+__bashrc_alias_greps_color
 
 # -------------
 # other aliases
 # -------------
 
-__alias_safely_check l 'ls -lAa'
-__alias_safely_check ll 'ls -lAa'
-__alias_safely_check la 'ls -Aa'
-__alias_safely_check ltr 'ls -Altr'
-__alias_safely whence 'type -a'  # where, of a sort
-__alias_safely_check psa 'ps -ef --forest'
-__alias_safely_check envs env_sorted
+__bashrc_alias_safely_check l 'ls -lAa'
+__bashrc_alias_safely_check ll 'ls -lAa'
+__bashrc_alias_safely_check la 'ls -Aa'
+__bashrc_alias_safely_check ltr 'ls -Altr'
+__bashrc_alias_safely whence 'type -a'  # where, of a sort
+__bashrc_alias_safely_check psa 'ps -ef --forest'
+__bashrc_alias_safely_check envs env_sorted
 
-if ${__installed_git}; then
-    __alias_safely gitb 'git branch -avv'
-    __alias_safely gitf 'git fetch -av'
-    __alias_safely gits 'git status -vv'
+if ${__bashrc_installed_git}; then
+    __bashrc_alias_safely gitb 'git branch -avv'
+    __bashrc_alias_safely gitf 'git fetch -av'
+    __bashrc_alias_safely gits 'git status -vv'
 fi
 
 if __installed mount sort column; then
     # TODO: BUG: this fails to be set under Debian 9 WSL depite success when run manually
-    __alias_safely_check mnt 'mount | sort -k3 | column -t'
+    __bashrc_alias_safely_check mnt 'mount | sort -k3 | column -t'
 fi
 
 # ============
 # self updater
 # ============
 
-function __download_from_to () {
+function __bashrc_download_from_to () {
     # XXX: .bash_profile has __download_to_from :-/
     declare -r url=${1}
     shift
@@ -1404,7 +1403,7 @@ function __download_from_to () {
     fi
 }
 
-function __downloader_used () {
+function __bashrc_downloader_used () {
     if __installed wget; then
         echo 'wget'
     elif __installed curl; then
@@ -1414,41 +1413,41 @@ function __downloader_used () {
     fi
 }
 
-function __update_dotbash_profile () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' './.bash_profile' "${@}"
+function __bashrc_update_dotbash_profile () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' './.bash_profile' "${@}"
 }
 
-function __update_dotbashrc () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
+function __bashrc_update_dotbashrc () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
 }
 
-function __update_dotbash_logout () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
+function __bashrc_update_dotbash_logout () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
 }
 
-function __update_dotbashrclocalpost () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.local.post' './.bashrc.local.post' "${@}"
+function __bashrc_update_dotbashrclocalpost () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.local.post' './.bashrc.local.post' "${@}"
 }
 
-function __update_dotbash () {
+function __bashrc_update_dotbash () {
     # install bash dot files in a one-liner
-    __update_dotbash_profile && __update_dotbashrc && __update_dotbash_logout
+    __bashrc_update_dotbash_profile && __bashrc_update_dotbashrc && __bashrc_update_dotbash_logout
 }
 
-function __update_dotvimrc () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
+function __bashrc_update_dotvimrc () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
 }
 
-function __update_dotscreenrc () {
-    __download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
+function __bashrc_update_dotscreenrc () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
 }
 
-function __update_dots () {
+function __bashrc_update_dots () {
     # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell
     # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
-    __update_dotbash "${@}"
-    __update_dotvimrc "${@}"
-    __update_dotscreenrc "${@}"
+    __bashrc_update_dotbash "${@}"
+    __bashrc_update_dotvimrc "${@}"
+    __bashrc_update_dotscreenrc "${@}"
 }
 
 # =========================
@@ -1458,13 +1457,13 @@ function __update_dots () {
 # Do not source ./.bash_profile as that will source this ./.bashrc (circular dependency)
 
 # .bashrc.local for host-specific customizations
-__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local"
-__source_file_bashrc "${__path_dir_bashrc}/.bash_aliases"
-__source_file_bashrc "${__path_dir_bashrc}/.bashrc.local.post"
+__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
+__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
+__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
-    __source_file_bashrc /usr/share/bash-completion/bash_completion
-    __source_file_bashrc /etc/bash_completion
+    __bashrc_source_file /usr/share/bash-completion/bash_completion
+    __bashrc_source_file /etc/bash_completion
 fi
 
 # ====================================================
@@ -1487,7 +1486,7 @@ function bashrc_start_info () {
     declare __env_1_now=$(env_sorted)
     declare b=''
     declare boff=''
-    if ${__color_prompt}; then
+    if ${__bashrc_color_prompt}; then
         b='\e[1m'
         boff='\e[0m'
     fi
@@ -1498,7 +1497,7 @@ Using bash ${BASH_VERSION}, process ID $$
 "
 
     # echo information functions available
-    declare funcs=$(__replace_str "$(declare -F)" 'declare -f ' '	')
+    declare funcs=$(__bashrc_replace_str "$(declare -F)" 'declare -f ' '	')
     declare -i funcs_c=$(echo -n "${funcs}" | line_count)
     echo -e "\
 ${b}functions (×${funcs_c}) in this shell (declare -F):${boff}
@@ -1507,7 +1506,7 @@ ${funcs}
 "
 
     # echo aliases
-    declare aliases=$(__replace_str "$(__replace_str "$(alias)" 'alias ' '')" '
+    declare aliases=$(__bashrc_replace_str "$(__bashrc_replace_str "$(alias)" 'alias ' '')" '
 ' '
 	')
     declare -i aliases_c=$(echo -n "${aliases}" | line_count)
@@ -1531,29 +1530,29 @@ ${b}New Environment Variables:${boff}
 	LOCALE='${LOCALE-NOT SET}'
 	BASH_VERSION_MAJOR='${BASH_VERSION_MAJOR}'
 	BASH_VERSION_MINOR='${BASH_VERSION_MINOR}'
-	debian_chroot='${debian_chroot-NOT SET}'
-	prompt_bullet='${prompt_bullet-NOT SET}'
+	__bashrc_debian_chroot='${__bashrc_debian_chroot-NOT SET}'
+	bash_prompt_bullet='${bash_prompt_bullet-NOT SET}'
 	color_force=${color_force-NOT SET}
-	__color=${__color-NOT SET}
-	__color_prompt=${__color_prompt-NOT SET}
-	__color_apps=${__color_apps-NOT SET}
-	__OperatingSystem='${__OperatingSystem}'
-	__env_0_original=… (too large to print)
+	__bashrc_color=${__bashrc_color-NOT SET}
+	__bashrc_color_prompt=${__bashrc_color_prompt-NOT SET}
+	__bashrc_color_apps=${__bashrc_color_apps-NOT SET}
+	__bashrc_OperatingSystem='${__bashrc_OperatingSystem}'
+	__bashrc_env_0_original=… (too large to print)
 "
 
-    # echo $__sourced_files
+    # echo $__bash_sourced_files
     echo -e "\
-${b}Files Sourced (×${#__sourced_files[@]}):${boff}
+${b}Files Sourced (×${#__bash_sourced_files[@]}):${boff}
 
-$(for src in "${__sourced_files[@]}"; do echo "	${src}"; done)
+$(for src in "${__bash_sourced_files[@]}"; do echo "	${src}"; done)
 "
 
-    # echo $__processed_files if any
-    if [[ ${#__processed_files[@]} -gt 0 ]]; then
+    # echo $__bash_processed_files if any
+    if [[ ${#__bash_processed_files[@]} -gt 0 ]]; then
         echo -e "\
-${b}Files Processed (×${#__processed_files[@]}):${boff}
+${b}Files Processed (×${#__bash_processed_files[@]}):${boff}
 
-$(for src in "${__processed_files[@]}"; do echo "	${src}"; done)
+$(for src in "${__bash_processed_files[@]}"; do echo "	${src}"; done)
 "
     fi
 
@@ -1564,7 +1563,7 @@ ${b}tmux Settings:${boff}
 
 	tmux ID: $(tmux display-message -p '#S')
 	tmux sessions:
-		$(__tab_str "$(tmux list-sessions)" 2)
+		$(__bashrc_tab_str "$(tmux list-sessions)" 2)
 "
     elif [[ -n "${STY-}" ]] && __installed screen; then
         # shellcheck disable=SC2155
@@ -1579,12 +1578,12 @@ ${b}screen Settings:${boff}
 	screen: $(screen --version)
 	screen ID: ${STY}
 	screen Sessions:
-		$(__tab_str "${__screen_list}")
+		$(__bashrc_tab_str "${__screen_list}")
 "
     fi
 
     # echo $PATHs
-    declare paths=$(__tab_str "${PATH}" 1 ':')
+    declare paths=$(__bashrc_tab_str "${PATH}" 1 ':')
     # shellcheck disable=SC2155
     declare -i paths_c=$(echo -n "${paths}" | line_count)
     echo -e "\
@@ -1598,7 +1597,7 @@ ${b}Paths (×${paths_c}):${boff}
         echo -e "\
 ${b}System and Users (w):${boff}
 
-	$(__tab_str "$(w)")
+	$(__bashrc_tab_str "$(w)")
 "
     fi
 
@@ -1608,26 +1607,26 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
-		${b}__update_dotbash_profile${boff}  # update ./.bash_profile
-		${b}__update_dotbashrc${boff}        # update ./.bashrc
-		${b}__update_dotbash_logout${boff}   # update ./.bash_logout
-		${b}__update_dotbash${boff}          # update prior .bash files
-		${b}__update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
-		${b}__update_dotscreenrc${boff}      # update ./.screenrc
-		${b}__update_dotvimrc${boff}         # update ./.vimrc
-		${b}__update_dots${boff}             # update all of the above
-	Parameters like '--no-check-certificate' will be passed to the downloader $(__downloader_used).
+		${b}__bashrc_update_dotbash_profile${boff}  # update ./.bash_profile
+		${b}__bashrc_update_dotbashrc${boff}        # update ./.bashrc
+		${b}__bashrc_update_dotbash_logout${boff}   # update ./.bash_logout
+		${b}__bashrc_update_dotbash${boff}          # update prior .bash files
+		${b}__bashrc_update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
+		${b}__bashrc_update_dotscreenrc${boff}      # update ./.screenrc
+		${b}__bashrc_update_dotvimrc${boff}         # update ./.vimrc
+		${b}__bashrc_update_dots${boff}             # update all of the above
+	Parameters like '--no-check-certificate' will be passed to the downloader $(__bashrc_downloader_used).
 	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
-	Change prompt table variables by adding or subtracting from array ${b}prompt_table_variables${boff}. Currently searches for:
-		$(__tab_str "$(for i in "${!prompt_table_variables[@]}"; do echo "prompt_table_variables[${i}]=${prompt_table_variables[${i}]}"; let i++; done)" 2)
+	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff}. Currently searches for:
+		$(__bashrc_tab_str "$(for i in "${!bash_prompt_table_variables[@]}"; do echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"; let i++; done)" 2)
 	Change table column lines by setting ${b}prompt_table_column${boff} (currently '${prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}prompt_strftime_format${boff} (currently '${prompt_strftime_format}').
-	Override prompt by changing ${b}prompt_bullet${boff} (currently '${b}${prompt_bullet}${boff}').
+	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
 "
 }
 
 bashrc_start_info >&2
 
-export __bashrc_initialized=$(readlink_portable "${BASH_SOURCE:-}")
+export __bashrc_initialized=${__bashrc_initialized_flag}
 
 set +u

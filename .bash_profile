@@ -19,7 +19,7 @@
 #      this should occur in the opposite way; start a multiplexer instance and then start a bash
 #      instance. But is that even *reasonably* possible?
 #
-
+set -u
 # If not running interactively, do not print.
 __bash_profile_verbose=false
 case "$-" in
@@ -30,7 +30,7 @@ case "$-" in
         ;;
 esac
 
-declare -a __sourced_files=()
+declare -a __bash_sourced_files=()
 
 function __installed () {
     # are all passed args found in the $PATH?
@@ -69,7 +69,7 @@ function readlink_portable () {
     fi
 }
 
-function __path_dir_bash_profile_ () {
+function __bash_profile_path_dir_ () {
     # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
@@ -81,9 +81,9 @@ function __path_dir_bash_profile_ () {
     fi
     echo -n "${path}"
 }
-__path_dir_bash_profile=$(__path_dir_bash_profile_)
+__bash_profile_path_dir=$(__bash_profile_path_dir_)
 
-function __source_file_bashprofile () {
+function __bash_profile_source_file () {
     declare sourcef=
     sourcef=$(readlink_portable "${1}")
     if ! [[ -f "${sourcef}" ]]; then
@@ -97,13 +97,13 @@ function __source_file_bashprofile () {
         echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
     fi
     source "${sourcef}"
-    __sourced_files[${#__sourced_files[@]}]=${sourcef}
+    __bash_sourced_files[${#__bash_sourced_files[@]}]=${sourcef}
 }
 
-__sourced_files[0]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
+__bash_sourced_files[0]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
 
 # useful for setting $force_multiplexer
-__source_file_bashprofile "${__path_dir_bash_profile}/.bash_profile.local"
+__bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 
 # inform the local X server to allow this shell instance to launch GUI programs
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
@@ -143,7 +143,7 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
         fi
         if [[ -z "${tmux_detached}" ]] ; then
              # a detached session not present so create a new session
-            __source_file_bashprofile "${__path_dir_bash_profile}/.bashrc"
+            __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             echo "${PS4:-}exec tmux new-session" >&2
             exec tmux new-session
         else
@@ -156,7 +156,7 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     elif [[ "${force_multiplexer+x}" = 'screen' ]] || (__installed screen && ! [[ "${force_multiplexer+x}" ]]); then
         # try to attach to Detached session, otherwise start a new session
         screen_detached=
-        # XXX: if screen does start a new instance, then `__source_file_bashprofile .bashrc` else do
+        # XXX: if screen does start a new instance, then `__bash_profile_source_file .bashrc` else do
         #      not how to determine ahead of time?
         if __installed grep tr cut; then
             # based on `screen -list` output like:
@@ -179,7 +179,7 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
         fi
         if [[ -z "${screen_detached}" ]]; then
             # no detached screen, start new screen
-            __source_file_bashprofile "${__path_dir_bash_profile}/.bashrc"
+            __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             # without `-l` this will break logins
             echo "${PS4:-}exec screen -l -RR -U" >&2
             exec screen -l -RR -U
@@ -191,4 +191,4 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     fi
 fi
 
-__source_file_bashprofile "${__path_dir_bash_profile}/.bashrc"
+__bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
