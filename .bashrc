@@ -677,14 +677,14 @@ function __bashrc_prompt_color_eval () {
         fi
     fi
 
-    # if $color_force is defined, then set $__bashrc_prompt_color according to $color_force truth
+    # if $bash_color_force is defined, then set $__bashrc_prompt_color according to $bash_color_force truth
     # Force color off
-    #      color_force=false . ./.bashrc
+    #      bash_color_force=false . ./.bashrc
     # Force color on
-    #      color_force=true . ./.bashrc
+    #      bash_color_force=true . ./.bashrc
     # shellcheck disable=SC2154
-    if [[ -n "${color_force+x}" ]]; then
-        if ${color_force} &>/dev/null; then
+    if [[ -n "${bash_color_force+x}" ]]; then
+        if ${bash_color_force} &>/dev/null; then
             __bashrc_prompt_color=true
             __bashrc_color_apps=true
         else
@@ -871,8 +871,8 @@ function __bashrc_window_column_count () {
 __bashrc_prompt_table_tty=$(tty 2>/dev/null || true)  # global, set once
 
 __bashrc_prompt_table_column_default='│'  # ┃ ║ ║ │ │ (global)
-if ! [[ "${prompt_table_column+x}" ]]; then
-    prompt_table_column=${__bashrc_prompt_table_column_default}  # global
+if ! [[ "${bash_prompt_table_column+x}" ]]; then
+    bash_prompt_table_column=${__bashrc_prompt_table_column_default}  # global
 fi
 
 if ! [[ "${bash_prompt_table_variables+x}" ]]; then
@@ -895,7 +895,7 @@ function bash_prompt_table_variable_add () {
 }
 
 bash_prompt_table_variable_add 'TERM'
-bash_prompt_table_variable_add 'color_force'
+bash_prompt_table_variable_add 'bash_color_force'
 bash_prompt_table_variable_add 'DISPLAY'
 bash_prompt_table_variable_add 'COLORTERM'
 bash_prompt_table_variable_add 'SHLVL'
@@ -1055,7 +1055,7 @@ function __bashrc_prompt_table () {
 
     declare row1=''
     declare row2=''
-    declare -r s1=${prompt_table_column}  # visible columns
+    declare -r s1=${bash_prompt_table_column}  # visible columns
     #declare b=''  # bold on
     #declare bf=''  # bold off
     #if ${__bashrc_prompt_color}; then
@@ -1202,8 +1202,8 @@ function __bashrc_prompt_git_info () {
 #
 
 __bashrc_prompt_strftime_format_default='%F %T'  # global
-if ! [[ "${prompt_strftime_format+x}" ]]; then
-    prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
+if ! [[ "${bash_prompt_strftime_format+x}" ]]; then
+    bash_prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
 fi
 
 function __bashrc_prompt_set () {
@@ -1218,12 +1218,12 @@ function __bashrc_prompt_set () {
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)$(__bashrc_prompt_git_info)${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)$(__bashrc_prompt_git_info)${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \u@\h:\w
 '"${bash_prompt_bullet}"' '
     fi
@@ -1231,10 +1231,13 @@ function __bashrc_prompt_set () {
 __bashrc_prompt_set
 
 # __bashrc_prompt_live_updates variables that must be globals
-__bashrc_prompt_color_force_last=  # global
-__bashrc_prompt_table_column_last=  # global
-__bashrc_prompt_strftime_format_last=  # global
-__bashrc_prompt_bullet_last=  # global
+__bashrc_prompt_color_force_last=        # global
+__bashrc_prompt_color_user_last=         # global
+__bashrc_prompt_color_user_root_last=    # global
+__bashrc_prompt_color_dateline_last=     # global
+__bashrc_prompt_table_column_last=       # global
+__bashrc_prompt_strftime_format_last=    # global
+__bashrc_prompt_bullet_last=             # global
 
 function __bashrc_prompt_live_updates () {
     # special "live" updates that monitor special variables
@@ -1243,11 +1246,11 @@ function __bashrc_prompt_live_updates () {
     declare call___bashrc_prompt_set=false
 
     # update if necessary
-    if [[ "${color_force+x}" ]] && [[ "${__bashrc_prompt_color_force_last-}" != "${color_force-}" ]]; then
+    if [[ "${bash_color_force+x}" ]] && [[ "${__bashrc_prompt_color_force_last-}" != "${bash_color_force-}" ]]; then
         call___bashrc_prompt_color_eval=true
         call___bashrc_prompt_set=true
     fi
-    __bashrc_prompt_color_force_last=${color_force-}  # global
+    __bashrc_prompt_color_force_last=${bash_color_force-}  # global
 
     # if `unset __bashrc_prompt_color_user` occurred then reset to default
     if ! [[ "${__bashrc_prompt_color_user+x}" ]]; then
@@ -1279,25 +1282,25 @@ function __bashrc_prompt_live_updates () {
     fi
     __bashrc_prompt_color_dateline_last=${__bashrc_prompt_color_dateline}  # global
 
-    # if `unset prompt_table_column` occurred then reset to default
-    if ! [[ "${prompt_table_column+x}" ]]; then
-        prompt_table_column=${__bashrc_prompt_table_column_default}  # global
+    # if `unset bash_prompt_table_column` occurred then reset to default
+    if ! [[ "${bash_prompt_table_column+x}" ]]; then
+        bash_prompt_table_column=${__bashrc_prompt_table_column_default}  # global
     fi
     # update if necessary
-    if [[ "${__bashrc_prompt_table_column_last-}" != "${prompt_table_column}" ]]; then
+    if [[ "${__bashrc_prompt_table_column_last-}" != "${bash_prompt_table_column}" ]]; then
         call___bashrc_prompt_set=true
     fi
-    __bashrc_prompt_table_column_last=${prompt_table_column}  # global
+    __bashrc_prompt_table_column_last=${bash_prompt_table_column}  # global
 
-    # if `unset prompt_strftime_format` occurred then reset to default
-    if ! [[ "${prompt_strftime_format+x}" ]]; then
-        prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
+    # if `unset bash_prompt_strftime_format` occurred then reset to default
+    if ! [[ "${bash_prompt_strftime_format+x}" ]]; then
+        bash_prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
     fi
     # update if necessary
-    if [[ "${__bashrc_prompt_strftime_format_last-}" != "${prompt_strftime_format}" ]]; then
+    if [[ "${__bashrc_prompt_strftime_format_last-}" != "${bash_prompt_strftime_format}" ]]; then
         call___bashrc_prompt_set=true
     fi
-    __bashrc_prompt_strftime_format_last=${prompt_strftime_format}  # global
+    __bashrc_prompt_strftime_format_last=${bash_prompt_strftime_format}  # global
 
     # if `unset bash_prompt_bullet` occurred then reset to default
     if ! [[ "${bash_prompt_bullet+x}" ]]; then
@@ -1577,7 +1580,7 @@ ${b}New Environment Variables:${boff}
 	BASH_VERSION_MINOR='${BASH_VERSION_MINOR}'
 	__bashrc_debian_chroot='${__bashrc_debian_chroot-NOT SET}'
 	bash_prompt_bullet='${bash_prompt_bullet-NOT SET}'
-	color_force=${color_force-NOT SET}
+	bash_color_force=${bash_color_force-NOT SET}
 	__bashrc_color=${__bashrc_color-NOT SET}
 	__bashrc_prompt_color=${__bashrc_prompt_color-NOT SET}
 	__bashrc_color_apps=${__bashrc_color_apps-NOT SET}
@@ -1661,11 +1664,11 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__bashrc_update_dotvimrc${boff}         # update ./.vimrc
 		${b}__bashrc_update_dots${boff}             # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__bashrc_downloader_used).
-	Override color by changing ${b}color_force${boff} to ${b}true${boff} or ${b}false${boff}.
+	Override color by changing ${b}bash_color_force${boff} to ${b}true${boff} or ${b}false${boff}.
 	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff}. Currently searches for:
 		$(__bashrc_tab_str "$(for i in "${!bash_prompt_table_variables[@]}"; do echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"; let i++; done)" 2)
-	Change table column lines by setting ${b}prompt_table_column${boff} (currently '${prompt_table_column}').
-	Change PS1 strftime format (prompt date time) by setting ${b}prompt_strftime_format${boff} (currently '${prompt_strftime_format}').
+	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
+	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
 "
 }
