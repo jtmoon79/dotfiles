@@ -72,6 +72,15 @@
 #                   $ time (for i in {0..100}; do $(which true); done)
 #                   2.602s
 #
+# TODO: add jobs to prompt when jobs are present. Should behave like git prompt; not visible when no jobs.
+#
+# TODO: allow more selection of colors for various parts of the prompt
+#       e.g $color_prompt_user $color_prompt_table $color_prompt_hostname $color_prompt_path
+#           $color_prompt_table_row1 $color_prompt_table_row2 $color_prompt_table_cell_err
+#
+# TODO: prepend all variables that affect this .bashrc and .bash_profile with a string,
+#       e.g. `_bi_` for "bash init"
+#
 # XXX: bash <4.2 cannot declare empty arrays via "empty array" syntax
 #
 #          $ array=()
