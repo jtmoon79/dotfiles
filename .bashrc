@@ -16,7 +16,7 @@
 #   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - attempts sourcing of /usr/share/bash-completion/bash_completion
 #   - fast to install: see companion install.sh at source repository.
-#   - fast to update: see __bashrc_update_bash* functions.
+#   - fast to update: see __bash_update_bash* functions.
 #   - safe to use in many varying Unix environments 🤞 (see docker-tests.sh)
 #
 # Anti-Features:
@@ -1461,41 +1461,41 @@ function __bashrc_downloader_used () {
     fi
 }
 
-function __bashrc_update_dotbash_profile () {
+function __bash_update_dotbash_profile () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' './.bash_profile' "${@}"
 }
 
-function __bashrc_update_dotbashrc () {
+function __bash_update_dotbashrc () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
 }
 
-function __bashrc_update_dotbash_logout () {
+function __bash_update_dotbash_logout () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
 }
 
-function __bashrc_update_dotbashrclocalpost () {
+function __bash_update_dotbashrclocalpost () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.local.post' './.bashrc.local.post' "${@}"
 }
 
-function __bashrc_update_dotbash () {
+function __bash_update_dotbash () {
     # install bash dot files in a one-liner
-    __bashrc_update_dotbash_profile && __bashrc_update_dotbashrc && __bashrc_update_dotbash_logout
+    __bash_update_dotbash_profile && __bash_update_dotbashrc && __bash_update_dotbash_logout
 }
 
-function __bashrc_update_dotvimrc () {
+function __bash_update_dotvimrc () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
 }
 
-function __bashrc_update_dotscreenrc () {
+function __bash_update_dotscreenrc () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
 }
 
-function __bashrc_update_dots () {
+function __bash_update_dots () {
     # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell
     # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
-    __bashrc_update_dotbash "${@}"
-    __bashrc_update_dotvimrc "${@}"
-    __bashrc_update_dotscreenrc "${@}"
+    __bash_update_dotbash "${@}"
+    __bash_update_dotvimrc "${@}"
+    __bash_update_dotscreenrc "${@}"
 }
 
 # =========================
@@ -1655,14 +1655,14 @@ ${b}Special Features of this .bashrc:${boff}
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
-		${b}__bashrc_update_dotbash_profile${boff}  # update ./.bash_profile
-		${b}__bashrc_update_dotbashrc${boff}        # update ./.bashrc
-		${b}__bashrc_update_dotbash_logout${boff}   # update ./.bash_logout
-		${b}__bashrc_update_dotbash${boff}          # update prior .bash files
-		${b}__bashrc_update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
-		${b}__bashrc_update_dotscreenrc${boff}      # update ./.screenrc
-		${b}__bashrc_update_dotvimrc${boff}         # update ./.vimrc
-		${b}__bashrc_update_dots${boff}             # update all of the above
+		${b}__bash_update_dotbash_profile${boff}  # update ./.bash_profile
+		${b}__bash_update_dotbashrc${boff}        # update ./.bashrc
+		${b}__bash_update_dotbash_logout${boff}   # update ./.bash_logout
+		${b}__bash_update_dotbash${boff}          # update prior .bash files
+		${b}__bash_update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
+		${b}__bash_update_dotscreenrc${boff}      # update ./.screenrc
+		${b}__bash_update_dotvimrc${boff}         # update ./.vimrc
+		${b}__bash_update_dots${boff}             # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__bashrc_downloader_used).
 	Override color by changing ${b}bash_color_force${boff} to ${b}true${boff} or ${b}false${boff}.
 	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff}. Currently searches for:
