@@ -121,7 +121,7 @@ if ! type -t readlink_portable &>/dev/null; then
 fi
 
 # protect again initialization files that source in a loop
-__bashrc_initialized_flag=$(readlink_portable "${BASH_SOURCE:-}" 2>/dev/null)
+__bashrc_initialized_flag="$(readlink_portable "${BASH_SOURCE:-}" 2>/dev/null) (${SHLVL})"
 if [[ "${__bashrc_initialized+x}" ]] \
   && [[ "${__bashrc_initialized:-}" = "${__bashrc_initialized_flag}" ]]; then
     echo "Skip duplicate initialization of '${__bashrc_initialized}'" >&2
