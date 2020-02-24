@@ -31,3 +31,8 @@ bash_prompt_table_variable_add 'LC_ALL'
 bash_prompt_table_variable_add 'http_proxy'
 bash_prompt_table_variable_add 'https_proxy'
 bash_prompt_table_variable_add 'proxy'
+
+# several forms of "Temporary Directory"
+bash_prompt_table_variable_add 'TEMP'
+bash_prompt_table_variable_add 'TMP'
+bash_prompt_table_variable_add 'TMPDIR'
