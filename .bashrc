@@ -886,6 +886,7 @@ function bash_prompt_table_variable_add () {
     # do not add variable already present in $bash_prompt_table_variables
     # otherwise repeated invocations of .bashrc create a huge
     # $bash_prompt_table_variables
+    # XXX: is this relevant after addition of $__bashrc_initialized ?
     declare -i i=0
     for ((; i < ${#bash_prompt_table_variables[@]}; ++i)); do
         if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
@@ -895,6 +896,7 @@ function bash_prompt_table_variable_add () {
     bash_prompt_table_variables[${#bash_prompt_table_variables[@]}]=${1}
 }
 
+# preload the table with some common shell environment variables that are good to know
 bash_prompt_table_variable_add 'TERM'
 bash_prompt_table_variable_add 'bash_color_force'
 bash_prompt_table_variable_add 'DISPLAY'
@@ -907,6 +909,7 @@ bash_prompt_table_variable_add 'SSH_CONNECTION'
 bash_prompt_table_variable_add 'GPG_AGENT_INFO'
 bash_prompt_table_variable_add 'SSH_AUTH_SOCK'
 bash_prompt_table_variable_add 'SSH_AGENT_PID'
+bash_prompt_table_variable_add 'SSH_ASKPASS'
 
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal() {
