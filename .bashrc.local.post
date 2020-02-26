@@ -26,3 +26,8 @@ bash_prompt_table_variable_add 'VISUAL'
 # locale
 bash_prompt_table_variable_add 'LC_CTYPE'
 bash_prompt_table_variable_add 'LC_ALL'
+
+# proxy
+bash_prompt_table_variable_add 'http_proxy'
+bash_prompt_table_variable_add 'https_proxy'
+bash_prompt_table_variable_add 'proxy'
