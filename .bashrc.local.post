@@ -17,6 +17,11 @@ bash_prompt_table_variable_add 'LOCKPRG'
 bash_prompt_table_variable_add 'SCREENCAP'
 bash_prompt_table_variable_add 'WINDOW'
 
+# X11
+bash_prompt_table_variable_add 'XSOCK'
+bash_prompt_table_variable_add 'XAUTH'
+bash_prompt_table_variable_add 'XAUTHORITY' 
+
 # tmux
 bash_prompt_table_variable_add 'TMUX'
 bash_prompt_table_variable_add 'TMUX_TMPDIR'
