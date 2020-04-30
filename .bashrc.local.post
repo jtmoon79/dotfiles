@@ -10,6 +10,7 @@ bash_prompt_table_variable_add 'PYTHON_PIP_VERSION'
 bash_prompt_table_variable_add 'PYTHON'
 bash_prompt_table_variable_add 'VIRTUAL_ENV'
 bash_prompt_table_variable_add 'Py_DEBUG'
+bash_prompt_table_variable_add 'PYTHONIOENCODING'
 
 # GNU screen
 bash_prompt_table_variable_add 'SYSSCREENRC'
