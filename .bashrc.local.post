@@ -4,6 +4,9 @@
 #
 # function `bash_prompt_table_variable_add` is defined in .bashrc
 
+# general
+bash_prompt_table_variable_add 'TZ'
+
 # Python
 bash_prompt_table_variable_add 'PYTHON_PIPENV'
 bash_prompt_table_variable_add 'PYTHON_PIP_VERSION'
@@ -70,3 +73,16 @@ bash_prompt_table_variable_add 'proxy'
 bash_prompt_table_variable_add 'TEMP'
 bash_prompt_table_variable_add 'TMP'
 bash_prompt_table_variable_add 'TMPDIR'
+
+# other Linux tools
+bash_prompt_table_variable_add 'GZIP'
+bash_prompt_table_variable_add 'ZIP'
+bash_prompt_table_variable_add 'ZIPOPT'
+bash_prompt_table_variable_add 'ZIP_OPTS'
+bash_prompt_table_variable_add 'BZIP'
+bash_prompt_table_variable_add 'BZIP2'
+bash_prompt_table_variable_add 'TAR_FILETYPE'
+bash_prompt_table_variable_add 'TAR_ARCHIVE'
+bash_prompt_table_variable_add 'TAR_FORMAT'
+bash_prompt_table_variable_add 'TAR_FD'
+bash_prompt_table_variable_add 'TAR_VOLUME'
