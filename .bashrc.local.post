@@ -75,13 +75,17 @@ bash_prompt_table_variable_add 'TMP'
 bash_prompt_table_variable_add 'TMPDIR'
 
 # other Linux tools
-bash_prompt_table_variable_add 'GZIP'
-bash_prompt_table_variable_add 'ZIP'
+bash_prompt_table_variable_add 'PSFORMAT'  # ps
+bash_prompt_table_variable_add 'VERSION_CONTROL'  # cp, mv
+bash_prompt_table_variable_add 'MANOPT'    # man
+bash_prompt_table_variable_add 'LS_COLORS' # ls
+bash_prompt_table_variable_add 'GZIP'      # gzip
+bash_prompt_table_variable_add 'ZIP'       # zip
 bash_prompt_table_variable_add 'ZIPOPT'
 bash_prompt_table_variable_add 'ZIP_OPTS'
-bash_prompt_table_variable_add 'BZIP'
+bash_prompt_table_variable_add 'BZIP'      # bzip2
 bash_prompt_table_variable_add 'BZIP2'
-bash_prompt_table_variable_add 'TAR_FILETYPE'
+bash_prompt_table_variable_add 'TAR_FILETYPE'  # tar
 bash_prompt_table_variable_add 'TAR_ARCHIVE'
 bash_prompt_table_variable_add 'TAR_FORMAT'
 bash_prompt_table_variable_add 'TAR_FD'
