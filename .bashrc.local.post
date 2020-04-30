@@ -23,6 +23,22 @@ bash_prompt_table_variable_add 'PYTHONHOME'
 bash_prompt_table_variable_add 'PYTHONCASEOK'
 bash_prompt_table_variable_add 'PYTHONHASHSEED'
 
+# Perl - https://perldoc.perl.org/perlrun.html#ENVIRONMENT
+bash_prompt_table_variable_add 'PERL5OPT'
+bash_prompt_table_variable_add 'PERLIO'
+bash_prompt_table_variable_add 'PERLIO_DEBUG'
+bash_prompt_table_variable_add 'PERLLIB'
+bash_prompt_table_variable_add 'PERL5LIB'
+bash_prompt_table_variable_add 'PERL5DB'
+bash_prompt_table_variable_add 'PERL5DB_THREADED'
+bash_prompt_table_variable_add 'PERL5SHELL'
+bash_prompt_table_variable_add 'PERL_ALLOW_NON_IFS_LSP'
+bash_prompt_table_variable_add 'PERL_DEBUG_MSTATS'
+bash_prompt_table_variable_add 'PERL_DESTRUCT_LEVEL'
+bash_prompt_table_variable_add 'PERL_UNICODE'
+bash_prompt_table_variable_add 'PERL_ENCODING'
+bash_prompt_table_variable_add 'PERL_USE_UNSAFE_INC'
+
 # GNU screen
 bash_prompt_table_variable_add 'SYSSCREENRC'
 bash_prompt_table_variable_add 'LOCKPRG'
