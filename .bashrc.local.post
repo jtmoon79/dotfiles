@@ -51,7 +51,8 @@ bash_prompt_table_variable_add 'WINDOW'
 # X11
 bash_prompt_table_variable_add 'XSOCK'
 bash_prompt_table_variable_add 'XAUTH'
-bash_prompt_table_variable_add 'XAUTHORITY' 
+bash_prompt_table_variable_add 'XAUTHORITY'
+bash_prompt_table_variable_add 'XLOCAL'
 
 # tmux
 bash_prompt_table_variable_add 'TMUX'
