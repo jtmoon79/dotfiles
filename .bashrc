@@ -1079,10 +1079,14 @@ function __bashrc_prompt_table () {
     declare -i v1l=  # varn length
     declare -i v2l=  # vare length
     declare -i rows_len=0  # rows max length
+    declare truncate=true
+    if [[ "${1:-}" = '--no-truncate' ]]; then
+        truncate=false
+    fi
     for varn in "${bash_prompt_table_variables[@]}"; do
         # if the rows are already too long for the window column width then do
         # not continue appending to them
-        if [[ ${rows_len} -gt ${cols} ]]; then
+        if ${truncate} && [[ ${rows_len} -gt ${cols} ]]; then
             break
         fi
         # skip blank names or undefined values
@@ -1125,9 +1129,20 @@ function __bashrc_prompt_table () {
     # make attempt to print table-like output based on available programs
     # TODO: consider adding color to table? this would need to be done after substring length
     # XXX: it is faster to do this with `tr` and `column` but more portable this way
-    echo  # start with a newline
-    echo "${row1::${cols}}"
-    echo "${row2::${cols}}"
+    if ${truncate}; then
+        echo  # start with a newline
+        echo "${row1::${cols}}"
+        echo "${row2::${cols}}"
+    else
+        # no newline (presume to *not* be part of the prompt)
+        echo "${row1}"
+        echo "${row2}"
+    fi
+}
+
+function bash_prompt_table_print () {
+    # Print the *entire* prompt table.
+    __bashrc_prompt_table --no-truncate
 }
 
 # ---------------
