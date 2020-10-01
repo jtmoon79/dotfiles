@@ -1554,7 +1554,9 @@ function __bash_update_dotbashrclocalpost () {
 
 function __bash_update_dotbash () {
     # install bash dot files in a one-liner
-    __bash_update_dotbash_profile && __bash_update_dotbashrc && __bash_update_dotbash_logout
+    __bash_update_dotbash_profile "${@}" \
+        && __bash_update_dotbashrc "${@}" \
+        && __bash_update_dotbash_logout "${@}"
 }
 
 function __bash_update_dotvimrc () {
