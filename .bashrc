@@ -1729,7 +1729,6 @@ ${b}System and Users (w):${boff}
     echo -e "\
 ${b}Special Features of this .bashrc:${boff}
 
-	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Update a dot file by calling one of the functions:
 		${b}__bash_update_dotbash_profile${boff}  # update ./.bash_profile
 		${b}__bash_update_dotbashrc${boff}        # update ./.bashrc
