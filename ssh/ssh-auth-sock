@@ -5,7 +5,8 @@ if [ "${BASH_SOURCE}" = "${0}" ]; then
     echo "This file ${0} should be sourced, not run." >&2
 else
     if [[ ! "${SSH_AUTH_SOCK+x}" ]]; then
-        export SSH_AUTH_SOCK=/tmp/${USER}/ssh-agent
+        # $USER is *nix, $USERNAME is MinGW bash
+        export SSH_AUTH_SOCK=/tmp/${USER-${USERNAME}}/ssh-agent
     fi
     if [[ ! "${SSH_AUTH_SOCKD+x}" ]]; then
         export SSH_AUTH_SOCKD=$(dirname -- "${SSH_AUTH_SOCK}")
