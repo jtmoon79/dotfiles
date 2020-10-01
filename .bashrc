@@ -98,6 +98,10 @@
 #      existing `readonly` variable is an error. Some tedium is necessary to do
 #      so without an error. This file refrains from use of `readonly`.
 #
+# TODO: add flock to only allow one startup of .bashrc at a time
+#       prevents rare case of multiple bash windows using the same tty
+#       which can happen when launching `terminator`
+
 
 # If not running interactively, do not do anything
 case "$-" in
