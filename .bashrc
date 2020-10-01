@@ -1518,20 +1518,20 @@ function __bashrc_download_from_to () {
     shift
     declare -r path=${1}
     shift
-    if __installed wget; then
-        (set -x; wget "${@}" -O "${path}" "${url}")
-    elif __installed curl; then
+    if __installed curl; then
         (set -x; curl "${@}" --output "${path}" "${url}")
+    elif __installed wget; then
+        (set -x; wget "${@}" -O "${path}" "${url}")
     else
         return 1
     fi
 }
 
 function __bashrc_downloader_used () {
-    if __installed wget; then
-        echo 'wget'
-    elif __installed curl; then
+    if __installed curl; then
         echo 'curl'
+    elif __installed wget; then
+        echo 'wget'
     else
         return 1
     fi
