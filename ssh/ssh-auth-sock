@@ -1,0 +1,14 @@
+# Set $SSH_AUTH_SOCK for user. Sourced by ~/bin/ssh-agent-start.sh.
+# This file must be sourced.
+
+if [ "${BASH_SOURCE}" = "${0}" ]; then
+    echo "This file ${0} should be sourced, not run." >&2
+else
+    if [[ ! "${SSH_AUTH_SOCK+x}" ]]; then
+        export SSH_AUTH_SOCK=/tmp/${USER}/ssh-agent
+    fi
+    if [[ ! "${SSH_AUTH_SOCKD+x}" ]]; then
+        export SSH_AUTH_SOCKD=$(dirname -- "${SSH_AUTH_SOCK}")
+    fi
+fi
+
