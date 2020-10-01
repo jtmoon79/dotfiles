@@ -1210,9 +1210,11 @@ function __bashrc_prompt_git_info () {
     if ${__bashrc_prompt_color}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]]; then
-            out='\e[31m'"${out}"'\e[0m'
+            out='\e[31m'"${out}"'\e[0m'  # red
         elif [[ "${out}" =~ '<)' ]]; then
-            out='\e[33m'"${out}"'\e[0m'
+            out='\e[33m'"${out}"'\e[0m'  # yellow
+        elif [[  "${out}" =~ 'GIT_DIR!' ]]; then
+            out='\e[95m'"${out}"'\e[0m'  #  light magenta
         fi
     fi
     # use echo to interpret color sequences here, PS1 will not attempt to interpret this functions
