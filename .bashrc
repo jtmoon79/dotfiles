@@ -1417,6 +1417,34 @@ __bashrc_alias_greps_color
 # other aliases
 # -------------
 
+# TODO: add CLICOLOR, from FreeBSD `ls`
+#
+#      -G      Enable colorized output.  This option is equivalent to defining
+#             CLICOLOR in the environment.  (See below.)  This functionality
+#             can be compiled out by removing the definition of COLORLS.  This
+#             option is not defined in IEEE Std 1003.1-2001 (“POSIX.1”).
+#
+#      CLICOLOR            Use ANSI color sequences to distinguish file types.
+#                         See LSCOLORS below.  In addition to the file types
+#                         mentioned in the -F option some extra attributes
+#                         (setuid bit set, etc.) are also displayed.  The
+#                         colorization is dependent on a terminal type with the
+#                         proper termcap(5) capabilities.  The default “cons25”
+#                         console has the proper capabilities, but to display
+#                         the colors in an xterm(1), for example, the TERM
+#                         variable must be set to “xterm-color”.  Other
+#                         terminal types may require similar adjustments.
+#                         Colorization is silently disabled if the output is
+#                         not directed to a terminal unless the CLICOLOR_FORCE
+#                         variable is defined.
+#
+#     LSCOLORS            The value of this variable describes what color to
+#                         use for which attribute when colors are enabled with
+#                         CLICOLOR.  This string is a concatenation of pairs of
+#                         the format fb, where f is the foreground color and b
+#                         is the background color.
+
+
 __bashrc_alias_safely_check l 'ls -lAa'
 __bashrc_alias_safely_check ll 'ls -lAa'
 __bashrc_alias_safely_check la 'ls -Aa'
