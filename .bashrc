@@ -1486,6 +1486,8 @@ __bashrc_alias_greps_color
 #                         the format fb, where f is the foreground color and b
 #                         is the background color.
 
+# TODO: all alias creation should be moved into an example .bash_aliases
+#       that is part of this repository. They can use functions defined here.
 
 __bashrc_alias_safely_check l 'ls -lAa'
 __bashrc_alias_safely_check ll 'ls -lAa'
