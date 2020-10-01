@@ -1357,13 +1357,16 @@ function __bashrc_prompt_live_updates () {
     fi
 }
 
-function __bashrc_prompt_extras () {
-    # stub function. Override this function in `.bashrc.local.post`.
-    # This function runs on every prompt refresh before the table is printed.
-    # Useful for terminals that do not automatically update the window $COLUMNS
-    # value and require manual update (on FreeBSD, call `resizewin`).
-    true
-}
+# do not overwrite prior definition of __bashrc_prompt_extras
+if ! type -t __bashrc_prompt_extras &>/dev/null; then
+    function __bashrc_prompt_extras () {
+        # stub function. Override this function in `.bashrc.local.post`.
+        # This function runs on every prompt refresh before the table is printed.
+        # Useful for terminals that do not automatically update the window $COLUMNS
+        # value and require manual update (on FreeBSD, call `resizewin`).
+        true
+    }
+fi
 
 # order is important; additional commands must between functions __bashrc_prompt_last_exit_code_update and
 # __bashrc_prompt_timer_stop
