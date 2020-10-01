@@ -912,7 +912,6 @@ function bash_prompt_table_variable_rm () {
     false
 }
 
-
 # preload the table with some common shell environment variables that are good to know
 bash_prompt_table_variable_add 'TERM'
 bash_prompt_table_variable_add 'bash_color_force'
