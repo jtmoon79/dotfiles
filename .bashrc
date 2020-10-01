@@ -900,6 +900,19 @@ function bash_prompt_table_variable_add () {
     bash_prompt_table_variables[${#bash_prompt_table_variables[@]}]=${1}
 }
 
+function bash_prompt_table_variable_rm () {
+    # remove a variable from the $bash_prompt_table_variables
+    declare -i i=0
+    for ((; i < ${#bash_prompt_table_variables[@]}; ++i)); do
+        if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
+            unset bash_prompt_table_variables[${i}]
+            return
+        fi
+    done
+    false
+}
+
+
 # preload the table with some common shell environment variables that are good to know
 bash_prompt_table_variable_add 'TERM'
 bash_prompt_table_variable_add 'bash_color_force'
@@ -1345,9 +1358,17 @@ function __bashrc_prompt_live_updates () {
     fi
 }
 
+function __bashrc_prompt_extras () {
+    # stub function. Override this function in `.bashrc.local.post`.
+    # This function runs on every prompt refresh before the table is printed.
+    # Useful for terminals that do not automatically update the window $COLUMNS
+    # value and require manual update (on FreeBSD, call `resizewin`).
+    true
+}
+
 # order is important; additional commands must between functions __bashrc_prompt_last_exit_code_update and
 # __bashrc_prompt_timer_stop
-PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_timer_stop'
+PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_extras; __bashrc_prompt_timer_stop'
 
 # ----------
 # misc color
@@ -1717,8 +1738,12 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__bash_update_dotvimrc${boff}         # update ./.vimrc
 		${b}__bash_update_dots${boff}             # update all of the above
 	Parameters like '--no-check-certificate' will be passed to the downloader $(__bashrc_downloader_used).
+
+	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
+	Can override ${b}__bashrc_prompt_extras${boff} in ${b}.bashrc.local.post${boff}.
 	Override color by changing ${b}bash_color_force${boff} to ${b}true${boff} or ${b}false${boff}.
-	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff}. Currently searches for:
+	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff} using ${b}bash_prompt_table_variable_add${boff} or ${b}bash_prompt_table_variable_rm${boff}.
+	${b}bash_prompt_table_variables${boff} currently displays:
 		$(__bashrc_tab_str "$(for i in "${!bash_prompt_table_variables[@]}"; do echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"; let i++; done)" 2)
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
