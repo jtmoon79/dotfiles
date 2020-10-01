@@ -16,33 +16,43 @@ function backup_name_tar() {
 if [[ ${#} != 1 && ${#} != 2 ]] || [[ "${1:-}" == '--help' ]]; then
     name="$(backup_name_tar '$1').7z"
     echo "usage:
-    ${0} /path/to/backup [/backup/destination/dir]
+    ${0} TARGET [BACKUP_DIR]
 
-Tar and 7zip a target directory path.
-Tar to preserve filesystem permissions and layout. 7zip to compress and encrypt.
-REQUIRES ENTERING A PASSWORD.
+Tar and 7zip a TARGET directory path.
+Tar to preserve filesystem permissions and layout. 7zip then compresses and
+encrypts.
+Requires entering a password on stdin for the 7zip encryption.
 
 Backup to an archive file based on the host and path passed,
 e.g. '${name}'
 
-Decrypt the archive file with command:
+Default destination for encrypted archive BACKUP_DIR is
+'${BACKUP_DIR}'
+
+Later, the archive will decrypt with command:
 
     7z e '${name}' -so | tar --verbose -xf - -C /some/path
 
-REQUIRES ENTERING A PASSWORD.
+The 7z command will wait for the password on stdin.
 " >&2
     exit 1
 fi
 
-target=${1}
-if [[ ! -e "${target}" ]]; then
-    echo "ERROR: Target '${target}' does not exist" >&2
+TARGET=${1}
+if [[ ! -e "${TARGET}" ]]; then
+    echo "ERROR: TARGET '${TARGET}' does not exist" >&2
     exit 1
 fi
-declare -r BACKUP_DIR=${2:-${BACKUP_DIR}}
-readonly BACKUP_DIR target
+if [[ ! -d "${TARGET}" ]]; then
+    echo "ERROR: TARGET is not a directory '${TARGET}'" >&2
+    exit 1
+fi
+readonly TARGET
 
-name=$(basename -- "$(readlink -f -- "${target}")")
+BACKUP_DIR=${2:-${BACKUP_DIR}}
+readonly BACKUP_DIR
+
+name=$(basename -- "$(readlink -f -- "${TARGET}")")
 archive_tar=$(backup_name_tar "${name}")
 archive_tar7z="${archive_tar}.7z"
 readonly name archive_tar archive_tar7z
@@ -65,8 +75,9 @@ tar \
   --sort=name \
   --one-file-system \
   --ignore-failed-read \
+  --format=pax \
   --file="${archive_tar}" \
-  --directory="${target}" \
+  --directory="${TARGET}" \
   .
 
 tar \
