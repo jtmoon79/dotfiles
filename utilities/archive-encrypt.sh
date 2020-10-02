@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
-# Quick imperfect script to tar a path and 7zip encrypt the tar.
+# Quick imperfect script to tar a path and 7zip compress+encrypt the tar.
 # Useful for quick encrypted backups.
+# Do keep in mind, any user on a *nix system can see the full command line of
+# other running commands.
 
 set -e
 set -u
@@ -31,7 +33,7 @@ Default destination for encrypted archive BACKUP_DIR is
 
 Later, the archive will decrypt with command:
 
-    7z e '${name}' -so | tar --verbose -xf - -C /some/path
+    7z e '${name}' -so | tar -xvf - -C /some/path
 
 The 7z command will wait for the password on stdin.
 " >&2
@@ -55,12 +57,12 @@ readonly BACKUP_DIR
 name=$(basename -- "$(readlink -f -- "${TARGET}")")
 archive_tar=$(backup_name_tar "${name}")
 archive_tar7z="${archive_tar}.7z"
-readonly name archive_tar archive_tar7z
 
 read -p "Enter the 7z archive password: " -s password
 echo
 
 (
+# success or failure, remove the temporary .tar file
 function exit_() {
     rm -vf -- "${archive_tar}"
 }
@@ -69,6 +71,7 @@ trap exit_ EXIT
 (
 set -x
 
+# create the .tar
 tar \
   --create \
   --preserve-permissions \
@@ -80,6 +83,7 @@ tar \
   --directory="${TARGET}" \
   .
 
+# list contents of the .tar
 tar \
   -t \
   -f "${archive_tar}" >/dev/null
@@ -97,21 +101,25 @@ declare -a s7z_args=(
   "${archive_tar}"
 )
 
+# compress+encrypt the archive
+# XXX: not ideal to put a password on a command-line
 echo "${PS4-}7z a -p****" "${s7z_args[@]}" >&2
 7z a \
   -p"${password}" \
   "${s7z_args[@]}"
 
+# list archive details, also a sanity check
+# XXX: not ideal to put a password on a command-line
 echo "${PS4-}7z l -p****" -slt "${archive_tar7z}" >&2
 7z l \
-   -p"${password}" \
-   -slt \
-   "${archive_tar7z}"
+  -p"${password}" \
+  -slt \
+  "${archive_tar7z}"
 )
 
 echo "Success! Restore this archive with
 
-    7z e '${archive_tar7z}' -so | tar --verbose -xf - -C /some/path
+    7z e '${archive_tar7z}' -so | tar -xvf - -C /some/path
 
 The blank prompt is expecting the password.
 " >&2
