@@ -1067,10 +1067,16 @@ function __bashrc_prompt_table_blank_n_test_all () {
 
 function __bashrc_prompt_table () {
     # Creates a basic "table" of interesting environment variables.
+    # Typical example:
+    #
+    #   TERM          │bash_color_force│SHLVL│tty       │SSH_TTY   │LC_ALL    │
+    #   xterm-256color│true            │1    │/dev/pts/0│/dev/pts/0│en_US.utf8│
+    #
     # Adds some safety for terminal column width so a narrow terminal does not
     # have a dump of shared table data.
     # This function and functions it calls make efforts to be efficient as it is expected this
     # function is called for every prompting.
+    #
     # XXX: this function gets slow on low-horsepower hosts. Probably needs some optimization work.
 
     declare row1=''
@@ -1095,12 +1101,15 @@ function __bashrc_prompt_table () {
     if [[ "${1:-}" = '--no-truncate' ]]; then
         truncate=false
     fi
+
+    # XXX: it is faster to do this with `tr` and `column` but more portable this way.
     for varn in "${bash_prompt_table_variables[@]}"; do
         # if the rows are already too long for the window column width then do
         # not continue appending to them
         if ${truncate} && [[ ${rows_len} -gt ${cols} ]]; then
             break
         fi
+
         # skip blank names or undefined values
         if [[ -z "${varn-}" ]] || [[ ! "${!varn+x}" ]]; then
             if [[ "${varn-}" != 'tty' ]]; then  # special case
@@ -1140,7 +1149,6 @@ function __bashrc_prompt_table () {
 
     # make attempt to print table-like output based on available programs
     # TODO: consider adding color to table? this would need to be done after substring length
-    # XXX: it is faster to do this with `tr` and `column` but more portable this way
     if ${truncate}; then
         echo  # start with a newline
         echo "${row1::${cols}}"
@@ -1527,6 +1535,15 @@ function __bashrc_download_from_to () {
     else
         return 1
     fi
+    # TODO: add check that if a prior file existed, this update was necessary.
+    #       would require
+    #       1. downloading to a temporary directory
+    #       2. checksum each file, compare
+    #       3. overwrite if different
+    #       4. let user know what happened
+    #       perhaps quieting output of each downloader
+    #       also, how to set file datetime to that in HTTP reply?
+    #       also, is it possible to do a HEAD first, check if anything needs to be downloaded?
 }
 
 function __bashrc_downloader_used () {
