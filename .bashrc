@@ -928,12 +928,12 @@ bash_prompt_table_variable_add 'SSH_AGENT_PID'
 bash_prompt_table_variable_add 'SSH_ASKPASS'
 
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
-function ordinal() {
+function ordinal () {
     # pass a single-character string, prints the numeric ordinal value
     (LC_CTYPE=C printf '%d' "'${1:0:1}")
 }
 
-function character() {
+function character () {
     # pass a number, prints the character
     [ "${1}" -lt 256 ] || return 1
     printf "\\$(printf '%03o' "${1}")"
