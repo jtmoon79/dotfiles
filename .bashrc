@@ -2,7 +2,9 @@
 #
 # A mish-mash of bashrc ideas that are worthwhile, some original ideas, others
 # copied. This file is expected to be sourced by it's companion ./.bash_profile
-# Howver, it does support multiple source in the same shell instance.
+# However, it does support multiple source in the same shell instance.
+#
+# Works best with companion .bash_profile
 #
 # Features:
 #   - prints context info on startup
@@ -1537,7 +1539,6 @@ fi
 # ============
 
 function __bashrc_download_from_to () {
-    # XXX: .bash_profile has __download_to_from :-/
     declare -r url=${1}
     shift
     declare -r path=${1}
