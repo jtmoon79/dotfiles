@@ -9,6 +9,15 @@
 #
 #    curl --silent 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' | bash --norc --noprofile
 #
+# or
+#
+#    wget -O /tmp/script.sh 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' && chmod -v +x /tmp/script.sh && /tmp/script.sh
+#
+#    curl 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' --output /tmp/script.sh && chmod -v +x /tmp/script.sh && /tmp/script.sh
+#
+# BUG: bash 3 will fail if not passed a parameters.
+#      workaround is to pass --no-check-certificate or --insecure to /tmp/script.sh
+#
 
 set -e
 set -u
