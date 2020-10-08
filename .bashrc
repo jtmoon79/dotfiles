@@ -1571,6 +1571,16 @@ function __bashrc_downloader_used () {
     fi
 }
 
+function __bashrc_downloader_used_example_argument () {
+    if __installed curl; then
+        echo '--insecure'
+    elif __installed wget; then
+        echo '--no-check-certificate'
+    else
+        return 1
+    fi
+}
+
 function __bash_update_dotbash_profile () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' './.bash_profile' "${@}"
 }
@@ -1774,7 +1784,7 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__bash_update_dotscreenrc${boff}      # update ./.screenrc
 		${b}__bash_update_dotvimrc${boff}         # update ./.vimrc
 		${b}__bash_update_dots${boff}             # update all of the above
-	Parameters like '--insecure' will be passed to the downloader $(__bashrc_downloader_used).
+	Parameters like '$(__bashrc_downloader_used_example_argument)' will be passed to the downloader $(__bashrc_downloader_used).
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Can override ${b}__bashrc_prompt_extras${boff} in ${b}.bashrc.local.post${boff}.
