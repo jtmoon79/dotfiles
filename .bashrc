@@ -251,6 +251,7 @@ function __bashrc_path_add () {
     echo "${PS4-}__bashrc_path_add '${path}'" >&2
     export PATH=${PATH}:${path}
 }
+
 __bashrc_path_add "${HOME}/bin"
 
 function __bashrc_path_add_from_file () {
@@ -266,6 +267,7 @@ function __bashrc_path_add_from_file () {
         return 1
     fi
 }
+
 __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 
 # -------------------------------------------------
@@ -387,6 +389,7 @@ function what_OS () {
     fi
     echo -n "${os_flavor}${os}"
 }
+
 __bashrc_OperatingSystem=$(what_OS)
 
 function __bashrc_replace_str () {
@@ -488,6 +491,7 @@ function env_sorted () {
            | tr '\000' '\n' 2>/dev/null
     )
 }
+
 # Record original environment variables for later diff
 # shellcheck disable=SC2034
 __bashrc_env_0_original=$(env_sorted)
@@ -699,6 +703,7 @@ function __bashrc_prompt_color_eval () {
     fi
 
 }
+
 __bashrc_prompt_color_eval
 
 # -------------
@@ -721,6 +726,7 @@ function __bashrc_prompt_timer_epoch_set () {
         __bashrc_prompt_timer_epoch=true
     fi
 }
+
 __bashrc_prompt_timer_epoch_set
 
 # idea from http://archive.fo/SYU2A
@@ -737,6 +743,7 @@ function __bashrc_prompt_timer_start () {
         __bashrc_prompt_timer_cur=${__bashrc_prompt_timer_cur:-${SECONDS:-0}}
     fi
 }
+
 __bashrc_prompt_timer_start
 
 function __bashrc_prompt_timer_stop () {
@@ -748,6 +755,7 @@ function __bashrc_prompt_timer_stop () {
     fi
     unset __bashrc_prompt_timer_cur
 }
+
 trap '__bashrc_prompt_timer_start' DEBUG
 
 if ${__bashrc_prompt_timer_epoch}; then
@@ -805,6 +813,7 @@ __bashrc_title_set_kernel=${__bashrc_title_set_kernel-kernel $(uname -r)}  # glo
 __bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem}}  # global
 #__bashrc_title_set_hostname=$(hostname)
 #__bashrc_title_set_user=${USER-}
+
 function __bashrc_title_set () {
     # title will only accept one line of text
     declare ssh_connection=
@@ -816,10 +825,12 @@ function __bashrc_title_set () {
     declare host_=${HOSTNAME-$(hostname)}  # some bash may not set $HOSTNAME
     echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__bashrc_title_set_TTY} hosted by ${__bashrc_title_set_OS} running ${__bashrc_title_set_kernel}${ssh_connection}\007"
 }
+
 function __bashrc_title_reset () {  # can be called called in ./.bash_logout
     # BUG: does not work in most environments
     echo -en '\033]0;'"${__bashrc_title_set_prev-}"'\007'
 }
+
 __bashrc_title_set  # call once, no need to call again
 
 # ============================
@@ -992,6 +1003,7 @@ function __bashrc_prompt_table_blank_n_head_zero () {
 # XXX: hacky method to quickly print blanks without relying on installed programs
 #      or expensive loops
 __bashrc_prompt_table_blank_n_buffer='                                                                                                                                                                        '
+
 function __bashrc_prompt_table_blank_n_longstr () {
     echo -ne "${__bashrc_prompt_table_blank_n_buffer:0:${1}}"
 }
@@ -1273,6 +1285,7 @@ function __bashrc_prompt_set () {
 '"${bash_prompt_bullet}"' '
     fi
 }
+
 __bashrc_prompt_set
 
 # __bashrc_prompt_live_updates variables that must be globals
@@ -1463,6 +1476,7 @@ function __bashrc_alias_greps_color () {
         fi
     done
 }
+
 __bashrc_alias_greps_color
 
 # -------------

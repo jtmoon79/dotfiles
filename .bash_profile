@@ -19,7 +19,9 @@
 #      this should occur in the opposite way; start a multiplexer instance and then start a bash
 #      instance. But is that even *reasonably* possible?
 #
+
 set -u
+
 # If not running interactively, do not print.
 __bash_profile_verbose=false
 case "$-" in
@@ -81,6 +83,7 @@ function __bash_profile_path_dir_ () {
     fi
     echo -n "${path}"
 }
+
 __bash_profile_path_dir=$(__bash_profile_path_dir_)
 
 function __bash_profile_source_file () {
