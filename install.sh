@@ -24,12 +24,12 @@ function download () {
     if which wget &>/dev/null; then
         (
             set -x
-            wget "${@}" -O "${to_}" "${from_}"
+            wget "${@-}" -O "${to_}" "${from_}"
         )
     elif which curl &>/dev/null; then
         (
             set -x
-            curl "${@}" --output "${to_}" "${from_}"
+            curl "${@-}" --output "${to_}" "${from_}"
         )
     else
         echo 'ERROR: cannot find either program wget or curl' >&2
@@ -37,13 +37,12 @@ function download () {
     fi
 }
 
-download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${@}"
-download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${@}"
-download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' "${@}"
+download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${@-}"
+download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${@-}"
+download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' "${@-}"
 if which screen &>/dev/null; then
-    download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${@}"
+    download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${@-}"
 fi
 if which vim &>/dev/null; then
-    download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${@}"
+    download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${@-}"
 fi
-
