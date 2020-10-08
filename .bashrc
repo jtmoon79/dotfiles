@@ -1759,7 +1759,7 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__bash_update_dotscreenrc${boff}      # update ./.screenrc
 		${b}__bash_update_dotvimrc${boff}         # update ./.vimrc
 		${b}__bash_update_dots${boff}             # update all of the above
-	Parameters like '--no-check-certificate' will be passed to the downloader $(__bashrc_downloader_used).
+	Parameters like '--insecure' will be passed to the downloader $(__bashrc_downloader_used).
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Can override ${b}__bashrc_prompt_extras${boff} in ${b}.bashrc.local.post${boff}.
