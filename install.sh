@@ -83,4 +83,3 @@ else
         download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc'
     fi
 fi
-
