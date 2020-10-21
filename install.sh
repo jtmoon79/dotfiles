@@ -22,6 +22,8 @@
 set -e
 set -u
 
+# XXX: older versions of bash do not like the "${@-}" expansion when there are no arguments
+
 function download () {
     # $1 download to
     # $2 download from
@@ -30,28 +32,55 @@ function download () {
     shift
     declare -r from_=${1}
     shift
-    if which wget &>/dev/null; then
-        (
-            set -x
-            wget "${@-}" -O "${to_}" "${from_}"
-        )
-    elif which curl &>/dev/null; then
+    if which curl &>/dev/null; then
+        if [[ ${#} -gt 0 ]]; then
         (
             set -x
             curl "${@-}" --output "${to_}" "${from_}"
         )
+        else
+        (
+            set -x
+            curl --output "${to_}" "${from_}"
+        )
+        fi
+    elif which wget &>/dev/null; then
+        if [[ ${#} -gt 0 ]]; then
+        (
+            set -x
+            wget "${@-}" -O "${to_}" "${from_}"
+        )
+        else
+        (
+            set -x
+            wget -O "${to_}" "${from_}"
+        )
+        fi
     else
         echo 'ERROR: cannot find either program wget or curl' >&2
         exit 1
     fi
 }
 
-download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${@-}"
-download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${@-}"
-download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' "${@-}"
-if which screen &>/dev/null; then
-    download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${@-}"
+if [[ ${#} -gt 0 ]]; then
+    download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${@-}"
+    download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${@-}"
+    download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' "${@-}"
+    if which screen &>/dev/null; then
+        download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${@-}"
+    fi
+    if which vim &>/dev/null; then
+        download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${@-}"
+    fi
+else
+    download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile'
+    download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc'
+    download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout'
+    if which screen &>/dev/null; then
+        download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc'
+    fi
+    if which vim &>/dev/null; then
+        download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc'
+    fi
 fi
-if which vim &>/dev/null; then
-    download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${@-}"
-fi
+
