@@ -58,7 +58,7 @@ function download () {
         fi
     else
         echo 'ERROR: cannot find either program wget or curl' >&2
-        exit 1
+        return 1
     fi
 }
 
