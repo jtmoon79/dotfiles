@@ -1,22 +1,19 @@
 #!/usr/bin/env bash
 #
-# install other . (dot) files in a one-liner, for fast setup of a new Unix user shell environment
-# parameters passed to this script will be passed as options to wget or curl
+# Install other . (dot) files in a one-liner, for fast setup of a new Unix user shell environment.
+# Parameters passed to this script will be passed as options to wget or curl, prefers curl.
 #
-# run this file:
-#
-#    wget -q -O- 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' | bash --norc --noprofile
+# To run this file:
 #
 #    curl --silent 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' | bash --norc --noprofile
 #
-# or
+#    wget -q -O- 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' | bash --norc --noprofile
 #
-#    wget -O /tmp/script.sh 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' && chmod -v +x /tmp/script.sh && /tmp/script.sh
+# Or, if options must be passed, like `--insecure` or `--no-check-certificate`:
 #
-#    curl 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' --output /tmp/script.sh && chmod -v +x /tmp/script.sh && /tmp/script.sh
+#    curl 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' --output /tmp/install.sh && chmod +x /tmp/install.sh && /tmp/install.sh && rm /tmp/install.sh
 #
-# BUG: bash 3 will fail if not passed a parameters.
-#      workaround is to pass --no-check-certificate or --insecure to /tmp/script.sh
+#    wget -O /tmp/install.sh 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' && chmod +x /tmp/install.sh && /tmp/install.sh && rm /tmp/install.sh
 #
 
 set -e
@@ -62,24 +59,26 @@ function download () {
     fi
 }
 
+declare -r URL='https://raw.githubusercontent.com/jtmoon79/dotfiles/master'
+
 if [[ ${#} -gt 0 ]]; then
-    download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' "${@-}"
-    download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' "${@-}"
-    download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' "${@-}"
+    download './.bash_profile' "${URL}/.bash_profile" "${@-}"
+    download './.bashrc' "${URL}/.bashrc" "${@-}"
+    download './.bash_logout' "${URL}/.bash_logout" "${@-}"
     if which screen &>/dev/null; then
-        download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' "${@-}"
+        download './.screenrc' "${URL}/.screenrc" "${@-}"
     fi
     if which vim &>/dev/null; then
-        download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' "${@-}"
+        download './.vimrc' "${URL}/.vimrc" "${@-}"
     fi
 else
-    download './.bash_profile' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile'
-    download './.bashrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc'
-    download './.bash_logout' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout'
+    download './.bash_profile' "${URL}/.bash_profile"
+    download './.bashrc' "${URL}/.bashrc"
+    download './.bash_logout' "${URL}/.bash_logout"
     if which screen &>/dev/null; then
-        download './.screenrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc'
+        download './.screenrc' "${URL}/.screenrc"
     fi
     if which vim &>/dev/null; then
-        download './.vimrc' 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc'
+        download './.vimrc' "${URL}/.vimrc"
     fi
 fi
