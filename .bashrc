@@ -110,6 +110,13 @@
 #        [3]=B
 #      then add and rm will appear to randomly drop variables after an add/rm
 #
+# TODO: change prompt printed time to be human-readable when seconds >60
+#       e.g.
+#            "last command 4359s"
+#       is difficult to grok, whereas
+#            "last command 4359s (1:12:39)"
+#       is much easier
+#
 
 
 # If not running interactively, do not do anything
