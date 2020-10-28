@@ -103,6 +103,13 @@
 # TODO: add flock to only allow one startup of .bashrc at a time
 #       prevents rare case of multiple bash windows using the same tty
 #       which can happen when launching `terminator`
+#
+# BUG: bash_prompt_table_variable_add/rm function does not account for empty indexes
+#      e.g. given bash_prompt_table_variables array like
+#        [0]=A
+#        [3]=B
+#      then add and rm will appear to randomly drop variables after an add/rm
+#
 
 
 # If not running interactively, do not do anything
