@@ -1471,6 +1471,11 @@ function __bashrc_alias_safely_check () {
     fi
 }
 
+function bash_alias_add ()  {
+    # user-facing function wrapper
+    __bashrc_alias_safely "${@}"
+}
+
 # -------------
 # color aliases
 # -------------
@@ -1657,6 +1662,11 @@ function __bash_update_dots () {
     __bash_update_dotscreenrc "${@}"
 }
 
+function bash_update_dots () {
+    # user-facing function wrapper
+    __bash_update_dots "${@}"
+}
+
 # =========================
 # source other bashrc files
 # =========================
@@ -1818,7 +1828,7 @@ ${b}Special Features of this .bashrc:${boff}
 		${b}__bash_update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
 		${b}__bash_update_dotscreenrc${boff}      # update ./.screenrc
 		${b}__bash_update_dotvimrc${boff}         # update ./.vimrc
-		${b}__bash_update_dots${boff}             # update all of the above
+		${b}bash_update_dots${boff}               # update all of the above
 	Parameters like '$(__bashrc_downloader_used_example_argument)' will be passed to the downloader $(__bashrc_downloader_used).
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
