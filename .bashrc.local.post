@@ -79,7 +79,7 @@ bash_prompt_table_variable_add 'TMPDIR'
 bash_prompt_table_variable_add 'PSFORMAT'  # ps
 bash_prompt_table_variable_add 'VERSION_CONTROL'  # cp, mv
 bash_prompt_table_variable_add 'MANOPT'    # man
-bash_prompt_table_variable_add 'LS_COLORS' # ls
+#bash_prompt_table_variable_add 'LS_COLORS' # ls
 bash_prompt_table_variable_add 'GZIP'      # gzip
 bash_prompt_table_variable_add 'ZIP'       # zip
 bash_prompt_table_variable_add 'ZIPOPT'
