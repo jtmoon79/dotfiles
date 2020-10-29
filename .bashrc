@@ -104,12 +104,6 @@
 #       prevents rare case of multiple bash windows using the same tty
 #       which can happen when launching `terminator`
 #
-# BUG: bash_prompt_table_variable_add/rm function does not account for empty indexes
-#      e.g. given bash_prompt_table_variables array like
-#        [0]=A
-#        [3]=B
-#      then add and rm will appear to randomly drop variables after an add/rm
-#
 # TODO: change prompt printed time to be human-readable when seconds >60
 #       e.g.
 #            "last command 4359s"
@@ -914,29 +908,40 @@ if ! [[ "${bash_prompt_table_variables+x}" ]]; then
 fi
 
 function bash_prompt_table_variable_add () {
-    # do not add variable already present in $bash_prompt_table_variables
-    # otherwise repeated invocations of .bashrc create a huge
-    # $bash_prompt_table_variables
-    # XXX: is this relevant after addition of $__bashrc_initialized ?
+    # add variable to $bash_prompt_table_variables, do not add if already present
     declare -i i=0
-    for ((; i < ${#bash_prompt_table_variables[@]}; ++i)); do
-        if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
+    for i in ${!bash_prompt_table_variables[*]}; do
+        if [[ ${#bash_prompt_table_variables[@]} -eq 0 ]]; then
+            bash_prompt_table_variables[0]=${1}
             return
         fi
+        if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
+            return 1
+        fi
     done
-    bash_prompt_table_variables[${#bash_prompt_table_variables[@]}]=${1}
+    i+=1  # append to end of array
+    bash_prompt_table_variables[${i}]=${1}
 }
 
 function bash_prompt_table_variable_rm () {
     # remove a variable from the $bash_prompt_table_variables
     declare -i i=0
-    for ((; i < ${#bash_prompt_table_variables[@]}; ++i)); do
+    for i in ${!bash_prompt_table_variables[*]}; do
         if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
             unset bash_prompt_table_variables[${i}]
             return
         fi
     done
-    false
+    return 1
+}
+
+function bash_prompt_table_variable_print () {
+    __bashrc_tab_str "$(
+        for i in "${!bash_prompt_table_variables[@]}"; do
+            echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"
+            let i++
+        done
+        )" ${1-0}
 }
 
 # preload the table with some common shell environment variables that are good to know
@@ -1805,7 +1810,7 @@ ${b}Special Features of this .bashrc:${boff}
 	Override color by changing ${b}bash_color_force${boff} to ${b}true${boff} or ${b}false${boff}.
 	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff} using ${b}bash_prompt_table_variable_add${boff} or ${b}bash_prompt_table_variable_rm${boff}.
 	${b}bash_prompt_table_variables${boff} currently displays:
-		$(__bashrc_tab_str "$(for i in "${!bash_prompt_table_variables[@]}"; do echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"; let i++; done)" 2)
+		$(bash_prompt_table_variable_print 2)
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
