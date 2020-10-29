@@ -936,6 +936,7 @@ function bash_prompt_table_variable_rm () {
 }
 
 function bash_prompt_table_variable_print () {
+    # print $bash_prompt_table_variables, optional $2 is tab indent amount
     __bashrc_tab_str "$(
         for i in "${!bash_prompt_table_variables[@]}"; do
             echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"
