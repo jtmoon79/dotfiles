@@ -663,6 +663,9 @@ function __bashrc_prompt_color_eval () {
     # set a fancy prompt
     declare __bashrc_color=false
     case "${TERM}" in
+        xterm)
+            __bashrc_color=true
+            ;;
         *color)
             __bashrc_color=true
             ;;
