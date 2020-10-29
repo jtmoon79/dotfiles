@@ -1680,25 +1680,23 @@ fi
 # print information this .bashrc has done for the user
 # ====================================================
 
-# TODO: show newly introduced environment variables
-#       But how to diff input from stdin? Creating temporary files to feed to diff is too risky for
-#       a startup script.
-
 function bashrc_start_info () {
     # echo information about this shell instance for the user with pretty formatting and indentation
 
-    # allow skipping __bashrc_start_info by __bashrc_start_info=false
-    # helpful for manual testing
-    if [[ "${__bashrc_start_info+x}" ]] && ! ${__bashrc_start_info}; then
-        return
-    fi
+    # TODO: show newly introduced environment variables
+    #       But how to diff input from stdin? Creating temporary files to feed to diff is too risky for
+    #       a startup script.
 
-    declare __env_1_now=$(env_sorted)
     declare b=''
     declare boff=''
     if ${__bashrc_prompt_color}; then
         b='\e[1m'
         boff='\e[0m'
+    fi
+
+    if [[ "${1-}" == '--minimal' ]]; then
+        echo -e "Run ${b}bashrc_start_info${boff} for information about this bash shell."
+        return
     fi
 
     # echo information about this bash
@@ -1838,6 +1836,6 @@ ${b}Special Features of this .bashrc:${boff}
 "
 }
 
-bashrc_start_info >&2
+bashrc_start_info --minimal >&2
 
 set +u
