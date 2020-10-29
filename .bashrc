@@ -147,18 +147,18 @@ export BASH_VERSION_MAJOR \
 shopt -s shift_verbose
 
 # ------------------------------
-# important helper `__installed`
+# important helper `__bash_installed`
 # ------------------------------
 
 # XXX: overwrites function in .bash_profile
-function __installed () {
+function __bash_installed () {
+    # are all passed args found in the $PATH?
     if ! which which &> /dev/null; then
-        echo "WARNING: which was not found in current path. This will limit features from this '${0}'" >&2
+        echo "WARNING: which was not found in current \$PATH. This will limit features from this '${0}'" >&2
         echo "         Current Path:" >&2
         echo "         ${PATH}" >&2
         return 1
     fi
-    # are all passed args found in the $PATH?
     declare prog=
     for prog in "${@}"; do
         if ! which "${prog}" &>/dev/null; then
@@ -167,6 +167,10 @@ function __installed () {
     done
 }
 
+function is_installed () {
+    # user-facing function wrapper
+    __bash_installed "${@}"
+}
 
 # ---------------------------------------
 # functions for sourcing other bash files
@@ -180,7 +184,7 @@ function __bashrc_path_dir_bashrc_ () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
-    if __installed dirname; then
+    if __bash_installed dirname; then
         path=$(dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
@@ -226,7 +230,7 @@ __bashrc_PATH_original=${PATH}
 # PATH additions
 # ==============
 
-# add PATHs sooner so calls to `__installed` will search *all* paths the user
+# add PATHs sooner so calls to `__bash_installed` will search *all* paths the user
 # has specified
 
 function __bashrc_path_add () {
@@ -305,7 +309,7 @@ __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 #         #if [[ ${ret} -ne 0 ]]; then
 #         #    return 1
 #         #fi
-#         if __installed "${prog}" &>/dev/null; then
+#         if __bash_installed "${prog}" &>/dev/null; then
 #             __bashrc_installed_tracker_array["${prog}"]=true
 #         else
 #             __bashrc_installed_tracker_array["${prog}"]=false
@@ -388,7 +392,7 @@ function what_OS () {
         echo -n "${os_flavor}${os}"
     fi
 
-    if __installed showrev; then
+    if __bash_installed showrev; then
         os_flavor='Solaris '
     fi
     echo -n "${os_flavor}${os}"
@@ -482,7 +486,7 @@ function env_sorted () {
     # Print environment sorted
     # Accounts for newlines within environment values (common in $LS_COLORS)
 
-    if ! __installed env sort tr; then
+    if ! __bash_installed env sort tr; then
         return 1
     fi
     # The programs env and sort may not supported the passed options. Shell option `pipefail` will
@@ -593,7 +597,7 @@ function locale_get () {
     #
 
     declare locales=
-    if ! __installed locale || ! locales=$(locale -a 2>/dev/null); then
+    if ! __bash_installed locale || ! locales=$(locale -a 2>/dev/null); then
         # a fallback value likely to be valid on constrained systems (i.e. Alpine Linux)
         echo -n 'C.UTF-8'
         return 1
@@ -631,7 +635,7 @@ export LC_ALL=${LC_ALL-${__locale_get}}  # see https://unix.stackexchange.com/a/
 #     for locale in $(locale -a); do (export LANG=$locale; echo -en "$locale\t"; date); done
 #
 
-if __installed less; then
+if __bash_installed less; then
     # from `man less`
     #
     #     If neither LESSCHARSET nor LESSCHARDEF is set, but any of the strings
@@ -1224,12 +1228,12 @@ function bash_prompt_table_print () {
 # ---------------
 
 __bashrc_installed_git=false  # global
-if __installed git; then
+if __bash_installed git; then
     __bashrc_installed_git=true
 fi
 
 __bashrc_installed_stat=false  # global
-if __installed stat; then
+if __bash_installed stat; then
     __bashrc_installed_stat=true
 fi
 
@@ -1439,7 +1443,7 @@ PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_upda
 # misc color
 # ----------
 
-if (__installed gcc || __installed 'g++') && ${__bashrc_color_apps}; then
+if (__bash_installed gcc || __bash_installed 'g++') && ${__bashrc_color_apps}; then
     # colored GCC warnings and errors
     export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 fi
@@ -1487,10 +1491,10 @@ if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
     fi
 
     __bashrc_alias_check ls 'ls --color=auto'
-    if __installed dir; then
+    if __bash_installed dir; then
         __bashrc_alias_check dir 'dir --color=auto'
     fi
-    if __installed vdir; then
+    if __bash_installed vdir; then
         __bashrc_alias_check vdir 'vdir --color=auto'
     fi
 fi
@@ -1511,7 +1515,7 @@ function __bashrc_alias_greps_color () {
         declare grep_base=
         grep_base=${grep_path##*/}  # get basename
         # run simplest match with the grep program to make sure it understands option '--color=auto'
-        if __installed "${grep_path}" \
+        if __bash_installed "${grep_path}" \
             && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
             && (echo '' | "${grep_path}" --color=auto '' &>/dev/null); then
             alias "${grep_base}"="${grep_path} --color=auto"
@@ -1569,7 +1573,7 @@ if ${__bashrc_installed_git}; then
     __bashrc_alias_safely gits 'git status -vv'
 fi
 
-if __installed mount sort column; then
+if __bash_installed mount sort column; then
     # TODO: BUG: this fails to be set under Debian 9 WSL depite success when run manually
     __bashrc_alias_safely_check mnt 'mount | sort -k3 | column -t'
 fi
@@ -1583,9 +1587,9 @@ function __bashrc_download_from_to () {
     shift
     declare -r path=${1}
     shift
-    if __installed curl; then
+    if __bash_installed curl; then
         (set -x; curl "${@}" --output "${path}" "${url}")
-    elif __installed wget; then
+    elif __bash_installed wget; then
         (set -x; wget "${@}" -O "${path}" "${url}")
     else
         return 1
@@ -1602,9 +1606,9 @@ function __bashrc_download_from_to () {
 }
 
 function __bashrc_downloader_used () {
-    if __installed curl; then
+    if __bash_installed curl; then
         echo 'curl'
-    elif __installed wget; then
+    elif __bash_installed wget; then
         echo 'wget'
     else
         return 1
@@ -1612,9 +1616,9 @@ function __bashrc_downloader_used () {
 }
 
 function __bashrc_downloader_used_example_argument () {
-    if __installed curl; then
+    if __bash_installed curl; then
         echo '--insecure'
-    elif __installed wget; then
+    elif __bash_installed wget; then
         echo '--no-check-certificate'
     else
         return 1
@@ -1765,7 +1769,7 @@ $(for src in "${__bash_processed_files[@]}"; do echo "	${src}"; done)
     fi
 
     # echo multiplexer server status
-    if [[ -n "${TMUX-}" ]] && __installed tmux; then
+    if [[ -n "${TMUX-}" ]] && __bash_installed tmux; then
         echo -e "\
 ${b}tmux Settings:${boff}
 
@@ -1773,10 +1777,10 @@ ${b}tmux Settings:${boff}
 	tmux sessions:
 		$(__bashrc_tab_str "$(tmux list-sessions)" 2)
 "
-    elif [[ -n "${STY-}" ]] && __installed screen; then
+    elif [[ -n "${STY-}" ]] && __bash_installed screen; then
         # shellcheck disable=SC2155
         declare __screen_list=$(screen -list 2>/dev/null)
-        if __installed tail; then
+        if __bash_installed tail; then
             __screen_list=$(echo -n "${__screen_list}" | tail -n +2)
             __screen_list=${__screen_list:1}
         fi
@@ -1801,7 +1805,7 @@ ${b}Paths (×${paths_c}):${boff}
 "
 
     # echo information about other users, system uptime
-    if __installed w; then
+    if __bash_installed w; then
         echo -e "\
 ${b}System and Users (w):${boff}
 
