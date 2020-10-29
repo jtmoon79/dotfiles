@@ -47,6 +47,7 @@
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
 #   http://git.savannah.gnu.org/cgit/bash.git/tree/
 #   https://wiki.bash-hackers.org/commands/builtin/printf (http://archive.ph/wip/jDPjC)
+#   https://www.shell-tips.com/bash/math-arithmetic-calculation/ (https://archive.vn/dOUw0)
 #
 # TODO: change all `true` and `false` "boolean" variables to be the full path
 #       to the programs.  `true` implies a $PATH search whereas `/bin/true` does
@@ -103,13 +104,6 @@
 # TODO: add flock to only allow one startup of .bashrc at a time
 #       prevents rare case of multiple bash windows using the same tty
 #       which can happen when launching `terminator`
-#
-# TODO: change prompt printed time to be human-readable when seconds >60
-#       e.g.
-#            "last command 4359s"
-#       is difficult to grok, whereas
-#            "last command 4359s (1:12:39)"
-#       is much easier
 #
 
 
@@ -760,22 +754,45 @@ function __bashrc_prompt_timer_start () {
 __bashrc_prompt_timer_start
 
 function __bashrc_prompt_timer_stop () {
-    # use $__bashrc_prompt_timer_show for display
+    # get time difference since last call, reset prompt timer
+    # use $__bashrc_prompt_timer_show for display, not this function
+    #
+    # $EPOCHREALTIME is microsecond-precision current Epoch time available in bash 5
+
     if ${__bashrc_prompt_timer_epoch}; then
-        __bashrc_prompt_timer_show=$(((${EPOCHREALTIME//.} - ${__bashrc_prompt_timer_cur//.}) / 1000))
+        # truncate $EPOCHREALTIME to milliseconds
+        declare -i toffset=$(((${EPOCHREALTIME//.} - ${__bashrc_prompt_timer_cur//.}) / 1000))
+        # truncate to seconds
+        declare -i toffset_sec=$((${toffset} / 1000))
+        declare units='ms'
     else
-        __bashrc_prompt_timer_show=$((${SECONDS:-0} - __bashrc_prompt_timer_cur))
+        declare -i toffset=$((${SECONDS:-0} - __bashrc_prompt_timer_cur))
+        declare -i toffset_sec=${toffset}
+        declare units='s'
     fi
+
+    if [[ ${toffset_sec} -ge 60 ]] || ${__bashrc_prompt_timer_epoch}; then
+        # show Hour:Minute:Second breakdown
+        declare -i h=$((toffset_sec / 3600))
+        declare -i m=$((toffset_sec / 60))
+        declare m_=''
+        if [[ ${m} -lt 10 ]]; then
+            declare m_='0'
+        fi
+        declare -i s=$((toffset_sec % 60))
+        declare s_=''
+        if [[ ${s} -lt 10 ]]; then
+            declare s_='0'
+        fi
+        __bashrc_prompt_timer_show="${toffset}${units} (${h}:${m_}${m}:${s_}${s})"
+    else
+        __bashrc_prompt_timer_show="${toffset}${units}"
+    fi
+
     unset __bashrc_prompt_timer_cur
 }
 
 trap '__bashrc_prompt_timer_start' DEBUG
-
-if ${__bashrc_prompt_timer_epoch}; then
-    __bashrc_prompt_timer_units='ms'
-else
-    __bashrc_prompt_timer_units='s'
-fi
 
 # ---------------------
 # prompt last exit code
@@ -1300,12 +1317,12 @@ function __bashrc_prompt_set () {
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}${__bashrc_prompt_timer_units}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)$(__bashrc_prompt_git_info)${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)$(__bashrc_prompt_git_info)${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \u@\h:\w
 '"${bash_prompt_bullet}"' '
     fi
