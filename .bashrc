@@ -975,10 +975,9 @@ bash_prompt_table_variable_add 'bash_color_force'
 bash_prompt_table_variable_add 'DISPLAY'
 bash_prompt_table_variable_add 'COLORTERM'
 bash_prompt_table_variable_add 'SHLVL'
-bash_prompt_table_variable_add 'tty'
 bash_prompt_table_variable_add 'STY'
 bash_prompt_table_variable_add 'SSH_TTY'
-bash_prompt_table_variable_add 'SSH_CONNECTION'
+#bash_prompt_table_variable_add 'SSH_CONNECTION'
 bash_prompt_table_variable_add 'GPG_AGENT_INFO'
 bash_prompt_table_variable_add 'SSH_AUTH_SOCK'
 bash_prompt_table_variable_add 'SSH_AGENT_PID'
@@ -1170,17 +1169,11 @@ function __bashrc_prompt_table () {
 
         # skip blank names or undefined values
         if [[ -z "${varn-}" ]] || [[ ! "${!varn+x}" ]]; then
-            if [[ "${varn-}" != 'tty' ]]; then  # special case
-                continue
-            fi
+            continue
         fi
 
         # append the variable name to row1 and variable value to row2
-        if [[ 'tty' = "${varn}" ]]; then  # special case
-            vare=${__bashrc_prompt_table_tty}
-        else
-            vare=${!varn}
-        fi
+        vare=${!varn}
         v1l=${#varn}
         v2l=${#vare}
         if [[ ${v1l} -gt ${v2l} ]]; then
