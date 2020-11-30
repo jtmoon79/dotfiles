@@ -1702,7 +1702,7 @@ function bashrc_start_info () {
     fi
 
     if [[ "${1-}" == '--minimal' ]]; then
-        echo -e "Run ${b}bashrc_start_info${boff} for information about this bash shell."
+        echo -e "Run ${b}bashrc_start_info${boff} for detailed information about this shell instance.\nRun ${b}bash_update_dots${boff} to update."
         return
     fi
 
