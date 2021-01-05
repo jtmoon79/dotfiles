@@ -151,14 +151,25 @@ shopt -s shift_verbose
 # ------------------------------
 
 # XXX: overwrites function in .bash_profile
+__bash_installed_which_warning=false
+__bash_installed_which=false
 function __bash_installed () {
     # are all passed args found in the $PATH?
-    if ! which which &> /dev/null; then
-        echo "WARNING: which was not found in current \$PATH. This will limit features from this '${0}'" >&2
+
+    # check that 'which' exists
+    # cache that knowledge for slightly faster future calls to this function
+    if ! ${__bash_installed_which} && ! which which &> /dev/null; then
+        if ${__bash_installed_which_warning}; then
+            return 1
+        fi
+        # print one warning
+        __bash_installed_which_warning=true
+        echo "WARNING: 'which' was not found in current \$PATH. This will limit features from this '${0}'" >&2
         echo "         Current Path:" >&2
         echo "         ${PATH}" >&2
         return 1
     fi
+    __bash_installed_which=true
     declare prog=
     for prog in "${@}"; do
         if ! which "${prog}" &>/dev/null; then
@@ -166,6 +177,17 @@ function __bash_installed () {
         fi
     done
 }
+
+# run once so $__bash_installed_which_warning is properly set
+__bash_installed
+# other sanity warnings (most likely the PATH is screwed up)
+# TODO: replace presumed use of these with bash built-in alternatives
+for __bashrc_prog_sanity_check in dirname cat; do
+    if ! __bash_installed "${__bashrc_prog_sanity_check}"; then
+        echo "WARNING: typical Unix program '${__bashrc_prog_sanity_check}' not found in PATH; this shell will behave poorly" >&2
+    fi
+done
+unset __bashrc_prog_sanity_check
 
 function is_installed () {
     # user-facing function wrapper
