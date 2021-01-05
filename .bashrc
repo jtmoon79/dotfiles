@@ -1697,10 +1697,16 @@ function __bash_update_dotbash () {
 }
 
 function __bash_update_dotvimrc () {
+    if ! __bash_installed vim; then
+        return
+    fi
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
 }
 
 function __bash_update_dotscreenrc () {
+    if ! __bash_installed screen; then
+        return
+    fi
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
 }
 
