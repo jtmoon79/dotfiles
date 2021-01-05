@@ -1600,9 +1600,8 @@ if ${__bashrc_installed_git}; then
     __bashrc_alias_safely gits 'git status -vv'
 fi
 
-if __bash_installed mount sort column; then
-    # TODO: BUG: this fails to be set under Debian 9 WSL depite success when run manually
-    __bashrc_alias_safely_check mnt 'mount | sort -k3 | column -t'
+if __bash_installed mount sort column cut; then
+    __bashrc_alias_safely mnt 'mount | sort -k3 | column -t | cut -c -${COLUMNS}'
 fi
 
 # ============

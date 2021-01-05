@@ -4,76 +4,103 @@
 #
 # function `bash_prompt_table_variable_add` is defined in .bashrc
 
+if __bash_installed ip grep tr cut; then
+    function show_dev_ipv4() {
+        declare ip_show_out=
+        if ! ip_show_out=$(ip address show dev "${1}" 2>/dev/null); then
+            return 1
+        fi
+        echo -n "${ip_show_out}" | grep 'inet ' | tr -s ' '  | cut -f3 -d ' ' | cut -f1 -d '/'
+    }
+else
+    function show_dev_ipv4() { return 1; }
+fi
+
+IPv4_tun0=$(show_dev_ipv4 tun0)
+IPv4_eth0=$(show_dev_ipv4 eth0)
+bash_prompt_table_variable_add \
+  'IPv4_tun0' \
+  'IPv4_eth0' \
+
 # general
-bash_prompt_table_variable_add 'TZ'
+bash_prompt_table_variable_add \
+  'TZ' \
 
 # Python
-bash_prompt_table_variable_add 'PYTHON_PIPENV'
-bash_prompt_table_variable_add 'PYTHON_PIP_VERSION'
-bash_prompt_table_variable_add 'PYTHON'
-bash_prompt_table_variable_add 'VIRTUAL_ENV'
-bash_prompt_table_variable_add 'Py_DEBUG'
-bash_prompt_table_variable_add 'PYTHONIOENCODING'
-bash_prompt_table_variable_add 'PYTHONDONTWRITEBYTECODE'
-bash_prompt_table_variable_add 'PYTHONDEBUG'
-bash_prompt_table_variable_add 'PYTHONINSPECT'
-bash_prompt_table_variable_add 'PYTHONOPTIMIZE'
-bash_prompt_table_variable_add 'PYTHONNOUSERSITE'
-bash_prompt_table_variable_add 'PYTHONUNBUFFERED'
-bash_prompt_table_variable_add 'PYTHONDONTWRITEBYTECODE'
-bash_prompt_table_variable_add 'PYTHONSTARTUP'
-bash_prompt_table_variable_add 'PYTHONHOME'
-bash_prompt_table_variable_add 'PYTHONCASEOK'
-bash_prompt_table_variable_add 'PYTHONHASHSEED'
+bash_prompt_table_variable_add \
+'PYTHON_PIPENV' \
+  'PYTHON_PIP_VERSION' \
+  'PYTHON' \
+  'VIRTUAL_ENV' \
+  'Py_DEBUG' \
+  'PYTHONIOENCODING' \
+  'PYTHONDONTWRITEBYTECODE' \
+  'PYTHONDEBUG' \
+  'PYTHONINSPECT' \
+  'PYTHONOPTIMIZE' \
+  'PYTHONNOUSERSITE' \
+  'PYTHONUNBUFFERED' \
+  'PYTHONDONTWRITEBYTECODE' \
+  'PYTHONSTARTUP' \
+  'PYTHONHOME' \
+  'PYTHONCASEOK' \
+  'PYTHONHASHSEED' \
 
 # Perl - https://perldoc.perl.org/perlrun.html#ENVIRONMENT
-bash_prompt_table_variable_add 'PERL5OPT'
-bash_prompt_table_variable_add 'PERLIO'
-bash_prompt_table_variable_add 'PERLIO_DEBUG'
-bash_prompt_table_variable_add 'PERLLIB'
-bash_prompt_table_variable_add 'PERL5LIB'
-bash_prompt_table_variable_add 'PERL5DB'
-bash_prompt_table_variable_add 'PERL5DB_THREADED'
-bash_prompt_table_variable_add 'PERL5SHELL'
-bash_prompt_table_variable_add 'PERL_ALLOW_NON_IFS_LSP'
-bash_prompt_table_variable_add 'PERL_DEBUG_MSTATS'
-bash_prompt_table_variable_add 'PERL_DESTRUCT_LEVEL'
-bash_prompt_table_variable_add 'PERL_UNICODE'
-bash_prompt_table_variable_add 'PERL_ENCODING'
-bash_prompt_table_variable_add 'PERL_USE_UNSAFE_INC'
+bash_prompt_table_variable_add \
+  'PERL5OPT' \
+  'PERLIO' \
+  'PERLIO_DEBUG' \
+  'PERLLIB' \
+  'PERL5LIB' \
+  'PERL5DB' \
+  'PERL5DB_THREADED' \
+  'PERL5SHELL' \
+  'PERL_ALLOW_NON_IFS_LSP' \
+  'PERL_DEBUG_MSTATS' \
+  'PERL_DESTRUCT_LEVEL' \
+  'PERL_UNICODE' \
+  'PERL_ENCODING' \
+  'PERL_USE_UNSAFE_INC' \
 
 # GNU screen
-bash_prompt_table_variable_add 'SYSSCREENRC'
-bash_prompt_table_variable_add 'LOCKPRG'
-bash_prompt_table_variable_add 'SCREENCAP'
-bash_prompt_table_variable_add 'WINDOW'
+bash_prompt_table_variable_add \
+  'SYSSCREENRC' \
+  'LOCKPRG' \
+  'SCREENCAP' \
+  'WINDOW' \
 
 # X11
-bash_prompt_table_variable_add 'XSOCK'
-bash_prompt_table_variable_add 'XAUTH'
-bash_prompt_table_variable_add 'XAUTHORITY'
-bash_prompt_table_variable_add 'XLOCAL'
+bash_prompt_table_variable_add \
+  'XSOCK' \
+  'XAUTH' \
+  'XAUTHORITY' \
+  'XLOCAL' \
 
 # tmux
-bash_prompt_table_variable_add 'TMUX'
-bash_prompt_table_variable_add 'TMUX_TMPDIR'
-bash_prompt_table_variable_add 'EDITOR'
-bash_prompt_table_variable_add 'VISUAL'
+bash_prompt_table_variable_add \
+  'TMUX' \
+  'TMUX_TMPDIR' \
+  'EDITOR' \
+  'VISUAL' \
 
 # locale
-bash_prompt_table_variable_add 'LC_CTYPE'
-bash_prompt_table_variable_add 'LC_ALL'
-bash_prompt_table_variable_add 'TZ'
+bash_prompt_table_variable_add \
+  'LC_CTYPE' \
+  'LC_ALL' \
+  'TZ' \
 
 # proxy
-bash_prompt_table_variable_add 'http_proxy'
-bash_prompt_table_variable_add 'https_proxy'
-bash_prompt_table_variable_add 'proxy'
+bash_prompt_table_variable_add \
+  'http_proxy' \
+  'https_proxy' \
+  'proxy' \
 
 # several forms of "Temporary Directory"
-bash_prompt_table_variable_add 'TEMP'
-bash_prompt_table_variable_add 'TMP'
-bash_prompt_table_variable_add 'TMPDIR'
+bash_prompt_table_variable_add \
+  'TEMP' \
+  'TMP' \
+  'TMPDIR' \
 
 # other Linux tools
 bash_prompt_table_variable_add 'PSFORMAT'  # ps
