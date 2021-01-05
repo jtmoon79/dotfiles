@@ -932,31 +932,60 @@ if ! [[ "${bash_prompt_table_variables+x}" ]]; then
 fi
 
 function bash_prompt_table_variable_add () {
-    # add variable to $bash_prompt_table_variables, do not add if already present
+    # add variable(s) to $bash_prompt_table_variables, do not add if already present
     declare -i i=0
-    for i in ${!bash_prompt_table_variables[*]}; do
-        if [[ ${#bash_prompt_table_variables[@]} -eq 0 ]]; then
-            bash_prompt_table_variables[0]=${1}
-            return
-        fi
-        if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
-            return 1
+    declare -i ret=0
+    declare found=
+    declare arg=
+    for arg in "${@}"; do
+        found=false
+        for i in ${!bash_prompt_table_variables[*]}; do
+            # special case of zero size array
+            if [[ ${#bash_prompt_table_variables[@]} -eq 0 ]]; then
+                bash_prompt_table_variables[0]=${arg}
+                break
+            fi
+            if [[ "${bash_prompt_table_variables[${i}]}" == "${arg}" ]]; then
+                found=true
+                break
+            fi
+        done
+        if ! ${found}; then
+            declare -i j=
+            # append variable to end of array
+            for j in ${!bash_prompt_table_variables[*]}; do
+                continue
+            done
+            j+=1
+            bash_prompt_table_variables[${j}]=${arg}
+        else  # return 1 if any variable was already present
+            ret=1
         fi
     done
-    i+=1  # append to end of array
-    bash_prompt_table_variables[${i}]=${1}
+    return ${ret}
 }
 
 function bash_prompt_table_variable_rm () {
-    # remove a variable from the $bash_prompt_table_variables
+    # remove a variable(s) from the $bash_prompt_table_variables
     declare -i i=0
-    for i in ${!bash_prompt_table_variables[*]}; do
-        if [[ "${bash_prompt_table_variables[${i}]}" == "${1}" ]]; then
-            unset bash_prompt_table_variables[${i}]
-            return
+    declare -i ret=0
+    declare found=
+    declare arg=
+    for arg in "${@}"; do
+        found=false
+        for i in ${!bash_prompt_table_variables[*]}; do
+            if [[ "${bash_prompt_table_variables[${i}]}" == "${arg}" ]]; then
+                unset bash_prompt_table_variables[${i}]
+                found=true
+                break
+            fi
+        done
+        # return 1 if any variable was not found
+        if ! ${found}; then
+            ret=1
         fi
     done
-    return 1
+    return ${ret}
 }
 
 function bash_prompt_table_variable_print () {
