@@ -105,6 +105,10 @@
 #       prevents rare case of multiple bash windows using the same tty
 #       which can happen when launching `terminator`
 #
+# TODO: need to allow easy update of .bashrc.local.post without clobbering prior.
+#       Consider a __merge_file that is wrapped by a download then merge of temp
+#       .bashrc.local.post into ./.bashrc.local.post
+#
 
 
 # If not running interactively, do not do anything
