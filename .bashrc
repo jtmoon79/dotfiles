@@ -1740,8 +1740,11 @@ __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
+    # XXX: other "official" completion files often have variable expansion errors
+    set +u
     __bashrc_source_file /usr/share/bash-completion/bash_completion
     __bashrc_source_file /etc/bash_completion
+    set -u
 fi
 
 # ====================================================
