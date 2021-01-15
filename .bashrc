@@ -108,7 +108,12 @@
 # TODO: need to allow easy update of .bashrc.local.post without clobbering prior.
 #       Consider a __merge_file that is wrapped by a download then merge of temp
 #       .bashrc.local.post into ./.bashrc.local.post
+#       That would then allow moving that separating particualr settings in this
+#       .bashrc (aliases, prompt variables, etc.) into a .bashrc.local.post.
 #
+# TODO: would a "last prompt" timer be worthwhile? Or too much clutter?
+#
+
 
 
 # If not running interactively, do not do anything
