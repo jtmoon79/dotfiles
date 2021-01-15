@@ -175,7 +175,8 @@ function __bash_installed () {
     fi
     __bash_installed_which=true
     declare prog=
-    for prog in "${@}"; do
+    # XXX: bash 3 wants this one particular array expansion to have fallback value
+    for prog in "${@:-}"; do
         if ! which "${prog}" &>/dev/null; then
             return 1
         fi
