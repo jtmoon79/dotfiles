@@ -627,6 +627,7 @@ function locale_get () {
     #     uz_UZ@cyrillic
     #     uz_UZ.utf8
     #
+    # XXX: English-centric
 
     declare locales=
     if ! __bash_installed locale || ! locales=$(locale -a 2>/dev/null); then
@@ -1327,7 +1328,7 @@ function __bashrc_prompt_git_info () {
         return
     fi
 
-    declare out=''
+    declare out=
     # see https://github.com/git/git/blob/master/contrib/completion/git-prompt.sh
     out+="$(export GIT_PS1_SHOWDIRTYSTATE=1
             export GIT_PS1_SHOWSTASHSTATE=1
