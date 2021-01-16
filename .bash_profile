@@ -55,19 +55,24 @@ function readlink_portable () {
     # So make sure readlink exists and understands the options passed before
     # using it.
     declare out=
-    # GNU coreutils readlink supports '-e'
-    if __bash_installed readlink && out=$(readlink -n -e -- "${@}"  2>/dev/null); then
-        echo -n "${out}"
-    # BSD readlink supports '-f'
-    elif __bash_installed readlink && out=$(readlink -n -f -- "${@}"  2>/dev/null); then
-        echo -n "${out}"
-    # old versions of readlink may not support '-n'
-    elif __bash_installed readlink && out=$(readlink -e -- "${@}" 2>/dev/null); then
-        echo -n "${out}"
-    # nothing has worked, just echo
-    else
-        echo -n "${@}"
+
+    if __bash_installed readlink; then
+        # GNU coreutils readlink supports '-e'
+        if out=$(readlink -n -e -- "${@}" 2>/dev/null); then
+            echo -n "${out}"
+            return 0
+        # BSD readlink supports '-f'
+        elif out=$(readlink -n -f -- "${@}" 2>/dev/null); then
+            echo -n "${out}"
+            return 0
+        # old versions of readlink may not support '-n'
+        elif out=$(readlink -e -- "${@}" 2>/dev/null); then
+            echo -n "${out}"
+            return 0
+        fi
     fi
+    # nothing has worked, just echo
+    echo -n "${@}"
 }
 
 function __bash_profile_path_dir_ () {
