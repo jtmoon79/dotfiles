@@ -5,6 +5,7 @@
 #
 # tip: have ~/.bashrc source ~/.ssh/ssh-auth-sock
 #
+# Designed against ssh-agent from package ssh-client version OpenSSH_7.6
 
 set -e
 set -u

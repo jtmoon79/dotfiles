@@ -5,6 +5,8 @@
 # Do keep in mind, any user on a *nix system can see the full command line of
 # other running commands (and 7z requires passing the password on the command
 # line).
+#
+# Designed against 7-zip 16.02 and GNU tar 1.29
 
 set -e
 set -u
