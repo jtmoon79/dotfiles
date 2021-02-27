@@ -2060,6 +2060,11 @@ ${b}Special Features of this .bashrc:${boff}
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
+
+	Turn off prompt activity with:
+		trap '' DEBUG
+		PROMPT_COMMAND=
+		PS1=
 "
 }
 
