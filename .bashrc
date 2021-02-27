@@ -1705,6 +1705,7 @@ fi
 function print_dev_IPv4() {
     # given passed NIC, print the first found IPv4 address by scraping from
     # outputs of either `ip` or `ifconfig`
+    # TODO: this function should use only bash built-in features
 
     if ! __bash_installed ip && ! __bash_installed ifconfig; then
         return 1
