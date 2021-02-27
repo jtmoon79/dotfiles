@@ -280,11 +280,10 @@ function __bashrc_path_add () {
     #      test front
     #      test back
     #      test middle
-    # TODO: do not do this in a subshell
-    if ! (     [[ "${PATH}" = "${PATH##${path}:}" ]] \
+    if ! {     [[ "${PATH}" = "${PATH##${path}:}" ]] \
             && [[ "${PATH}" = "${PATH%%:${path}}" ]] \
-            && [[ "${PATH}" = "${PATH/:${path}:/}" ]]
-         )
+            && [[ "${PATH}" = "${PATH/:${path}:/}" ]] ;
+        }
     then
         return 1
     fi
