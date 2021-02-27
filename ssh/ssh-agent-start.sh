@@ -3,7 +3,7 @@
 # setup single system-wide ssh-agent process. Export $SSH_AUTH_SOCK
 # for $USER.
 #
-# tip: have ~/.bashrc source ~/.ssh/ssh-auth-sock
+# Pro-tip: have your ~/.bashrc `source ~/.ssh/ssh-auth-sock`
 #
 # Designed against ssh-agent from package ssh-client version OpenSSH_7.6
 
@@ -11,7 +11,14 @@ set -e
 set -u
 set -o pipefail
 
-source "$(dirname -- "${0}")/ssh-auth-sock"
+if [[ -f "${USER}/.ssh/ssh-auth-sock" ]]; then
+    source "${USER}/.ssh/ssh-auth-sock"
+elif [[ -f "$(dirname -- "${0}")/ssh-auth-sock" ]]; then
+    source "$(dirname -- "${0}")/ssh-auth-sock"
+else
+    echo "ERROR: cannot find ssh-auth-sock file" >&2
+    exit 1
+fi
 
 mkdir -vp -- "${SSH_AUTH_SOCKD}"
 # $USER is *nix, $USERNAME is MinGW bash
