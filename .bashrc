@@ -514,10 +514,10 @@ function line_count () {
     declare line=
     declare -i count=0
     while read -rs line; do
-        let count+=1
+        count+=1
     done
     if [[ "${line}" != '' ]]; then
-        let count+=1
+        count+=1
     fi
     echo -n "${count}"
 }
