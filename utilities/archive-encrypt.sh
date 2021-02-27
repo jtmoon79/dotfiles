@@ -3,7 +3,8 @@
 # Quick imperfect script to tar a path and 7zip compress+encrypt the tar.
 # Useful for quick encrypted backups.
 # Do keep in mind, any user on a *nix system can see the full command line of
-# other running commands.
+# other running commands (and 7z requires passing the password on the command
+# line).
 
 set -e
 set -u
@@ -102,14 +103,14 @@ declare -a s7z_args=(
 )
 
 # compress+encrypt the archive
-# XXX: not ideal to put a password on a command-line
+# XXX:password on a command-line is not good but that is how 7z was designed
 echo "${PS4-}7z a -p****" "${s7z_args[@]}" >&2
 7z a \
   -p"${password}" \
   "${s7z_args[@]}"
 
 # list archive details, also a sanity check
-# XXX: not ideal to put a password on a command-line
+# XXX:password on a command-line is not good but that is how 7z was designed
 echo "${PS4-}7z l -p****" -slt "${archive_tar7z}" >&2
 7z l \
   -p"${password}" \
@@ -121,6 +122,5 @@ echo "Success! Restore this archive with
 
     7z e '${archive_tar7z}' -so | tar -xvf - -C /some/path
 
-The blank prompt is expecting the password.
+The blank prompt will be expecting the password.
 " >&2
-
