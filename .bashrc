@@ -34,10 +34,12 @@
 # (sometimes) tested against
 # - bash 4.x on Linux Ubuntu 18
 # - bash 4.x on Linux Debian 9
+# - bash 4.x on OSX 10
 # - bash 3.2 on FreeBSD 10
 # - bash docker images within docker-tests.sh
 #
 # Excellent references:
+#   https://tiswww.case.edu/php/chet/bash/bashref.html#index-command (https://archive.vn/mRrbc)
 #   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
 #   https://misc.flogisoft.com/bash/tip_colors_and_formatting (http://archive.fo/NmIkP)
 #   https://shreevatsa.wordpress.com/2008/03/30/zshbash-startup-files-loading-order-bashrc-zshrc-etc/ (http://archive.fo/fktxC)
@@ -113,7 +115,14 @@
 #
 # TODO: would a "last prompt" timer be worthwhile? Or too much clutter?
 #
-
+# BUG: prompt timer will be 0 if a command is run in a subshell, e.g.
+#
+#          $ (sleep 3)
+#
+#      results in next prompt with:
+#
+#          ... last command 0s ...
+#
 
 
 # If not running interactively, do not do anything
