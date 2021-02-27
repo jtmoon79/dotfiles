@@ -364,20 +364,24 @@ __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 # other misc. helper functions
 # ============================
 
-function what_OS () {
-    # attempt to determine what Unix Operating System this is in
-    # tips from http://whatsmyos.com/
-    # TODO: Incomplete: MinGW bash, cygwin, OpenBSD
-    # TODO: this funciton is a bit of a mess and needs some consistency about
+function bashrc_OS () {
+    # print a useful string about this OS
+    # See also
+    #    http://whatsmyos.com/
+    #    https://stackoverflow.com/a/27776822/471376
+    #
+    # TODO: this function is a bit of a mess and needs some consistency about
     #       what it is aiming to do.
-    # TODO: this funciton could be replaced by $OSTYPE
+    # TODO: this funciton could use $OSTYPE
+    # TODO: not tested adequately on non-Linux
 
+    declare uname_=$(uname -s) 2>/dev/null
     declare os='unknown'
     declare os_flavor=''
     if [[ -f /proc/version ]]; then
         os='Linux'
         if [[ -f /etc/os-release ]]; then
-            # three examples of /etc/os-release :
+            # five examples of /etc/os-release (can you spot the bug?)
             #
             #   PRETTY_NAME="Raspbian GNU/Linux 9 (stretch)"
             #   NAME="Raspbian GNU/Linux"
@@ -409,16 +413,64 @@ function what_OS () {
             #   VERSION_CODENAME=bionic
             #   UBUNTU_CODENAME=bionic
             #
+            #   NAME="CentOS Linux"
+            #   VERSION="7 (Core)"
+            #   ID="centos"
+            #   ID_LIKE="rhel fedora"
+            #   VERSION_ID="7"
+            #   PRETTY_NAME="CentOS Linux 7 (Core)"
+            #   ANSI_COLOR="0;31"
+            #   CPE_NAME="cpe:/o:centos:centos:7"
+            #   HOME_URL="https://www.centos.org/"
+            #   BUG_REPORT_URL="https://bugs.centos.org/"
+            #   CENTOS_MANTISBT_PROJECT="CentOS-7"
+            #   CENTOS_MANTISBT_PROJECT_VERSION="7"
+            #   REDHAT_SUPPORT_PRODUCT="centos"
+            #   REDHAT_SUPPORT_PRODUCT_VERSION="7"
+            #
+            #   NAME=Fedora Remix for WSL
+            #   VERSION="29"
+            #   ID=fedoraremixforwsl
+            #   ID_LIKE=fedora
+            #   VERSION_ID=29
+            #   PLATFORM_ID="platform:f29"
+            #   PRETTY_NAME="Fedora Remix for WSL"
+            #   ANSI_COLOR="0;34"
+            #   CPE_NAME="cpe:/o:fedoraproject:fedora:29"
+            #   HOME_URL="https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL"
+            #   SUPPORT_URL="https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL"
+            #   BUG_REPORT_URL="https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/issues"
+            #   PRIVACY_POLICY_URL="https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/blob/master/PRIVACY.md"
+            #
             (
+                set +u
+                set -e
+                # XXX: potential bug in the Fedora WSL file
                 # shellcheck disable=SC2046
-                eval $(cat /etc/os-release)
-                echo -n "${PRETTY_NAME-${NAME}}"
-            )
-            return
+                source /etc/os-release 2>/dev/null || exit 1
+                echo -n "${PRETTY_NAME-${NAME-} ${VERSION_ID-}}"
+            ) && return
         elif [[ -f /etc/redhat-release ]]; then
              os_flavor='Redhat '
+        elif [[ "${uname_}" == CYGWIN* ]]; then
+            echo -n "${uname_}"
+            return
+        elif [[ "${uname_}" == MINGW* ]]; then
+            echo -n "MinGW ${uname_}"
+            return
+        elif [[ "${uname_}" == MSYS* ]]; then
+            echo -n "${uname_}"
+            return
+        elif [[ "${uname_}" == Darwin* ]]; then
+            echo -n "Mac ${uname_}"
+            return
         fi
         echo -n "${os_flavor}${os}"
+        return
+    fi
+
+    if [[ "${uname_}" != '' ]]; then
+        echo -n "${uname_}"
         return
     fi
 
@@ -430,6 +482,7 @@ function what_OS () {
             os_flavor='FreeBSD '
         fi
         echo -n "${os_flavor}${os}"
+        return
     fi
 
     if __bash_installed showrev; then
@@ -438,7 +491,7 @@ function what_OS () {
     echo -n "${os_flavor}${os}"
 }
 
-__bashrc_OperatingSystem=$(what_OS)
+__bashrc_OperatingSystem=$(bashrc_OS)
 
 function __bashrc_replace_str () {
     # Given string $1, replace substring $2 with string $3 then echo the result.

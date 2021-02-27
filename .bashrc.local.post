@@ -18,6 +18,16 @@ if __bashrc_IPv4_=$(print_dev_IPv4 tun0); then
 fi
 unset __bashrc_IPv4_
 
+__bashrc_OS_=
+if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
+    OS_RELEASE=${__bashrc_OperatingSystem}
+    bash_prompt_table_variable_add OS_RELEASE
+elif __bashrc_OS_=$(bashrc_OS); then
+    OS_RELEASE=${__bashrc_OS_}
+    bash_prompt_table_variable_add OS_RELEASE
+fi
+unset __bashrc_OS_
+
 # general
 bash_prompt_table_variable_add \
   'TZ' \
