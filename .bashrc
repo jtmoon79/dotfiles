@@ -1645,6 +1645,95 @@ if __bash_installed mount sort column cut; then
     __bashrc_alias_safely mnt 'mount | sort -k3 | column -t | cut -c -${COLUMNS}'
 fi
 
+# ===============
+# network helpers
+# ===============
+
+function print_dev_IPv4() {
+    # given passed NIC, print the first found IPv4 address by scraping from
+    # outputs of either `ip` or `ifconfig`
+
+    if ! __bash_installed ip && ! __bash_installed ifconfig; then
+        return 1
+    fi
+    if ! __bash_installed grep tr cut; then
+        return 1
+    fi
+
+    #
+    # example Ubuntu 20.04 ifconfig
+    #
+    # $ ifconfig eth0
+    # eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+    #     inet 172.0.0.1  netmask 255.255.240.0  broadcast 172.0.0.255
+    #     inet6 fe80::215:ffff:ffff:ffff  prefixlen 64  scopeid 0x20<link>
+    #     ether 00:12:34:56:78:90  txqueuelen 1000  (Ethernet)
+    #     RX packets 461503  bytes 460569329 (460.5 MB)
+    #     RX errors 0  dropped 0  overruns 0  frame 0
+    #     TX packets 137051  bytes 10105497 (10.1 MB)
+    #     TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+    #
+    # example FreeBSD 11 ifconfig
+    #
+    # $ ifconfig em0
+    # em0: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
+    #         options=b<RXCSUM,TXCSUM,VLAN_MTU>
+    #         inet 10.10.10.100 netmask 0xffffff00 broadcast 10.10.10.255
+    #         ether 00:12:34:56:78:90
+    #         media: Ethernet autoselect (1000baseTX <full-duplex>)
+    #         status: active
+    #
+    # example alpine 3.12 ifconfig
+    #
+    # $ ifconfig eth0
+    # eth0      Link encap:Ethernet  HWaddr 00:12:34:56:78:90
+    #           inet addr:192.168.1.2  Bcast:192.168.1.255  Mask:255.255.255.0
+    #           inet6 addr: fe80::a00:27ff:ffff:ffff/64 Scope:Link
+    #           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+    #           RX packets:26064149 errors:0 dropped:0 overruns:0 frame:0
+    #           TX packets:21446837 errors:0 dropped:0 overruns:0 carrier:0
+    #           collisions:0 txqueuelen:1000
+    #           RX bytes:22454975297 (20.9 GiB)  TX bytes:22240105824 (20.7 GiB)
+    #
+    # example Ubuntu 18 ip
+    #
+    # $ ip addr show dev eth0
+    # 5: eth0: <BROADCAST,MULTICAST,UP> mtu 1504 group default qlen 1
+    #     link/ether 00:12:34:56:78:90
+    #     inet 192.168.1.2/24 brd 192.168.1.255 scope global dynamic
+    #        valid_lft 29864sec preferred_lft 29864sec
+    #
+
+    declare out_=
+    # prefer `ip` as it is more consistent and will replace `ifconfig`
+    if __bash_installed ip; then
+        out_=$(ip address show dev "${1-}" 2>/dev/null) || return 1
+        echo -n "${out_}" \
+            | grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
+            | tr -s ' ' \
+            | cut -f3 -d ' ' \
+            | cut -f1 -d '/'
+    elif __bash_installed ifconfig; then
+        out_=$(ifconfig "${1-}" 2>/dev/null) || return 1
+        # most `ifconfig` print a leading ' ' but some print leading '\t' (FreeBSD)
+        declare line1=
+        line1=$(
+            echo -n "${out_}" \
+            | grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
+            | tr -d '	'
+        ) || return 1
+        # possible variations:
+        #     inet addr:192.168.1.2 Bcast:192.168.1.255 Mask:255.255.255.0
+        #     inet 10.10.10.100 netmask 0xffffff00 broadcast 10.10.10.255
+        #     inet 172.0.0.1 netmask 255.255.240.0 broadcast 172.0.0.255
+        line1=$(echo -n "${line1## }" | tr -s ' ') || return 1
+        echo -n "${line1}" \
+            | cut -f2 -d ' ' \
+            | cut -f1 -d '/' \
+            | cut -f2 -d ':'
+    fi
+}
+
 # ============
 # self updater
 # ============

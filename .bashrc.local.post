@@ -4,23 +4,19 @@
 #
 # function `bash_prompt_table_variable_add` is defined in .bashrc
 
-if __bash_installed ip grep tr cut; then
-    function show_dev_ipv4() {
-        declare ip_show_out=
-        if ! ip_show_out=$(ip address show dev "${1}" 2>/dev/null); then
-            return 1
-        fi
-        echo -n "${ip_show_out}" | grep 'inet ' | tr -s ' '  | cut -f3 -d ' ' | cut -f1 -d '/'
-    }
-else
-    function show_dev_ipv4() { return 1; }
+# attempt to add common NIC IPv4
+if __bashrc_IPv4_=$(print_dev_IPv4 eth0); then
+  IPv4_eth0=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_eth0
+elif __bashrc_IPv4_=$(print_dev_IPv4 em0); then
+  IPv4_em0=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_em0
 fi
-
-IPv4_tun0=$(show_dev_ipv4 tun0)
-IPv4_eth0=$(show_dev_ipv4 eth0)
-bash_prompt_table_variable_add \
-  'IPv4_tun0' \
-  'IPv4_eth0' \
+if __bashrc_IPv4_=$(print_dev_IPv4 tun0); then
+  IPv4_tun0=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_tun0
+fi
+unset __bashrc_IPv4_
 
 # general
 bash_prompt_table_variable_add \
