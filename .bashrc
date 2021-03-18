@@ -1935,15 +1935,17 @@ function bashrc_start_info () {
 
     function __bashrc_start_info_time_start() {
         # __bash_start_beg_time should be set by calling .bash_profile
+        # XXX: a smoother way to do this would be overriding the prompt_timer values
+        #      once during startup
         if [[ ! "${__bash_start_beg_time+x}" ]]; then
             return 1
         fi
-        if [[ "${EPOCHREALTIME+x}" ]]; then
-            __bash_start_end_time=${EPOCHREALTIME}
-            echo "Time required to start $(( ( ${__bash_start_end_time//.} - ${__bash_start_beg_time//.} ) / 1000)) milliseconds"
+        __bash_start_end_time=${EPOCHREALTIME-}
+        if [[ -n "${__bash_start_end_time}" ]]; then
+            echo "Time taken during startup was $(( ( ${__bash_start_end_time//.} - ${__bash_start_beg_time//.} ) / 1000)) milliseconds"
         else
             __bash_start_end_time=${SECONDS}
-            echo "Time required to start $((__bash_start_end_time - __bash_start_beg_time)) seconds"
+            echo "Time taken during startup was $((__bash_start_end_time - __bash_start_beg_time)) seconds"
         fi
     }
 
