@@ -450,6 +450,17 @@ function bashrc_OS () {
                 source /etc/os-release 2>/dev/null || exit 1
                 echo -n "${PRETTY_NAME-${NAME-} ${VERSION_ID-}}"
             ) && return
+        elif [[ -f cat /etc/centos-release ]]; then
+            # file /etc/centos-release from older CentOS
+            #
+            #    CentOS release 6.7 (Final)
+            #
+            if is_installed tr; then
+                cat /etc/centos-release | tr -d '\n'
+            else
+                cat /etc/centos-release
+            fi
+            return
         elif [[ -f /etc/redhat-release ]]; then
              os_flavor='Redhat '
         elif [[ "${uname_}" == CYGWIN* ]]; then
