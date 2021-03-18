@@ -872,13 +872,13 @@ function __bashrc_prompt_timer_stop () {
     if [[ ${toffset_sec} -ge 60 ]] || ${__bashrc_prompt_timer_epoch}; then
         # show Hour:Minute:Second breakdown
         declare -i h=$((toffset_sec / 3600))
-        declare -i m=$((toffset_sec / 60))
-        declare m_=''
+        declare -i m=$((toffset_sec % 3600 / 60))
+        declare m_=
         if [[ ${m} -lt 10 ]]; then
             declare m_='0'
         fi
         declare -i s=$((toffset_sec % 60))
-        declare s_=''
+        declare s_=
         if [[ ${s} -lt 10 ]]; then
             declare s_='0'
         fi
