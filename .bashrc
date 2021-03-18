@@ -378,9 +378,9 @@ function bashrc_OS () {
     declare uname_=$(uname -s) 2>/dev/null
     declare os='unknown'
     declare os_flavor=''
-    if [[ -f /proc/version ]]; then
+    if [[ -e /proc/version ]]; then
         os='Linux'
-        if [[ -f /etc/os-release ]]; then
+        if [[ -r /etc/os-release ]]; then
             # five examples of /etc/os-release (can you spot the bug?)
             #
             #   PRETTY_NAME="Raspbian GNU/Linux 9 (stretch)"
@@ -461,7 +461,7 @@ function bashrc_OS () {
                 cat /etc/centos-release
             fi
             return
-        elif [[ -f /etc/redhat-release ]]; then
+        elif [[ -r /etc/redhat-release ]]; then
              os_flavor='Redhat '
         elif [[ "${uname_}" == CYGWIN* ]]; then
             echo -n "${uname_}"
