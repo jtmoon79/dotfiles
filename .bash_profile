@@ -22,6 +22,11 @@
 
 set -u
 
+__bash_start_beg_time=${SECONDS}
+if [[ "${EPOCHREALTIME+x}" ]]; then
+    __bash_start_beg_time=${EPOCHREALTIME}
+fi
+
 # If not running interactively, do not print.
 __bash_profile_verbose=false
 case "$-" in

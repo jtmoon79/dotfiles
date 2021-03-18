@@ -1933,8 +1933,24 @@ function bashrc_start_info () {
         boff='\e[0m'
     fi
 
+    function __bashrc_start_info_time_start() {
+        # __bash_start_beg_time should be set by calling .bash_profile
+        if [[ ! "${__bash_start_beg_time+x}" ]]; then
+            return 1
+        fi
+        if [[ "${EPOCHREALTIME+x}" ]]; then
+            __bash_start_end_time=${EPOCHREALTIME}
+            echo "Time required to start $(( ( ${__bash_start_end_time//.} - ${__bash_start_beg_time//.} ) / 1000)) milliseconds"
+        else
+            __bash_start_end_time=${SECONDS}
+            echo "Time required to start $((__bash_start_end_time - __bash_start_beg_time)) seconds"
+        fi
+    }
+
     if [[ "${1-}" == '--minimal' ]]; then
-        echo -e "Run ${b}bashrc_start_info${boff} for detailed information about this shell instance.\nRun ${b}bash_update_dots${boff} to update."
+        echo -e "Run ${b}bashrc_start_info${boff} for detailed information about this shell instance."
+        echo -e "Run ${b}bash_update_dots${boff} to update."
+        __bashrc_start_info_time_start
         return
     fi
 
@@ -2072,6 +2088,7 @@ ${b}Special Features of this .bashrc:${boff}
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
+	$(__bashrc_start_info_time_start)
 
 	Turn off prompt activity with:
 		trap '' DEBUG
