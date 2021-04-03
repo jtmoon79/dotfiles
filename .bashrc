@@ -1384,9 +1384,9 @@ function __bash_path_mount_point () {
 }
 
 # allow forcing git prompt for mount paths that might be ignored (i.e. some remote paths)
-declare -ag __bashrc_prompt_git_info_force_array=(
-    "/"  # mount point '/' is very likely not a remote filesystem
-)
+# XXX: backward-compatible global array declaration
+__bashrc_prompt_git_info_force_array[0]="/"  # mount point '/' is very likely not a remote filesystem
+
 function __bashrc_prompt_git_info_force_add () {
     # add path to list of paths that should force git prompt
     declare arg=
@@ -1411,6 +1411,7 @@ function __bashrc_prompt_git_info_force_add () {
         if ${already_added}; then
             continue
         fi
+        # store the paths mountpoint
         if [[ ${len_array} -eq 0 ]]; then
             __bashrc_prompt_git_info_force_array[0]=${arg_mp}
         else
@@ -1440,6 +1441,10 @@ function __bashrc_prompt_git_info_force_contains () {
     return 1  # do not contain
 }
 
+# one element caches
+#__bashrc_prompt_git_info_last_path=''  # global
+#__bashrc_prompt_git_info_last_path_do=true  # global
+
 function __bashrc_prompt_git_info () {
     # a prompt line with git information
     #
@@ -1449,34 +1454,43 @@ function __bashrc_prompt_git_info () {
 
     # do the necessary programs exist?
     if ! ${__bashrc_prompt_git_info_git_stat}; then
-        return
+        return 1
     fi
 
     # does the necessary helper function exist already?
     if ! declare -F __git_ps1 &>/dev/null; then
-        return
+        return 1
     fi
 
-    # run `git worktree` only for some mount points, preferrably not for remote mount
-    # points; those often require a long time for `git worktree list` to parse.
-    # user can add to acceptable paths via `__bashrc_prompt_git_info_force_add`
-    declare mountpoint=
-    mountpoint=$(__bash_path_mount_point "${PWD}")
-    declare mountpoint_okay=false
-    declare mountpoint_=
-    for mountpoint_ in "${__bashrc_prompt_git_info_force_array[@]}"; do
-        if [[ "${mountpoint_}" = "${mountpoint}" ]]; then
-            mountpoint_okay=true
-            break
+    #if [[ "${__bashrc_prompt_git_info_last_path}" = "${PWD}" ]]; then
+    #    if ! ${__bashrc_prompt_git_info_last_path_do}; then
+    #        return
+    #    fi
+    #else
+        # run `git worktree` only for some mount points, preferrably not for remote mount
+        # points; those often require a long time for `git worktree list` to parse.
+        # user can add to acceptable paths via `__bashrc_prompt_git_info_force_add`
+        #__bashrc_prompt_git_info_last_path=${PWD}
+        #__bashrc_prompt_git_info_last_path_do=true
+        declare mountpoint=
+        mountpoint=$(__bash_path_mount_point "${PWD}")
+        declare mountpoint_okay=false
+        declare mountpoint_=
+        for mountpoint_ in "${__bashrc_prompt_git_info_force_array[@]}"; do
+            if [[ "${mountpoint_}" = "${mountpoint}" ]]; then
+                mountpoint_okay=true
+                break
+            fi
+        done
+        if ! ${mountpoint_okay}; then
+            #__bashrc_prompt_git_info_last_path_do=false
+            return
         fi
-    done
-    if ! ${mountpoint_okay}; then
-        return
-    fi
+    #fi
 
     # is this a git worktree?
     if ! git worktree list &>/dev/null; then
-        return
+        return 1
     fi
 
     declare out=
