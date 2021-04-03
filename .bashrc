@@ -123,6 +123,13 @@
 #
 #          ... last command 0s ...
 #
+# TODO: add color to prompt bullet, change it if user is root
+#
+# TODO: change prompt bullet if user is root
+#
+# TODO: consider creating a `help` or similar alias that will dump information and
+#       provide extended examples.
+#
 
 
 # If not running interactively, do not do anything
