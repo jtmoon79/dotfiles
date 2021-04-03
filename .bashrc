@@ -1371,38 +1371,51 @@ fi
 __bashrc_prompt_git_info_git_stat=false  # global
 if ${__bashrc_installed_git} \
    && ${__bashrc_installed_stat} \
-   && [[ "$(stat '--format=%m' '/' 2>/dev/null)" = '/' ]]; then
+   && [[ "$(stat '--format=%m' --dereference '/' 2>/dev/null)" = '/' ]]; then
     __bashrc_prompt_git_info_git_stat=true
 fi
+
+# check `__git_ps1` exists
+__bashrc_prompt_git_info_git_ps1=false
+if declare -F __git_ps1 &>/dev/null; then
+    __bashrc_prompt_git_info_git_ps1=true
+fi
+
+function __bashrc_prompt_git_info_do () {
+    # should this attempt to run `__git_ps1` helper and make it part of the prompt?
+    # do the necessary programs exist?
+    # does the necessary helper function `__git_ps1` exist?
+    ${__bashrc_prompt_git_info_git_stat} && ${__bashrc_prompt_git_info_git_ps1}
+}
 
 function __bash_path_mount_point () {
     # for the path $1, print the mount point
     if ! ${__bashrc_installed_stat}; then
         return 1
     fi
-    stat '--format=%m' "${1}" 2>/dev/null
+    stat '--format=%m' --dereference "${1}" 2>/dev/null
 }
 
 # allow forcing git prompt for mount paths that might be ignored (i.e. some remote paths)
 # XXX: backward-compatible global array declaration
-__bashrc_prompt_git_info_force_array[0]="/"  # mount point '/' is very likely not a remote filesystem
+__bashrc_prompt_git_info_mountpoint_array[0]="/"  # mount point '/' is very likely not a remote filesystem
 
-function __bashrc_prompt_git_info_force_add () {
+function __bashrc_prompt_git_info_mountpoint_array_add () {
     # add path to list of paths that should force git prompt
     declare arg=
     for arg in "${@}"; do
-        declare -i len_array=${#__bashrc_prompt_git_info_force_array[@]}
+        declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
         declare arg_mp=
         if ! arg_mp=$(__bash_path_mount_point "${arg}"); then
             continue
         elif [[ "${arg_mp}" = '' ]]; then
             continue
         fi
-        # check if mount path is in $__bashrc_prompt_git_info_force_array
+        # check if mount path is in $__bashrc_prompt_git_info_mountpoint_array
         declare -i i=0
         declare already_added=false
         while [[ ${i} -lt ${len_array} ]]; do
-            if [[ "${__bashrc_prompt_git_info_force_array[${i}]}" = "${arg_mp}" ]]; then
+            if [[ "${__bashrc_prompt_git_info_mountpoint_array[${i}]}" = "${arg_mp}" ]]; then
                 already_added=true
                 break
             fi
@@ -1413,18 +1426,18 @@ function __bashrc_prompt_git_info_force_add () {
         fi
         # store the paths mountpoint
         if [[ ${len_array} -eq 0 ]]; then
-            __bashrc_prompt_git_info_force_array[0]=${arg_mp}
+            __bashrc_prompt_git_info_mountpoint_array[0]=${arg_mp}
         else
-            __bashrc_prompt_git_info_force_array[${len_array}]=${arg_mp}
+            __bashrc_prompt_git_info_mountpoint_array[${len_array}]=${arg_mp}
         fi
     done
 }
 
-function __bashrc_prompt_git_info_force_contains () {
-    # is path $1 within $__bashrc_prompt_git_info_force_array
+function __bashrc_prompt_git_info_mountpoint_array_contains () {
+    # is path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
     # if contains return 0
     # else return 1
-    declare -i len_array=${#__bashrc_prompt_git_info_force_array[@]}
+    declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
     declare arg_mp=
     if ! arg_mp=$(__bash_path_mount_point "${1-}"); then
         continue
@@ -1433,7 +1446,7 @@ function __bashrc_prompt_git_info_force_contains () {
     fi
     declare -i i=0
     while [[ ${i} -lt ${len_array} ]]; do
-        if [[ "${__bashrc_prompt_git_info_force_array[${i}]}" = "${arg_mp}" ]]; then
+        if [[ "${__bashrc_prompt_git_info_mountpoint_array[${i}]}" = "${arg_mp}" ]]; then
             return 0  # does contain
         fi
         i+=1
@@ -1441,60 +1454,58 @@ function __bashrc_prompt_git_info_force_contains () {
     return 1  # do not contain
 }
 
-# one element caches
-#__bashrc_prompt_git_info_last_path=''  # global
-#__bashrc_prompt_git_info_last_path_do=true  # global
+# one element cache
+__bashrc_prompt_git_info_cache_path=${PWD}   # global
+__bashrc_prompt_git_info_cache_path_do=      # global
+__bashrc_prompt_git_info_cache_mountpoint_array_len=${#__bashrc_prompt_git_info_mountpoint_array[@]}  # global
 
 function __bashrc_prompt_git_info () {
     # a prompt line with git information
     #
     # Most directories are not git repositories so make easy checks try to bail
-    # out early before getting to __git_ps1; do not let this function be a drag
-    # on the system
+    # out early before getting to __git_ps1; do not let this function slow down
+    # prompt refresh.
 
-    # do the necessary programs exist?
-    if ! ${__bashrc_prompt_git_info_git_stat}; then
+    if ! __bashrc_prompt_git_info_do; then
         return 1
     fi
 
-    # does the necessary helper function exist already?
-    if ! declare -F __git_ps1 &>/dev/null; then
-        return 1
-    fi
-
-    #if [[ "${__bashrc_prompt_git_info_last_path}" = "${PWD}" ]]; then
-    #    if ! ${__bashrc_prompt_git_info_last_path_do}; then
-    #        return
-    #    fi
-    #else
-        # run `git worktree` only for some mount points, preferrably not for remote mount
-        # points; those often require a long time for `git worktree list` to parse.
-        # user can add to acceptable paths via `__bashrc_prompt_git_info_force_add`
-        #__bashrc_prompt_git_info_last_path=${PWD}
-        #__bashrc_prompt_git_info_last_path_do=true
+    # before iterating through mountpoints and making calls to `stat`, first
+    # check the cached result
+    if [[ "${__bashrc_prompt_git_info_cache_path}" = "${PWD}" ]] \
+    && [[ "${__bashrc_prompt_git_info_cache_path_do}" != '' ]]; then
+        if ! ${__bashrc_prompt_git_info_cache_path_do}; then
+            return 1
+        fi
+    else
+        # Iterate thought mountpoints to see if `git worktree` should be called.
+        # the idea is `git worktree` is only run for some mount points and most
+        # preferrably not for remote mount points. Remote mounts often take a
+        # long time for `git worktree list` to finish.
+        # The user can add to acceptable paths via
+        # `__bashrc_prompt_git_info_mountpoint_array_add "/some/path"`.
         declare mountpoint=
         mountpoint=$(__bash_path_mount_point "${PWD}")
         declare mountpoint_okay=false
         declare mountpoint_=
-        for mountpoint_ in "${__bashrc_prompt_git_info_force_array[@]}"; do
+        for mountpoint_ in "${__bashrc_prompt_git_info_mountpoint_array[@]}"; do
             if [[ "${mountpoint_}" = "${mountpoint}" ]]; then
                 mountpoint_okay=true
                 break
             fi
         done
         if ! ${mountpoint_okay}; then
-            #__bashrc_prompt_git_info_last_path_do=false
-            return
+            return 1
         fi
-    #fi
+    fi
 
     # is this a git worktree?
     if ! git worktree list &>/dev/null; then
         return 1
     fi
-
     declare out=
-    # see https://github.com/git/git/blob/master/contrib/completion/git-prompt.sh
+    # presumed to be something near the `__git_ps1` defined in
+    # https://github.com/git/git/blob/fb628ab129dc2a29581e05edd886e3dc16a4ac49/contrib/completion/git-prompt.sh
     out+="$(export GIT_PS1_SHOWDIRTYSTATE=1
             export GIT_PS1_SHOWSTASHSTATE=1
             export GIT_PS1_SHOWUPSTREAM=1
@@ -1507,12 +1518,12 @@ function __bashrc_prompt_git_info () {
     # change to red if repository non-clean; check for literal substring '*='
     if ${__bashrc_prompt_color}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
-        if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]]; then
+        if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]] || [[ "${out}" =~ '*$=' ]]; then
             out='\e[31m'"${out}"'\e[0m'  # red
         elif [[ "${out}" =~ '<)' ]]; then
-            out='\e[33m'"${out}"'\e[0m'  # yellow
+            out='\e[93m'"${out}"'\e[0m'  # light yellow
         elif [[  "${out}" =~ 'GIT_DIR!' ]]; then
-            out='\e[95m'"${out}"'\e[0m'  #  light magenta
+            out='\e[1m\e[95m'"${out}"'\e[0m'  #  bold light magenta
         fi
     fi
     # use echo to interpret color sequences here, PS1 will not attempt to interpret this functions
@@ -1541,12 +1552,12 @@ function __bashrc_prompt_set () {
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables becomes unset there
         #      will be an empty line.
         PS1='
-\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]$(__bashrc_prompt_git_info)\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
 '"${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)$(__bashrc_prompt_git_info)${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)${__bashrc_prompt_git_info_show}${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \u@\h:\w
 '"${bash_prompt_bullet}"' '
     fi
@@ -1635,6 +1646,34 @@ function __bashrc_prompt_live_updates () {
         call___bashrc_prompt_set=true
     fi
     __bashrc_prompt_bullet_last=${bash_prompt_bullet}  # global
+
+    # update cache for git info
+#    echo -e "${PS4}before
+#    __bashrc_prompt_git_info_cache_path '${__bashrc_prompt_git_info_cache_path}'
+#    __bashrc_prompt_git_info_cache_path_do '${__bashrc_prompt_git_info_cache_path_do}'
+#    __bashrc_prompt_git_info_mountpoint_array [${__bashrc_prompt_git_info_mountpoint_array[*]}]
+#    __bashrc_prompt_git_info_cache_mountpoint_array_len ${__bashrc_prompt_git_info_cache_mountpoint_array_len}
+#    __bash_path_mount_point (current) '$(__bash_path_mount_point .)'
+#" >&2
+    if __bashrc_prompt_git_info_do; then
+        if [[ ${__bashrc_prompt_git_info_cache_mountpoint_array_len} -ne ${#__bashrc_prompt_git_info_mountpoint_array[@]} ]]; then
+            __bashrc_prompt_git_info_cache_path_do=
+        fi
+        if __bashrc_prompt_git_info_show=$(__bashrc_prompt_git_info); then
+            __bashrc_prompt_git_info_cache_path_do=true
+        else
+            __bashrc_prompt_git_info_cache_path_do=false
+        fi
+        __bashrc_prompt_git_info_cache_path=${PWD}
+        __bashrc_prompt_git_info_cache_mountpoint_array_len=${#__bashrc_prompt_git_info_mountpoint_array[@]}
+    fi
+#    echo -e "${PS4}after
+#    __bashrc_prompt_git_info_cache_path '${__bashrc_prompt_git_info_cache_path}'
+#    __bashrc_prompt_git_info_cache_path_do '${__bashrc_prompt_git_info_cache_path_do}'
+#    __bashrc_prompt_git_info_mountpoint_array [${__bashrc_prompt_git_info_mountpoint_array[*]}]
+#    __bashrc_prompt_git_info_cache_mountpoint_array_len ${__bashrc_prompt_git_info_cache_mountpoint_array_len}
+#    __bash_path_mount_point (current) '$(__bash_path_mount_point .)'
+#" >&2
 
     if ${call___bashrc_prompt_color_eval}; then
         __bashrc_prompt_color_eval
