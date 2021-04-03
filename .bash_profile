@@ -127,7 +127,7 @@ __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 if [[ "$-" =~ 'i' ]] \
 && [[ -z "${TMUX+x}" ]] \
 && [[ -z "${STY+x}" ]] \
-&& { [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] ; }  # `force_multiplexer` is defined and not empty
+&& ( [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] )  # `force_multiplexer` is defined and not empty
 then
     # try tmux
     # taken from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
