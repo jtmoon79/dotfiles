@@ -116,26 +116,20 @@ function __bash_profile_source_file () {
     __bash_sourced_files[${#__bash_sourced_files[@]}]=${sourcef}
 }
 
-__bash_sourced_files[0]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
+__bash_sourced_files[${#__bash_sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
 
 # useful for setting $force_multiplexer
 __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 
-# inform the local X server to allow this shell instance to launch GUI programs
-# see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
-if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && __bash_installed xhost &>/dev/null; then
-    # XXX: this is lax security, how to make the X server allowance more restricted?
-    #      see https://wiki.archlinux.org/index.php/Xhost#Usage
-    xhost +local:
-fi
-
-# try different terminal multiplexers but only if not already withiin one
-# TODO: BUG: race condition: multiple shells starting at once will attach to the same detached
-#            session (e.g. in Terminator)
+# try different terminal multiplexers tmux and screen but only if not already within a multiplexer
+# BUG: race condition: multiple shells starting at once will attach to the same detached
+#      session (e.g. in Terminator)
 if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
     # try tmux
     # taken from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
-    if [[ "${force_multiplexer+x}" = 'tmux' ]] || (__bash_installed tmux && ! [[ "${force_multiplexer+x}" ]]); then
+    if [[ "${force_multiplexer+x}" = 'tmux' ]] || \
+       { __bash_installed tmux && { [[ "${force_multiplexer-}" = '' ]] || [[ "${force_multiplexer-}" = 'tmux' ]] ;} ;}
+    then
         # try to attach-session to detached tmux session, otherwise create new-session
         tmux_detached=
         if __bash_installed grep cut; then
@@ -159,17 +153,21 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
         fi
         if [[ -z "${tmux_detached}" ]] ; then
              # a detached session not present so create a new session
-            __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
+            #__bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             echo "${PS4:-}exec tmux new-session" >&2
+            sleep 0.1
             exec tmux new-session
         else
             # detached session available so attach to that session
             echo "${PS4:-}exec tmux attach-session -t '${tmux_detached}'" >&2
+            sleep 0.1
             exec tmux attach-session -t "${tmux_detached}"
         fi
     # try screen
     # removed check [ -z "${STY+x}" ]
-    elif [[ "${force_multiplexer+x}" = 'screen' ]] || (__bash_installed screen && ! [[ "${force_multiplexer+x}" ]]); then
+    elif [[ "${force_multiplexer+x}" = 'screen' ]] || \
+       { __bash_installed screen && { [[ "${force_multiplexer-}" = '' ]] || [[ "${force_multiplexer-}" = 'screen' ]] ;} ;}
+    then
         # try to attach to Detached session, otherwise start a new session
         screen_detached=
         # XXX: if screen does start a new instance, then `__bash_profile_source_file .bashrc` else do
@@ -190,7 +188,7 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
             #9 Sockets in /run/screen/S-user.
             #
             # TODO: what about screen in non-English locale?
-
+            #
             screen_detached=$(screen -list | grep -m1 -Fe '(Detached)' | tr -s '[:blank:]' | cut -f2)
         fi
         if [[ -z "${screen_detached}" ]]; then
@@ -198,13 +196,23 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
             __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             # without `-l` this will break logins
             echo "${PS4:-}exec screen -l -RR -U" >&2
+            sleep 0.1
             exec screen -l -RR -U
         else
             # found detached screen
             echo "${PS4:-}exec screen -r '${screen_detached}'" >&2
+            sleep 0.1
             exec screen -r "${screen_detached}"
         fi
     fi
+fi
+
+# inform the local X server to allow this shell instance to launch GUI programs
+# see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
+if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && __bash_installed xhost &>/dev/null; then
+    # XXX: this is lax security, how to make the X server allowance more restricted?
+    #      see https://wiki.archlinux.org/index.php/Xhost#Usage
+    xhost +local:
 fi
 
 __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
