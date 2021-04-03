@@ -300,7 +300,9 @@ function __bashrc_path_add () {
     export PATH=${PATH}:${path}
 }
 
-__bashrc_path_add "${HOME}/bin"
+# XXX: `$HOME` may be undefined in very constrained shells (like rescue shells)
+#       but `~` is always defined
+__bashrc_path_add "${HOME-~}/bin"
 
 function __bashrc_path_add_from_file () {
     # attempt to add paths found in the file $1, assuming a path per-line
@@ -1542,6 +1544,7 @@ fi
 
 function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
+
     if ${__bashrc_prompt_color}; then
         declare color_user=${__bashrc_prompt_color_user}
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
