@@ -37,7 +37,9 @@ case "$-" in
         ;;
 esac
 
-declare -a __bash_sourced_files=()
+if ! [[ "${__bash_sourced_files+x}" ]]; then
+    declare -a __bash_sourced_files=()
+fi
 
 function __bash_installed () {
     # are all passed args found in the $PATH?

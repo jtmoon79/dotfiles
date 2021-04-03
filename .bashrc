@@ -1375,6 +1375,71 @@ if ${__bashrc_installed_git} \
     __bashrc_prompt_git_info_git_stat=true
 fi
 
+function __bash_path_mount_point () {
+    # for the path $1, print the mount point
+    if ! ${__bashrc_installed_stat}; then
+        return 1
+    fi
+    stat '--format=%m' "${1}" 2>/dev/null
+}
+
+# allow forcing git prompt for mount paths that might be ignored (i.e. some remote paths)
+declare -ag __bashrc_prompt_git_info_force_array=(
+    "/"  # mount point '/' is very likely not a remote filesystem
+)
+function __bashrc_prompt_git_info_force_add () {
+    # add path to list of paths that should force git prompt
+    declare arg=
+    for arg in "${@}"; do
+        declare -i len_array=${#__bashrc_prompt_git_info_force_array[@]}
+        declare arg_mp=
+        if ! arg_mp=$(__bash_path_mount_point "${arg}"); then
+            continue
+        elif [[ "${arg_mp}" = '' ]]; then
+            continue
+        fi
+        # check if mount path is in $__bashrc_prompt_git_info_force_array
+        declare -i i=0
+        declare already_added=false
+        while [[ ${i} -lt ${len_array} ]]; do
+            if [[ "${__bashrc_prompt_git_info_force_array[${i}]}" = "${arg_mp}" ]]; then
+                already_added=true
+                break
+            fi
+            i+=1
+        done
+        if ${already_added}; then
+            continue
+        fi
+        if [[ ${len_array} -eq 0 ]]; then
+            __bashrc_prompt_git_info_force_array[0]=${arg_mp}
+        else
+            __bashrc_prompt_git_info_force_array[${len_array}]=${arg_mp}
+        fi
+    done
+}
+
+function __bashrc_prompt_git_info_force_contains () {
+    # is path $1 within $__bashrc_prompt_git_info_force_array
+    # if contains return 0
+    # else return 1
+    declare -i len_array=${#__bashrc_prompt_git_info_force_array[@]}
+    declare arg_mp=
+    if ! arg_mp=$(__bash_path_mount_point "${1-}"); then
+        continue
+    elif [[ "${arg_mp}" = '' ]]; then
+        continue
+    fi
+    declare -i i=0
+    while [[ ${i} -lt ${len_array} ]]; do
+        if [[ "${__bashrc_prompt_git_info_force_array[${i}]}" = "${arg_mp}" ]]; then
+            return 0  # does contain
+        fi
+        i+=1
+    done
+    return 1  # do not contain
+}
+
 function __bashrc_prompt_git_info () {
     # a prompt line with git information
     #
@@ -1392,8 +1457,20 @@ function __bashrc_prompt_git_info () {
         return
     fi
 
-    # do not run `git worktree` on remote system, may take too long
-    if [[ '/' != "$(stat '--format=%m' "${PWD}" 2>/dev/null)" ]]; then
+    # run `git worktree` only for some mount points, preferrably not for remote mount
+    # points; those often require a long time for `git worktree list` to parse.
+    # user can add to acceptable paths via `__bashrc_prompt_git_info_force_add`
+    declare mountpoint=
+    mountpoint=$(__bash_path_mount_point "${PWD}")
+    declare mountpoint_okay=false
+    declare mountpoint_=
+    for mountpoint_ in "${__bashrc_prompt_git_info_force_array[@]}"; do
+        if [[ "${mountpoint_}" = "${mountpoint}" ]]; then
+            mountpoint_okay=true
+            break
+        fi
+    done
+    if ! ${mountpoint_okay}; then
         return
     fi
 
