@@ -303,7 +303,7 @@ function __bashrc_path_add () {
     then
         return 1
     fi
-    echo "${PS4-}__bashrc_path_add '${path}'" >&2
+    echo "${PS4-}${FUNCNAME-__bashrc_path_add} '${path}'" >&2
     export PATH=${PATH}:${path}
 }
 
@@ -1445,7 +1445,7 @@ function __bashrc_prompt_git_info_mountpoint_array_add () {
         else
             __bashrc_prompt_git_info_mountpoint_array[${len_array}]=${arg_mp}
         fi
-        echo "${PS4}${FUNCNAME-__bashrc_prompt_git_info_mountpoint_array_add} '${arg_mp}'" >&2
+        echo "${PS4-}${FUNCNAME-__bashrc_prompt_git_info_mountpoint_array_add} '${arg_mp}'" >&2
     done
     return ${ret}
 }
@@ -1667,7 +1667,7 @@ function __bashrc_prompt_live_updates () {
     __bashrc_prompt_bullet_last=${bash_prompt_bullet}  # global
 
     # update cache for git info
-#    echo -e "${PS4}before
+#    echo -e "${PS4-}before
 #    __bashrc_prompt_git_info_cache_path '${__bashrc_prompt_git_info_cache_path}'
 #    __bashrc_prompt_git_info_cache_path_do '${__bashrc_prompt_git_info_cache_path_do}'
 #    __bashrc_prompt_git_info_mountpoint_array [${__bashrc_prompt_git_info_mountpoint_array[*]}]
@@ -1686,7 +1686,7 @@ function __bashrc_prompt_live_updates () {
         __bashrc_prompt_git_info_cache_path=${PWD}
         __bashrc_prompt_git_info_cache_mountpoint_array_len=${#__bashrc_prompt_git_info_mountpoint_array[@]}
     fi
-#    echo -e "${PS4}after
+#    echo -e "${PS4-}after
 #    __bashrc_prompt_git_info_cache_path '${__bashrc_prompt_git_info_cache_path}'
 #    __bashrc_prompt_git_info_cache_path_do '${__bashrc_prompt_git_info_cache_path_do}'
 #    __bashrc_prompt_git_info_mountpoint_array [${__bashrc_prompt_git_info_mountpoint_array[*]}]
