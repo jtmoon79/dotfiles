@@ -110,7 +110,7 @@ function __bash_profile_source_file () {
     fi
     # help the user understand what is happening
     if ${__bash_profile_verbose}; then
-        echo "${PS4:-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+        echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
     fi
     source "${sourcef}"
     __bash_sourced_files[${#__bash_sourced_files[@]}]=${sourcef}
@@ -156,12 +156,12 @@ then
         if [[ -z "${__bash_profile_tmux_detached}" ]] ; then
              # a detached session not present so create a new session
             #__bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
-            echo "${PS4:-}exec tmux new-session" >&2
+            echo "${PS4-}exec tmux new-session" >&2
             sleep 0.1
             exec tmux new-session
         else
             # detached session available so attach to that session
-            echo "${PS4:-}exec tmux attach-session -t '${__bash_profile_tmux_detached}'" >&2
+            echo "${PS4-}exec tmux attach-session -t '${__bash_profile_tmux_detached}'" >&2
             sleep 0.1
             exec tmux attach-session -t "${__bash_profile_tmux_detached}"
         fi
@@ -194,12 +194,12 @@ then
             # no detached screen, start new screen
             __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             # without `-l` this will break logins
-            echo "${PS4:-}exec screen -l -RR -U" >&2
+            echo "${PS4-}exec screen -l -RR -U" >&2
             sleep 0.1
             exec screen -l -RR -U
         else
             # found detached screen
-            echo "${PS4:-}exec screen -r '${__bash_profile_screen_detached}'" >&2
+            echo "${PS4-}exec screen -r '${__bash_profile_screen_detached}'" >&2
             sleep 0.1
             exec screen -r "${__bash_profile_screen_detached}"
         fi
