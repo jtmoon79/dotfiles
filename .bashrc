@@ -1416,8 +1416,10 @@ function __bashrc_prompt_git_info_mountpoint_array_add () {
         declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
         declare arg_mp=
         if ! arg_mp=$(__bash_path_mount_point "${arg}"); then
+            echo "ERROR: failed to find mount point for '${arg}'" >&2
             continue
         elif [[ "${arg_mp}" = '' ]]; then
+            echo "ERROR: failed to find mount point for '${arg}'" >&2
             continue
         fi
         # check if mount path is in $__bashrc_prompt_git_info_mountpoint_array
