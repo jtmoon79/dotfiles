@@ -1518,7 +1518,7 @@ function __bashrc_prompt_git_info () {
     # change to red if repository non-clean; check for literal substring '*='
     if ${__bashrc_prompt_color}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
-        if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]] || [[ "${out}" =~ '*$=' ]]; then
+        if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]] || [[ "${out}" =~ '*$=' ]] || [[ "${out}" =~ '*$>' ]]; then
             out='\e[31m'"${out}"'\e[0m'  # red
         elif [[ "${out}" =~ '<)' ]]; then
             out='\e[93m'"${out}"'\e[0m'  # light yellow
