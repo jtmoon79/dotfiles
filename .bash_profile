@@ -19,10 +19,6 @@
 #      this should occur in the opposite way; start a multiplexer instance and then start a bash
 #      instance. But is that even *reasonably* possible?
 #
-# TODO: do not have a default multiplexer, instead let the user know they can select the mulitplexer
-#       by a setting in .bash_profile.local
-#       Also, provide an override that can be passed via ssh (like an Environment variable) in case things get wonky.
-#
 
 set -u
 
@@ -128,14 +124,16 @@ __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 # try different terminal multiplexers tmux and screen but only if not already within a multiplexer
 # BUG: race condition: multiple shells starting at once will attach to the same detached
 #      session (e.g. in Terminator)
-if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
+if [[ "$-" =~ 'i' ]] \
+&& [[ -z "${TMUX+x}" ]] \
+&& [[ -z "${STY+x}" ]] \
+&& { [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] }  # `force_multiplexer` is defined and not empty
+then
     # try tmux
     # taken from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
-    if [[ "${force_multiplexer+x}" = 'tmux' ]] || \
-       { __bash_installed tmux && { [[ "${force_multiplexer-}" = '' ]] || [[ "${force_multiplexer-}" = 'tmux' ]] ;} ;}
-    then
+    if [[ "${force_multiplexer-}" = 'tmux' ]] && __bash_installed tmux; then
         # try to attach-session to detached tmux session, otherwise create new-session
-        tmux_detached=
+        __bash_profile_tmux_detached=
         if __bash_installed grep cut; then
             # get the tmux ID of a deattached session
             #
@@ -153,9 +151,9 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
             #
             # TODO: what about tmux in non-English locale?
             #
-            tmux_detached=$(tmux ls | grep -v -m1 -Fe 'attached' | grep -v -Fe 'no server running' | cut -d: -f1) 2>/dev/null
+            __bash_profile_tmux_detached=$(tmux ls | grep -v -m1 -Fe 'attached' | grep -v -Fe 'no server running' | cut -d: -f1) 2>/dev/null
         fi
-        if [[ -z "${tmux_detached}" ]] ; then
+        if [[ -z "${__bash_profile_tmux_detached}" ]] ; then
              # a detached session not present so create a new session
             #__bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             echo "${PS4:-}exec tmux new-session" >&2
@@ -163,17 +161,14 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
             exec tmux new-session
         else
             # detached session available so attach to that session
-            echo "${PS4:-}exec tmux attach-session -t '${tmux_detached}'" >&2
+            echo "${PS4:-}exec tmux attach-session -t '${__bash_profile_tmux_detached}'" >&2
             sleep 0.1
-            exec tmux attach-session -t "${tmux_detached}"
+            exec tmux attach-session -t "${__bash_profile_tmux_detached}"
         fi
     # try screen
-    # removed check [ -z "${STY+x}" ]
-    elif [[ "${force_multiplexer+x}" = 'screen' ]] || \
-       { __bash_installed screen && { [[ "${force_multiplexer-}" = '' ]] || [[ "${force_multiplexer-}" = 'screen' ]] ;} ;}
-    then
+    elif [[ "${force_multiplexer-}" = 'screen' ]] && __bash_installed screen; then
         # try to attach to Detached session, otherwise start a new session
-        screen_detached=
+        __bash_profile_screen_detached=
         # XXX: if screen does start a new instance, then `__bash_profile_source_file .bashrc` else do
         #      not how to determine ahead of time?
         if __bash_installed grep tr cut; then
@@ -193,9 +188,9 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
             #
             # TODO: what about screen in non-English locale?
             #
-            screen_detached=$(screen -list | grep -m1 -Fe '(Detached)' | tr -s '[:blank:]' | cut -f2)
+            __bash_profile_screen_detached=$(screen -list | grep -m1 -Fe '(Detached)' | tr -s '[:blank:]' | cut -f2)
         fi
-        if [[ -z "${screen_detached}" ]]; then
+        if [[ -z "${__bash_profile_screen_detached}" ]]; then
             # no detached screen, start new screen
             __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             # without `-l` this will break logins
@@ -204,9 +199,9 @@ if [[ "$-" =~ 'i' ]] && [[ -z "${TMUX+x}" ]] && [[ -z "${STY+x}" ]]; then
             exec screen -l -RR -U
         else
             # found detached screen
-            echo "${PS4:-}exec screen -r '${screen_detached}'" >&2
+            echo "${PS4:-}exec screen -r '${__bash_profile_screen_detached}'" >&2
             sleep 0.1
-            exec screen -r "${screen_detached}"
+            exec screen -r "${__bash_profile_screen_detached}"
         fi
     fi
 fi
