@@ -762,10 +762,12 @@ fi
 #       see https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
 function __bashrc_prompt_color_eval () {
-
     # set a fancy prompt
     declare __bashrc_color=false
     case "${TERM}" in
+        screen)
+            __bashrc_color=true
+            ;;
         xterm)
             __bashrc_color=true
             ;;
