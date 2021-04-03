@@ -19,6 +19,10 @@
 #      this should occur in the opposite way; start a multiplexer instance and then start a bash
 #      instance. But is that even *reasonably* possible?
 #
+# TODO: do not have a default multiplexer, instead let the user know they can select the mulitplexer
+#       by a setting in .bash_profile.local
+#       Also, provide an override that can be passed via ssh (like an Environment variable) in case things get wonky.
+#
 
 set -u
 
