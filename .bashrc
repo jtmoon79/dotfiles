@@ -1407,19 +1407,23 @@ function __bash_path_mount_point () {
 
 # allow forcing git prompt for mount paths that might be ignored (i.e. some remote paths)
 # XXX: backward-compatible global array declaration
-__bashrc_prompt_git_info_mountpoint_array[0]="/"  # mount point '/' is very likely not a remote filesystem
+__bashrc_prompt_git_info_mountpoint_array[0]=
+unset __bashrc_prompt_git_info_mountpoint_array[0]
 
 function __bashrc_prompt_git_info_mountpoint_array_add () {
     # add path to list of paths that should force git prompt
+    declare -i ret=0
     declare arg=
     for arg in "${@}"; do
         declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
         declare arg_mp=
         if ! arg_mp=$(__bash_path_mount_point "${arg}"); then
             echo "ERROR: failed to find mount point for '${arg}'" >&2
+            ret=1
             continue
         elif [[ "${arg_mp}" = '' ]]; then
             echo "ERROR: failed to find mount point for '${arg}'" >&2
+            ret=1
             continue
         fi
         # check if mount path is in $__bashrc_prompt_git_info_mountpoint_array
@@ -1441,8 +1445,11 @@ function __bashrc_prompt_git_info_mountpoint_array_add () {
         else
             __bashrc_prompt_git_info_mountpoint_array[${len_array}]=${arg_mp}
         fi
+        echo "${PS4}${FUNCNAME-__bashrc_prompt_git_info_mountpoint_array_add} '${arg_mp}'" >&2
     done
+    return ${ret}
 }
+__bashrc_prompt_git_info_mountpoint_array_add "/"  # mount point '/' is very likely not a remote filesystem
 
 function __bashrc_prompt_git_info_mountpoint_array_contains () {
     # is path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
