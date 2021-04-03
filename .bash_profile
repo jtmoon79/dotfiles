@@ -22,9 +22,11 @@
 
 set -u
 
-__bash_start_beg_time=${EPOCHREALTIME-}
-if [[ -z "${__bash_start_beg_time}" ]]; then
-    __bash_start_beg_time=${SECONDS}
+if [[ -z "${__bash_start_beg_time-}" ]]; then
+    __bash_start_beg_time=${EPOCHREALTIME-}
+    if [[ -z "${__bash_start_beg_time-}" ]]; then
+        __bash_start_beg_time=${SECONDS}
+    fi
 fi
 
 # If not running interactively, do not print.
