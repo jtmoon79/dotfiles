@@ -11,9 +11,9 @@
 #
 # Or, if options must be passed, like `--insecure` or `--no-check-certificate`:
 #
-#    curl 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' --output /tmp/install.sh && chmod +x /tmp/install.sh && /tmp/install.sh && rm /tmp/install.sh
+#    curl --insecure 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' --output /tmp/install.sh && chmod +x /tmp/install.sh && /tmp/install.sh --insecure && rm /tmp/install.sh
 #
-#    wget -O /tmp/install.sh 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' && chmod +x /tmp/install.sh && /tmp/install.sh && rm /tmp/install.sh
+#    wget -O /tmp/install.sh --no-check-certificate 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' && chmod +x /tmp/install.sh && /tmp/install.sh --no-check-certificate && rm /tmp/install.sh
 #
 
 set -e
