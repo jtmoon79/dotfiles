@@ -39,8 +39,12 @@ case "$-" in
         ;;
 esac
 
-if ! [[ "${__bash_sourced_files+x}" ]]; then
-    declare -a __bash_sourced_files=()
+if ! [[ "${__bash_sourced_files_array+x}" ]]; then
+    # XXX: backward-compatible array declaration
+    __bash_sourced_files_array[0]=''  # global array
+    unset __bash_sourced_files_array[0]
+else
+    echo "WARNING: __bash_sourced_files_array already exists which is unexpected" >&2
 fi
 
 function __bash_installed () {
@@ -103,9 +107,10 @@ function __bash_profile_source_file () {
     declare sourcef=
     sourcef=$(readlink_portable "${1}")
     if ! [[ -f "${sourcef}" ]]; then
-        return 1
+        return 1  # file does not exist; do not warn
     fi
     if ! [[ -r "${sourcef}" ]]; then
+        echo "ERROR: attempted to source '${sourcef}' but it is not readable" >&2
         return 1  # file exists but is not readable
     fi
     # help the user understand what is happening
@@ -113,10 +118,10 @@ function __bash_profile_source_file () {
         echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
     fi
     source "${sourcef}"
-    __bash_sourced_files[${#__bash_sourced_files[@]}]=${sourcef}
+    __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
 }
 
-__bash_sourced_files[${#__bash_sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
+__bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
 
 # useful for setting $force_multiplexer
 __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
@@ -125,11 +130,11 @@ __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 # BUG: race condition: multiple shells starting at once will attach to the same detached
 #      session (e.g. in Terminator)
 if [[ "$-" =~ 'i' ]] \
-&& [[ -z "${TMUX+x}" ]] \
-&& [[ -z "${STY+x}" ]] \
-&& ( [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] )  # `force_multiplexer` is defined and not empty
+    && [[ -z "${TMUX+x}" ]] \
+    && [[ -z "${STY+x}" ]] \
+    && ( [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] )  # `force_multiplexer` is defined and not empty
 then
-    # try tmux
+    # first try tmux
     # taken from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
     if [[ "${force_multiplexer-}" = 'tmux' ]] && __bash_installed tmux; then
         # try to attach-session to detached tmux session, otherwise create new-session
@@ -153,16 +158,17 @@ then
             #
             __bash_profile_tmux_detached=$(tmux ls | grep -v -m1 -Fe 'attached' | grep -v -Fe 'no server running' | cut -d: -f1) 2>/dev/null
         fi
+        # `tmux` which will clear the console, so `sleep` to let user see what is about to happen
         if [[ -z "${__bash_profile_tmux_detached}" ]] ; then
              # a detached session not present so create a new session
             #__bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             echo "${PS4-}exec tmux new-session" >&2
-            sleep 0.1
+            sleep 0.5
             exec tmux new-session
         else
             # detached session available so attach to that session
             echo "${PS4-}exec tmux attach-session -t '${__bash_profile_tmux_detached}'" >&2
-            sleep 0.1
+            sleep 0.5
             exec tmux attach-session -t "${__bash_profile_tmux_detached}"
         fi
     # try screen
@@ -190,17 +196,18 @@ then
             #
             __bash_profile_screen_detached=$(screen -list | grep -m1 -Fe '(Detached)' | tr -s '[:blank:]' | cut -f2)
         fi
+        # `screen` which will clear the console, so `sleep` to let user see what is about to happen
         if [[ -z "${__bash_profile_screen_detached}" ]]; then
             # no detached screen, start new screen
             __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
             # without `-l` this will break logins
             echo "${PS4-}exec screen -l -RR -U" >&2
-            sleep 0.1
+            sleep 0.5
             exec screen -l -RR -U
         else
             # found detached screen
             echo "${PS4-}exec screen -r '${__bash_profile_screen_detached}'" >&2
-            sleep 0.1
+            sleep 0.5
             exec screen -r "${__bash_profile_screen_detached}"
         fi
     fi

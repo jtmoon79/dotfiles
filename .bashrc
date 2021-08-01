@@ -224,9 +224,12 @@ function is_installed () {
 # functions for sourcing other bash files
 # ---------------------------------------
 
-# XXX: backward-compatible array declaration
-__bash_processed_files[0]=''  # global array
-unset __bash_processed_files[0]
+# create $__bash_processed_files_array if it does not exist
+if ! [[ "${__bash_processed_files_array+x}" ]] ; then
+    # XXX: backward-compatible array declaration
+    __bash_processed_files_array[0]=''  # global array
+    unset __bash_processed_files_array[0]
+fi
 
 function __bashrc_path_dir_bashrc_ () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
@@ -247,11 +250,14 @@ if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
     __bashrc_path_dir_bashrc=~
 fi
 
-# .bash_profile may have already created $__bash_sourced_files, only create if not already created
+# .bash_profile should have created $__bash_sourced_files_array only create if not already created
 if ! [[ "${__bash_sourced_files+x}" ]]; then
-    declare -a __bash_sourced_files=()
+    # XXX: backward-compatible array declaration
+    __bash_sourced_files_array[0]=''  # global array
+    unset __bash_sourced_files_array[0]
+    echo "WARNING: __bash_sourced_files_array was not already created" >&2
 fi
-__bash_sourced_files[${#__bash_sourced_files[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
+__bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
 
 function __bashrc_source_file () {
     # shellcheck disable=SC2155
@@ -263,7 +269,7 @@ function __bashrc_source_file () {
         return 1  # file exists but is not readable
     fi
     echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
-    __bash_sourced_files[${#__bash_sourced_files[@]}]=${sourcef}
+    __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
     # shellcheck disable=SC1090
     source "${sourcef}"
 }
@@ -309,14 +315,14 @@ function __bashrc_path_add () {
 
 # XXX: `$HOME` may be undefined in very constrained shells (like rescue shells)
 #       but `~` is always defined
-__bashrc_path_add "${HOME-~}/bin"
+__bashrc_path_add ~/bin
 
 function __bashrc_path_add_from_file () {
     # attempt to add paths found in the file $1, assuming a path per-line
     declare path=
     declare -r paths_file=${1}
     if [[ -r "${paths_file}" ]]; then
-        __bash_processed_files[${#__bash_processed_files[@]}]=$(readlink_portable "${paths_file}")
+        __bash_processed_files_array[${#__bash_processed_files_array[@]}]=$(readlink_portable "${paths_file}")
         while read -r path; do
             __bashrc_path_add "${path}"
         done < "${paths_file}"
@@ -1041,27 +1047,27 @@ if ! [[ "${bash_prompt_table_column+x}" ]]; then
     bash_prompt_table_column=${__bashrc_prompt_table_column_default}  # global
 fi
 
-if ! [[ "${bash_prompt_table_variables+x}" ]]; then
+if ! [[ "${bash_prompt_table_variables_array+x}" ]]; then
     # XXX: backward-compatible array declaration
-    bash_prompt_table_variables[0]=''  # global array
-    unset bash_prompt_table_variables[0]
+    bash_prompt_table_variables_array[0]=''  # global array
+    unset bash_prompt_table_variables_array[0]
 fi
 
 function bash_prompt_table_variable_add () {
-    # add variable(s) to $bash_prompt_table_variables, do not add if already present
+    # add variable(s) to $bash_prompt_table_variables_array, do not add if already present
     declare -i i=0
     declare -i ret=0
     declare found=
     declare arg=
     for arg in "${@}"; do
         found=false
-        for i in ${!bash_prompt_table_variables[*]}; do
+        for i in ${!bash_prompt_table_variables_array[*]}; do
             # special case of zero size array
-            if [[ ${#bash_prompt_table_variables[@]} -eq 0 ]]; then
-                bash_prompt_table_variables[0]=${arg}
+            if [[ ${#bash_prompt_table_variables_array[@]} -eq 0 ]]; then
+                bash_prompt_table_variables_array[0]=${arg}
                 break
             fi
-            if [[ "${bash_prompt_table_variables[${i}]}" == "${arg}" ]]; then
+            if [[ "${bash_prompt_table_variables_array[${i}]}" == "${arg}" ]]; then
                 found=true
                 break
             fi
@@ -1069,11 +1075,11 @@ function bash_prompt_table_variable_add () {
         if ! ${found}; then
             declare -i j=
             # append variable to end of array
-            for j in ${!bash_prompt_table_variables[*]}; do
+            for j in ${!bash_prompt_table_variables_array[*]}; do
                 continue
             done
             j+=1
-            bash_prompt_table_variables[${j}]=${arg}
+            bash_prompt_table_variables_array[${j}]=${arg}
         else  # return 1 if any variable was already present
             ret=1
         fi
@@ -1082,16 +1088,16 @@ function bash_prompt_table_variable_add () {
 }
 
 function bash_prompt_table_variable_rm () {
-    # remove a variable(s) from the $bash_prompt_table_variables
+    # remove a variable(s) from the $bash_prompt_table_variables_array
     declare -i i=0
     declare -i ret=0
     declare found=
     declare arg=
     for arg in "${@}"; do
         found=false
-        for i in ${!bash_prompt_table_variables[*]}; do
-            if [[ "${bash_prompt_table_variables[${i}]}" == "${arg}" ]]; then
-                unset bash_prompt_table_variables[${i}]
+        for i in ${!bash_prompt_table_variables_array[*]}; do
+            if [[ "${bash_prompt_table_variables_array[${i}]}" == "${arg}" ]]; then
+                unset bash_prompt_table_variables_array[${i}]
                 found=true
                 break
             fi
@@ -1105,10 +1111,10 @@ function bash_prompt_table_variable_rm () {
 }
 
 function bash_prompt_table_variable_print () {
-    # print $bash_prompt_table_variables, optional $2 is tab indent amount
+    # print $bash_prompt_table_variables_array, optional $2 is tab indent amount
     __bashrc_tab_str "$(
-        for i in "${!bash_prompt_table_variables[@]}"; do
-            echo "bash_prompt_table_variables[${i}]=${bash_prompt_table_variables[${i}]}"
+        for i in "${!bash_prompt_table_variables_array[@]}"; do
+            echo "bash_prompt_table_variables_array[${i}]=${bash_prompt_table_variables_array[${i}]}"
             let i++
         done
         )" ${1-0}
@@ -1305,7 +1311,7 @@ function __bashrc_prompt_table () {
     fi
 
     # XXX: it is faster to do this with `tr` and `column` but more portable this way.
-    for varn in "${bash_prompt_table_variables[@]}"; do
+    for varn in "${bash_prompt_table_variables_array[@]}"; do
         # if the rows are already too long for the window column width then do
         # not continue appending to them
         if ${truncate} && [[ ${rows_len} -gt ${cols} ]]; then
@@ -1392,9 +1398,12 @@ fi
 
 function __bashrc_prompt_git_info_do () {
     # should this attempt to run `__git_ps1` helper and make it part of the prompt?
-    # do the necessary programs exist?
-    # does the necessary helper function `__git_ps1` exist?
-    ${__bashrc_prompt_git_info_git_stat} && ${__bashrc_prompt_git_info_git_ps1}
+    # - do the necessary programs exist?
+    # - does the necessary helper function `__git_ps1` exist?
+    # - are there any "registered" mountpoints?
+    ${__bashrc_prompt_git_info_git_stat} \
+    && ${__bashrc_prompt_git_info_git_ps1} \
+    && [[ ${#__bashrc_prompt_git_info_mountpoint_array[@]} -ne 0 ]]
 }
 
 function __bash_path_mount_point () {
@@ -1568,7 +1577,7 @@ function __bashrc_prompt_set () {
         fi
         # BUG: not putting the $(__bashrc_prompt_table) on it's own line causes oddity when resizing a window to be smaller;
         #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
-        #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables becomes unset there
+        #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array becomes unset there
         #      will be an empty line.
         PS1='
 \e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
@@ -2156,19 +2165,19 @@ ${b}New Environment Variables:${boff}
 	__bashrc_env_0_original=… (too large to print)
 "
 
-    # echo $__bash_sourced_files
+    # echo $__bash_sourced_files_array
     echo -e "\
-${b}Files Sourced (×${#__bash_sourced_files[@]}):${boff}
+${b}Files Sourced (×${#__bash_sourced_files_array[@]}):${boff}
 
-$(for src in "${__bash_sourced_files[@]}"; do echo "	${src}"; done)
+$(for src in "${__bash_sourced_files_array[@]}"; do echo "	${src}"; done)
 "
 
-    # echo $__bash_processed_files if any
-    if [[ ${#__bash_processed_files[@]} -gt 0 ]]; then
+    # echo $__bash_processed_files_array if any
+    if [[ ${#__bash_processed_files_array[@]} -gt 0 ]]; then
         echo -e "\
-${b}Files Processed (×${#__bash_processed_files[@]}):${boff}
+${b}Files Processed (×${#__bash_processed_files_array[@]}):${boff}
 
-$(for src in "${__bash_processed_files[@]}"; do echo "	${src}"; done)
+$(for src in "${__bash_processed_files_array[@]}"; do echo "	${src}"; done)
 "
     fi
 
@@ -2235,8 +2244,8 @@ ${b}Special Features of this .bashrc:${boff}
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
 	Can override ${b}__bashrc_prompt_extras${boff} in ${b}.bashrc.local.post${boff}.
 	Override color by changing ${b}bash_color_force${boff} to ${b}true${boff} or ${b}false${boff}.
-	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables${boff} using ${b}bash_prompt_table_variable_add${boff} or ${b}bash_prompt_table_variable_rm${boff}.
-	${b}bash_prompt_table_variables${boff} currently displays:
+	Change prompt table variables by adding or subtracting from array ${b}bash_prompt_table_variables_array${boff} using ${b}bash_prompt_table_variable_add${boff} or ${b}bash_prompt_table_variable_rm${boff}.
+	${b}bash_prompt_table_variables_array${boff} currently displays:
 		$(bash_prompt_table_variable_print 2)
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
