@@ -2,7 +2,6 @@
 #
 # A mish-mash of bashrc ideas that are worthwhile, some original ideas, others
 # copied. This file is expected to be sourced by it's companion ./.bash_profile
-# However, it does support multiple source in the same shell instance.
 #
 # Works best with companion .bash_profile
 #
@@ -138,7 +137,7 @@ case "$-" in
         ;;
     *)
         if [[ "true" = "${__bashrc_FORCE_INTERACTIVE-}" ]]; then
-            echo 'Warning: Forcing Interactive Mode! This is only meant for self-testing.' 1>&2
+            echo 'Warning: Forcing Interactive Mode! This is only meant for self-testing.' >&2
         else
             return
         fi
@@ -148,12 +147,13 @@ esac
 # function readlink_portable *should* be defined in companion .bash_profile. But in case was not defined,
 # create a stub function
 if ! type -t readlink_portable &>/dev/null; then
+    echo "ERROR: readlink_portable is not defined; was .bash_profile imported?" >&2
     function readlink_portable () {
         echo -n "${@}"
     }
 fi
 
-# protect again initialization files that may source in a loop
+# protect against initialization files that may source in a loop
 __bashrc_initialized_flag="$(readlink_portable "${BASH_SOURCE:-}" 2>/dev/null) (${SHLVL})"
 if [[ "${__bashrc_initialized+x}" ]] \
   && [[ "${__bashrc_initialized:-}" = "${__bashrc_initialized_flag}" ]]; then
@@ -332,48 +332,6 @@ function __bashrc_path_add_from_file () {
 }
 
 __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
-
-# -------------------------------------------------
-# search for some important installed programs once
-# -------------------------------------------------
-
-# TODO: how to implement this without itself doing path searches?
-#       ('true' and 'false' are programs in the path)
-#       oddly, running `true` is 1/10 time of running `/bin/true`.   Why is that?
-
-#__bashrc_installed_tracker_array=()
-#
-#function __bashrc_installed_tracker () {
-#     # search for a program once
-#     # further calls will only do an array lookup instead of searching the filesystem.
-#     # in theory, this should be faster.
-
-#     declare -i ret=0  # return code
-#     declare prog=
-#     for prog in "${@}"; do
-#         # check if program has been searched already
-#         # note if it is not installed
-#         if [[ "${__bashrc_installed_tracker_array[${prog}+x]}" ]]; then
-#             # program has been searched, what was the result?
-#             if ! ${__bashrc_installed_tracker_array[${prog}]}; then
-#                 ret=1
-#             fi
-#             continue
-#         fi
-#         # if a program in $@ was not installed then return failure
-#         #if [[ ${ret} -ne 0 ]]; then
-#         #    return 1
-#         #fi
-#         if __bash_installed "${prog}" &>/dev/null; then
-#             __bashrc_installed_tracker_array["${prog}"]=true
-#         else
-#             __bashrc_installed_tracker_array["${prog}"]=false
-#             ret=1
-#         fi
-#     done
-#     return ${ret}
-# }
-#__bashrc_installed_tracker grep sed tr cut
 
 # ============================
 # other misc. helper functions
@@ -1876,7 +1834,8 @@ fi
 function print_dev_IPv4() {
     # given passed NIC, print the first found IPv4 address by scraping from
     # outputs of either `ip` or `ifconfig`
-    # TODO: this function should use only bash built-in features
+    # TODO: this function should use only bash built-in features, rely less on
+    #       `grep` etc.
 
     if ! __bash_installed ip && ! __bash_installed ifconfig; then
         return 1
