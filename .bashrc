@@ -1854,18 +1854,19 @@ function __bash_update_dotbashrc () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
 }
 
-function __bash_update_dotbash_logout () {
-    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
+function __bash_update_dotbashrc_builtins () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.builtins.post' './.bashrc.builtins.post' "${@}"
 }
 
-function __bash_update_dotbashrclocalpost () {
-    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.local.post' './.bashrc.local.post' "${@}"
+function __bash_update_dotbash_logout () {
+    __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
 }
 
 function __bash_update_dotbash () {
     # install bash dot files in a one-liner
     __bash_update_dotbash_profile "${@}" \
         && __bash_update_dotbashrc "${@}" \
+        && __bash_update_dotbashrc_builtins "${@}" \
         && __bash_update_dotbash_logout "${@}"
 }
 
@@ -1905,8 +1906,8 @@ function bash_update_dots () {
 # .bashrc.local for host-specific customizations
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
-__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
+__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
     # XXX: other "official" completion files often have variable expansion errors
