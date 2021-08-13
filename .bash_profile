@@ -1,5 +1,9 @@
 # .bash_profile
 #
+# built-in customizations for bash
+# changes to this file will be overwritten by `dotfiles/install.sh`
+# local changes should be put into neighboring `.bash_profile.local`
+#
 # lastest version at
 #   https://github.com/jtmoon79/dotfiles/blob/master/.bash_profile
 #
@@ -12,12 +16,16 @@
 # Anti-Features:
 #   - not POSIX compliant!
 #
-# Works best with companion .bashrc.
+# This file works best with companion `dotfiles/.bashrc`,
+# `dotfiles/.bashrc.builtins.post`, `dotfiles/.bashrc.local.post`.
+# Run `dotfiles/install.sh` to install those companion files.
 #
 # XXX: this calls multiplexers backwards
 #      this file is processed by bash instance and which in-turn starts a multiplexer instance
 #      this should occur in the opposite way; start a multiplexer instance and then start a bash
 #      instance. But is that even *reasonably* possible?
+#
+# BUG: after shell fully starts, __bash_sourced_files_array has entry for .bashrc twice
 #
 
 set -u

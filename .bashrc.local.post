@@ -1,126 +1,26 @@
 # .bashrc.local.post
 #
-# sample .bashrc.local.post
+# add customizations to this file
+# this file will not be overwritten by `dotfiles/install.sh`
 #
-# function `bash_prompt_table_variable_add` is defined in .bashrc
+# list of useful functions defined in `dotfiles/.bashrc`:
+#   bash_prompt_table_variable_add
+#   bashrc_prompt_git_info_mountpoint_array_add
+#   bashrc_source_file
+#   bashrc_path_add
+#   bashrc_prompt_table_enable
+#   bashrc_prompt_table_disable
+#   bashrc_prompt_git_info_enable
+#   bashrc_prompt_git_info_disable
+#   bash_alias_add
+#
+# list of useful variables defined in `dotfiles/.bashrc`:
+#   bash_prompt_bullet
+#   bash_color_force
+#
+# a few utility functions defined in `dotfiles/.bashrc`:
+#   line_count
+#   ordinal
+#   character
+#   
 
-# attempt to add common NIC IPv4
-if __bashrc_IPv4_=$(print_dev_IPv4 eth0); then
-  IPv4_eth0=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_eth0
-elif __bashrc_IPv4_=$(print_dev_IPv4 em0); then
-  IPv4_em0=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_em0
-fi
-if __bashrc_IPv4_=$(print_dev_IPv4 tun0); then
-  IPv4_tun0=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_tun0
-fi
-unset __bashrc_IPv4_
-
-__bashrc_OS_=
-if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
-    OS_RELEASE=${__bashrc_OperatingSystem}
-    bash_prompt_table_variable_add OS_RELEASE
-elif __bashrc_OS_=$(bashrc_OS); then
-    OS_RELEASE=${__bashrc_OS_}
-    bash_prompt_table_variable_add OS_RELEASE
-fi
-unset __bashrc_OS_
-
-# general
-bash_prompt_table_variable_add \
-  'TZ' \
-
-# Python
-bash_prompt_table_variable_add \
-'PYTHON_PIPENV' \
-  'PYTHON_PIP_VERSION' \
-  'PYTHON' \
-  'VIRTUAL_ENV' \
-  'Py_DEBUG' \
-  'PYTHONIOENCODING' \
-  'PYTHONDONTWRITEBYTECODE' \
-  'PYTHONDEBUG' \
-  'PYTHONINSPECT' \
-  'PYTHONOPTIMIZE' \
-  'PYTHONNOUSERSITE' \
-  'PYTHONUNBUFFERED' \
-  'PYTHONDONTWRITEBYTECODE' \
-  'PYTHONSTARTUP' \
-  'PYTHONHOME' \
-  'PYTHONCASEOK' \
-  'PYTHONHASHSEED' \
-
-# Perl - https://perldoc.perl.org/perlrun.html#ENVIRONMENT
-bash_prompt_table_variable_add \
-  'PERL5OPT' \
-  'PERLIO' \
-  'PERLIO_DEBUG' \
-  'PERLLIB' \
-  'PERL5LIB' \
-  'PERL5DB' \
-  'PERL5DB_THREADED' \
-  'PERL5SHELL' \
-  'PERL_ALLOW_NON_IFS_LSP' \
-  'PERL_DEBUG_MSTATS' \
-  'PERL_DESTRUCT_LEVEL' \
-  'PERL_UNICODE' \
-  'PERL_ENCODING' \
-  'PERL_USE_UNSAFE_INC' \
-
-# GNU screen
-bash_prompt_table_variable_add \
-  'SYSSCREENRC' \
-  'LOCKPRG' \
-  'SCREENCAP' \
-  'WINDOW' \
-
-# X11
-bash_prompt_table_variable_add \
-  'XSOCK' \
-  'XAUTH' \
-  'XAUTHORITY' \
-  'XLOCAL' \
-
-# tmux
-bash_prompt_table_variable_add \
-  'TMUX' \
-  'TMUX_TMPDIR' \
-  'EDITOR' \
-  'VISUAL' \
-
-# locale
-bash_prompt_table_variable_add \
-  'LC_CTYPE' \
-  'LC_ALL' \
-  'TZ' \
-
-# proxy
-bash_prompt_table_variable_add \
-  'http_proxy' \
-  'https_proxy' \
-  'proxy' \
-
-# several forms of "Temporary Directory"
-bash_prompt_table_variable_add \
-  'TEMP' \
-  'TMP' \
-  'TMPDIR' \
-
-# other Linux tools
-bash_prompt_table_variable_add 'PSFORMAT'  # ps
-bash_prompt_table_variable_add 'VERSION_CONTROL'  # cp, mv
-bash_prompt_table_variable_add 'MANOPT'    # man
-#bash_prompt_table_variable_add 'LS_COLORS' # ls
-bash_prompt_table_variable_add 'GZIP'      # gzip
-bash_prompt_table_variable_add 'ZIP'       # zip
-bash_prompt_table_variable_add 'ZIPOPT'
-bash_prompt_table_variable_add 'ZIP_OPTS'
-bash_prompt_table_variable_add 'BZIP'      # bzip2
-bash_prompt_table_variable_add 'BZIP2'
-bash_prompt_table_variable_add 'TAR_FILETYPE'  # tar
-bash_prompt_table_variable_add 'TAR_ARCHIVE'
-bash_prompt_table_variable_add 'TAR_FORMAT'
-bash_prompt_table_variable_add 'TAR_FD'
-bash_prompt_table_variable_add 'TAR_VOLUME'

@@ -1,12 +1,15 @@
 # .bashrc
 #
+# changes to this file will be overwritten by `dotfiles/install.sh`
+# add customizations to neighboring `.bashrc.local.post` file
+#
 # A mish-mash of bashrc ideas that are worthwhile, some original ideas, others
 # copied. This file is expected to be sourced by it's companion ./.bash_profile
-#
-# Works best with companion .bash_profile
+# This file mostly creates new functions and private variables. These can be used
+# to customize the shell in neighboring files `.bashrc.builtins.post`,
+# `.bashrc.local.post`. This file does forcibly create a new prompt style.
 #
 # Features:
-#   - prints context info on startup
 #   - prompt prints: timer, return code, datetime,
 #     table of variables (adjustable), git prompt line.
 #   - attempts to set LOCALE to best choice of UTF-8
@@ -17,7 +20,7 @@
 #   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - attempts sourcing of /usr/share/bash-completion/bash_completion
 #   - fast to install: see companion install.sh at source repository.
-#   - fast to update: see __bash_update_bash* functions.
+#   - fast to update: see bash_update_dots* functions.
 #   - safe to use in many varying Unix environments 🤞 (see docker-tests.sh)
 #
 # Anti-Features:
@@ -104,7 +107,7 @@
 #
 # TODO: add flock to only allow one startup of .bashrc at a time
 #       prevents rare case of multiple bash windows using the same tty
-#       which can happen when launching `terminator`
+#       which can happen when launching multiple windows, like with `terminator`
 #
 # TODO: need to allow easy update of .bashrc.local.post without clobbering prior.
 #       Consider a __merge_file that is wrapped by a download then merge of temp
@@ -128,6 +131,8 @@
 #
 # TODO: consider creating a `help` or similar alias that will dump information and
 #       provide extended examples.
+#
+# TODO: move these bash files to new sub-directory in dotfiles project
 #
 
 
@@ -251,7 +256,7 @@ if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
 fi
 
 # .bash_profile should have created $__bash_sourced_files_array only create if not already created
-if ! [[ "${__bash_sourced_files+x}" ]]; then
+if ! [[ "${__bash_sourced_files_array+x}" ]]; then
     # XXX: backward-compatible array declaration
     __bash_sourced_files_array[0]=''  # global array
     unset __bash_sourced_files_array[0]
@@ -260,6 +265,8 @@ fi
 __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
 
 function __bashrc_source_file () {
+    # source a file with some preliminary checks, print a debug message
+    #
     # shellcheck disable=SC2155
     declare sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
@@ -272,6 +279,11 @@ function __bashrc_source_file () {
     __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
     # shellcheck disable=SC1090
     source "${sourcef}"
+}
+
+function bashrc_source_file () {
+    # public-facing wrapper for __bashrc_source_file
+    __bashrc_source_file "${@}"
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
@@ -313,9 +325,10 @@ function __bashrc_path_add () {
     export PATH=${PATH}:${path}
 }
 
-# XXX: `$HOME` may be undefined in very constrained shells (like rescue shells)
-#       but `~` is always defined
-__bashrc_path_add ~/bin
+function bashrc_path_add () {
+    # public-facing wrapper for __bashrc_path_add
+    __bashrc_path_add "${@}"
+}
 
 function __bashrc_path_add_from_file () {
     # attempt to add paths found in the file $1, assuming a path per-line
@@ -330,8 +343,6 @@ function __bashrc_path_add_from_file () {
         return 1
     fi
 }
-
-__bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 
 # ============================
 # other misc. helper functions
@@ -580,148 +591,6 @@ function env_sorted () {
 # Record original environment variables for later diff
 # shellcheck disable=SC2034
 __bashrc_env_0_original=$(env_sorted)
-
-# ===============
-# history control
-# ===============
-
-# don't put duplicate lines or lines starting with space in the history.
-export HISTCONTROL=ignoreboth
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
-export HISTSIZE=5000
-export HISTFILESIZE=400000
-export HISTTIMEFORMAT="%Y%m%dT%H%M%S "
-# append to the history file, don't overwrite it
-shopt -s histappend
-
-# ------------------------
-# globbing and completions
-# ------------------------
-
-# see https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
-
-# includes filenames beginning with a ‘.’ in the results of filename expansion. The filenames ‘.’
-# and ‘..’ must always be matched explicitly, even if dotglob is set.
-shopt -s dotglob
-# patterns which fail to match filenames during filename expansion result in an expansion error.
-# XXX: prints debugging messages on Debian bash 4.2, leave off
-#shopt -s failglob
-# the pattern ‘**’ used in a filename expansion context will match all files and zero or more
-# directories and subdirectories. If the pattern is followed by a ‘/’, only directories and
-# subdirectories match.
-shopt -s globstar 2>/dev/null  # not always available
-# Bash attempts spelling correction on directory names during word completion if the directory name
-# initially supplied does not exist.
-shopt -s dirspell 2>/dev/null  # not always available
-
-# the following *should* be enabled by default, but be certain because they are important
-shopt -s promptvars
-shopt -s progcomp
-shopt -s progcomp_alias 2>/dev/null  # not always available
-shopt -s complete_fullquote 2>/dev/null  # not always available
-
-# ---------------
-# misc...
-# ---------------
-
-# check the window size after each command and, if necessary, update the values
-# of LINES and COLUMNS.
-shopt -s checkwinsize
-
-# make `less` more friendly for non-text input files, see lesspipe(1)
-if [[ -x /usr/bin/lesspipe ]]; then
-    eval "$(SHELL=/bin/sh /usr/bin/lesspipe)"
-fi
-
-# =====================
-# Localization settings
-# =====================
-
-# from https://www.gnu.org/software/gettext/manual/html_node/Locale-Environment-Variables.html
-#
-#     When a program looks up locale dependent values, it does this according to the following
-#     environment variables, in priority order:
-#         LANGUAGE
-#         LC_ALL
-#         LC_xxx, according to selected locale category: LC_CTYPE, LC_NUMERIC, LC_TIME, LC_COLLATE, LC_MONETARY, LC_MESSAGES, ...
-#         LANG
-#
-# from https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html
-#     GNU gettext gives preference to LANGUAGE over LC_ALL and LANG for the purpose of message handling
-#
-# also see https://unix.stackexchange.com/questions/149111/what-should-i-set-my-locale-to-and-what-are-the-implications-of-doing-so/149129#149129
-#          https://unix.stackexchange.com/questions/87745/what-does-lc-all-c-do/87763#87763
-
-function locale_get () {
-    # get an available locale, preferring $1 if passed, then preferring others
-    # for reference, a sampling of `locale -a` output on OpenSUSE 15.1 Linux
-    #
-    #     C
-    #     C.UTF-8
-    #     …
-    #     en_GB.utf8
-    #     en_US.utf8
-    #     …
-    #     POSIX
-    #     …
-    #     tt_RU@iqtelif
-    #     …
-    #     ug_CN
-    #     uk_UA
-    #     uz_UZ
-    #     uz_UZ@cyrillic
-    #     uz_UZ.utf8
-    #
-    # XXX: English-centric
-
-    declare locales=
-    if ! __bash_installed locale || ! locales=$(locale -a 2>/dev/null); then
-        # a fallback value likely to be valid on constrained systems (i.e. Alpine Linux)
-        echo -n 'C.UTF-8'
-        return 1
-    fi
-
-    # shellcheck disable=SC2120
-    if [[ "${1+x}" ]] && [[ "${locales}" =~ ${1} ]]; then
-        echo -n "${1}"
-        return
-    fi
-    declare locale=
-    for locale in \
-        'en_US.utf8' \
-        'en_US.UTF-8' \
-        'en_GB.utf8' \
-        'en_GB.UTF-8' \
-        'en_US' \
-        'C.UTF-8'
-    do
-        if [[ "${locales}" =~ ${locale} ]]; then
-            echo -n "${locale}"
-            return
-        fi
-    done
-    # undesirable fallback: uses ASCII, better than nothing
-    echo -n 'POSIX'
-}
-
-export LOCALE=${LOCALE-'UTF-8'}
-__locale_get=$(locale_get)
-export LANG=${LANG-${__locale_get}}
-export LC_ALL=${LC_ALL-${__locale_get}}  # see https://unix.stackexchange.com/a/87763/21203
-# $LANG affect can be seen with code:
-#
-#     for locale in $(locale -a); do (export LANG=$locale; echo -en "$locale\t"; date); done
-#
-
-if __bash_installed less; then
-    # from `man less`
-    #
-    #     If neither LESSCHARSET nor LESSCHARDEF is set, but any of the strings
-    #     "UTF-8", "UTF8", "utf-8" or "utf8" is found in the LC_ALL, LC_CTYPE or LANG
-    #      environment variables, then the default character set is utf-8.
-    #
-    unset LESSCHARSET
-fi
 
 # ==============
 # prompt changes
@@ -1078,20 +947,6 @@ function bash_prompt_table_variable_print () {
         )" ${1-0}
 }
 
-# preload the table with some common shell environment variables that are good to know
-bash_prompt_table_variable_add 'TERM'
-bash_prompt_table_variable_add 'bash_color_force'
-bash_prompt_table_variable_add 'DISPLAY'
-bash_prompt_table_variable_add 'COLORTERM'
-bash_prompt_table_variable_add 'SHLVL'
-bash_prompt_table_variable_add 'STY'
-bash_prompt_table_variable_add 'SSH_TTY'
-#bash_prompt_table_variable_add 'SSH_CONNECTION'
-bash_prompt_table_variable_add 'GPG_AGENT_INFO'
-bash_prompt_table_variable_add 'SSH_AUTH_SOCK'
-bash_prompt_table_variable_add 'SSH_AGENT_PID'
-bash_prompt_table_variable_add 'SSH_ASKPASS'
-
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal () {
     # pass a single-character string, prints the numeric ordinal value
@@ -1116,6 +971,7 @@ function __bashrc_prompt_table_expr_length () {
 #      such. Only one is used but others remain for sake of comparison.
 
 function __bashrc_prompt_table_blank_n_printf1 () {
+    # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/22048085/471376
     # XXX: presumes `seq`
     #printf '%0.s ' {1..${1}}  # does not correctly expand
@@ -1124,11 +980,13 @@ function __bashrc_prompt_table_blank_n_printf1 () {
 }
 
 function __bashrc_prompt_table_blank_n_printf2 () {
+    # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5801221/471376
     printf "%${1}s" ' '
 }
 
 function __bashrc_prompt_table_blank_n_for_echo () {
+    # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5801221/471376
     declare -i i=0
     for ((; i<${1}; i++)) {
@@ -1137,18 +995,21 @@ function __bashrc_prompt_table_blank_n_for_echo () {
 }
 
 function __bashrc_prompt_table_blank_n_awk () {
+    # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/23978009/471376
     # XXX: presumes `awk`
     awk "BEGIN { while (c++ < ${1}) printf \" \" ; }"
 }
 
 function __bashrc_prompt_table_blank_n_yes_head () {
+    # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5799335/471376
     # XXX: `yes` `head` (LOL!)
     echo -n "$(yes ' ' | head -n${1})"
 }
 
 function __bashrc_prompt_table_blank_n_head_zero () {
+    # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/16617155/471376
     # XXX: presumes `head` and `tr`
     head -c ${1} /dev/zero | tr '\0' ' '
@@ -1163,6 +1024,7 @@ function __bashrc_prompt_table_blank_n_longstr () {
 }
 
 function __bashrc_prompt_table_blank_n () {
+    # XXX: this is for internal debugging
     # wrapper to preferred method
     __bashrc_prompt_table_blank_n_printf2 "${1}"
 }
@@ -1171,6 +1033,9 @@ function __bashrc_prompt_table_blank_n () {
 alias __bashrc_prompt_table_blank_n_alias=__bashrc_prompt_table_blank_n_printf2
 
 function __bashrc_prompt_table_blank_n_test_all () {
+    # XXX: this is for internal debugging
+    # test various printing schemes
+
     declare -ir len=10
     echo "${PS4-} time 1000 iterations of each, length ${len}"
 
@@ -1231,6 +1096,8 @@ function __bashrc_prompt_table_blank_n_test_all () {
     )
 }
 
+__bashrc_prompt_table_enable=${__bashrc_prompt_table_enable-true}  # global
+
 function __bashrc_prompt_table () {
     # Creates a basic "table" of interesting environment variables.
     # Typical example:
@@ -1244,6 +1111,10 @@ function __bashrc_prompt_table () {
     # function is called for every prompting.
     #
     # XXX: this function gets slow on low-horsepower hosts. Probably needs some optimization work.
+
+    if ! ${__bashrc_prompt_table_enable}; then
+        return 0
+    fi
 
     declare row1=''
     declare row2=''
@@ -1320,6 +1191,15 @@ function __bashrc_prompt_table () {
     fi
 }
 
+function bashrc_prompt_table_enable() {
+    # public-facing 'on' switch for prompt table
+    __bashrc_prompt_table_enable=true
+}
+function bashrc_prompt_table_disable() {
+    # public-facing 'off' switch for prompt table
+    __bashrc_prompt_table_enable=false
+}
+
 function bash_prompt_table_print () {
     # Print the *entire* prompt table.
     __bashrc_prompt_table --no-truncate
@@ -1328,6 +1208,8 @@ function bash_prompt_table_print () {
 # ---------------
 # prompt git info
 # ---------------
+
+__bashrc_prompt_git_info_enable=${__bashrc_prompt_git_info_enable-true}  # global
 
 __bashrc_installed_git=false  # global
 if __bash_installed git; then
@@ -1359,9 +1241,19 @@ function __bashrc_prompt_git_info_do () {
     # - do the necessary programs exist?
     # - does the necessary helper function `__git_ps1` exist?
     # - are there any "registered" mountpoints?
-    ${__bashrc_prompt_git_info_git_stat} \
+    ${__bashrc_prompt_git_info_enable} \
+    && ${__bashrc_prompt_git_info_git_stat} \
     && ${__bashrc_prompt_git_info_git_ps1} \
     && [[ ${#__bashrc_prompt_git_info_mountpoint_array[@]} -ne 0 ]]
+}
+
+function bashrc_prompt_git_info_enable() {
+    # public-facing 'on' switch for prompt git info
+    __bashrc_prompt_git_info_enable=true
+}
+function bashrc_prompt_git_info_disable() {
+    # public-facing 'off' switch for prompt git info
+    __bashrc_prompt_git_info_enable=false
 }
 
 function __bash_path_mount_point () {
@@ -1417,6 +1309,11 @@ function __bashrc_prompt_git_info_mountpoint_array_add () {
     return ${ret}
 }
 __bashrc_prompt_git_info_mountpoint_array_add "/"  # mount point '/' is very likely not a remote filesystem
+
+function bashrc_prompt_git_info_mountpoint_array_add () {
+    # public-facing wrapper for __bashrc_prompt_git_info_mountpoint_array_add
+    __bashrc_prompt_git_info_mountpoint_array_add "${@}"
+}
 
 function __bashrc_prompt_git_info_mountpoint_array_contains () {
     # is path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
@@ -1684,15 +1581,6 @@ fi
 # __bashrc_prompt_timer_stop
 PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_extras; __bashrc_prompt_timer_stop'
 
-# ----------
-# misc color
-# ----------
-
-if (__bash_installed gcc || __bash_installed 'g++') && ${__bashrc_color_apps}; then
-    # colored GCC warnings and errors
-    export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-fi
-
 # =======
 # aliases
 # =======
@@ -1724,30 +1612,13 @@ function __bashrc_alias_safely_check () {
 }
 
 function bash_alias_add ()  {
-    # user-facing function wrapper
+    # public-facing wrapper for __bashrc_alias_safely
     __bashrc_alias_safely "${@}"
 }
 
 # -------------
 # color aliases
 # -------------
-
-# enable color support of ls and also add handy aliases
-if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
-    if [[ -r "${__bashrc_path_dir_bashrc}/.dircolors" ]]; then
-        eval "$(/usr/bin/dircolors -b "${__bashrc_path_dir_bashrc}/.dircolors")"
-    else
-        eval "$(/usr/bin/dircolors -b)"
-    fi
-
-    __bashrc_alias_check ls 'ls --color=auto'
-    if __bash_installed dir; then
-        __bashrc_alias_check dir 'dir --color=auto'
-    fi
-    if __bash_installed vdir; then
-        __bashrc_alias_check vdir 'vdir --color=auto'
-    fi
-fi
 
 function __bashrc_alias_greps_color () {
     # alias various forms of `grep` programs for `--color=auto`
@@ -1772,60 +1643,6 @@ function __bashrc_alias_greps_color () {
         fi
     done
 }
-
-__bashrc_alias_greps_color
-
-# -------------
-# other aliases
-# -------------
-
-# TODO: add CLICOLOR, from FreeBSD `ls`
-#
-#      -G      Enable colorized output.  This option is equivalent to defining
-#             CLICOLOR in the environment.  (See below.)  This functionality
-#             can be compiled out by removing the definition of COLORLS.  This
-#             option is not defined in IEEE Std 1003.1-2001 (“POSIX.1”).
-#
-#      CLICOLOR            Use ANSI color sequences to distinguish file types.
-#                         See LSCOLORS below.  In addition to the file types
-#                         mentioned in the -F option some extra attributes
-#                         (setuid bit set, etc.) are also displayed.  The
-#                         colorization is dependent on a terminal type with the
-#                         proper termcap(5) capabilities.  The default “cons25”
-#                         console has the proper capabilities, but to display
-#                         the colors in an xterm(1), for example, the TERM
-#                         variable must be set to “xterm-color”.  Other
-#                         terminal types may require similar adjustments.
-#                         Colorization is silently disabled if the output is
-#                         not directed to a terminal unless the CLICOLOR_FORCE
-#                         variable is defined.
-#
-#     LSCOLORS            The value of this variable describes what color to
-#                         use for which attribute when colors are enabled with
-#                         CLICOLOR.  This string is a concatenation of pairs of
-#                         the format fb, where f is the foreground color and b
-#                         is the background color.
-
-# TODO: all alias creation should be moved into an example .bash_aliases
-#       that is part of this repository. They can use functions defined here.
-
-__bashrc_alias_safely_check l 'ls -lAa'
-__bashrc_alias_safely_check ll 'ls -lAa'
-__bashrc_alias_safely_check la 'ls -Aa'
-__bashrc_alias_safely_check ltr 'ls -Altr'
-__bashrc_alias_safely whence 'type -a'  # where, of a sort
-__bashrc_alias_safely_check psa 'ps -ef --forest'
-__bashrc_alias_safely_check envs env_sorted
-
-if ${__bashrc_installed_git}; then
-    __bashrc_alias_safely gitb 'git branch -avv'
-    __bashrc_alias_safely gitf 'git fetch -av'
-    __bashrc_alias_safely gits 'git status -vv'
-fi
-
-if __bash_installed mount sort column cut; then
-    __bashrc_alias_safely mnt 'mount | sort -k3 | column -t | cut -c -${COLUMNS}'
-fi
 
 # ===============
 # network helpers
@@ -1916,6 +1733,70 @@ function print_dev_IPv4() {
             | cut -f1 -d '/' \
             | cut -f2 -d ':'
     fi
+}
+
+function bash_print_host_IPv4() {
+    # given $1 is an URI host, print the IPv4 address (DNS A Record)
+    # with the help of `host` or `dig`
+
+    declare host_=${1-}
+    declare out=
+    if __bash_installed host; then
+        # make the DNS request with short timeouts
+        if ! out=$(host -4 -t A -W 2 -U "${host_}" 2>/dev/null); then
+            return 1
+        fi
+        # in en-US locale the `host` output should look like:
+        #
+        #    ifconfig.me has address 34.117.59.81
+        #
+        # remove everything before last non-space character
+        out=${out##* }
+    elif __bash_installed dig; then
+        # make the DNS request with short timeouts, one try
+        if ! out=$(dig -4 -t A +short +tries=1 +timeout=2 "${host_}" 2>/dev/null); then
+            return 1
+        fi
+        # the `dig` output should look like:
+        #
+        #    34.117.59.81
+        #
+    fi
+    if [[ "${out}" = '' ]]; then
+        return 1
+    fi
+    echo -n "${out}"
+}
+
+function bash_print_internet_IPv4() {
+    # attempt to print the Internet-facing IPv4 address of this host using
+    # helper website 'ifconfig.me'
+
+    declare -r ihost="ifconfig.me"
+    declare ipv4=
+
+    if ! __bash_installed curl; then
+        return 1
+    fi
+    if ! ipv4=$(bash_print_host_IPv4 "${ihost}"); then
+        return 1
+    fi
+
+    declare out=
+    # make the web request with short timeouts
+    if ! out=$(curl \
+        --header "Host: ${ihost}" \
+        --max-time 2 \
+        --connect-timeout 2 \
+        "http://${ipv4}" \
+            2>/dev/null \
+    ); then
+        return 1
+    fi
+    if [[ "${out}" = '' ]]; then
+        return 1
+    fi
+    echo -n "${out}"
 }
 
 # ============
@@ -2025,6 +1906,7 @@ function bash_update_dots () {
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
 __bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
+__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
 
 if ! shopt -oq posix; then
     # XXX: other "official" completion files often have variable expansion errors
@@ -2211,7 +2093,7 @@ ${b}Special Features of this .bashrc:${boff}
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
 	$(__bashrc_start_info_time_start)
 
-	Turn off prompt activity with:
+	Turn off *all* prompt activity with:
 		trap '' DEBUG
 		PROMPT_COMMAND=
 		PS1=

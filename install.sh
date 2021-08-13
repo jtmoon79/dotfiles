@@ -20,6 +20,7 @@ set -e
 set -u
 
 # XXX: older versions of bash do not like the "${@-}" expansion when there are no arguments
+#      must do tedious workaround of first testing ${#}
 
 function download () {
     # $1 download to
@@ -61,24 +62,63 @@ function download () {
 
 declare -r URL='https://raw.githubusercontent.com/jtmoon79/dotfiles/master'
 
+function install_dotfiles() {
+    declare fn=
+    if [[ ${#} -gt 0 ]]; then
+        fn='.bash_profile'
+        download "./${fn}" "${URL}/${fn}" "${@-}"
+        fn='.bash_profile.local'
+        if ! [[ -x "./${fn}" ]]; then
+            download "./${fn}" "${URL}/${fn}" "${@-}"
+        fi
+        fn='.bashrc'
+        download "./${fn}" "${URL}/${fn}" "${@-}"
+        fn='.bashrc.builtins.post'
+        download "./${fn}" "${URL}/${fn}" "${@-}"
+        fn='.bashrc.local.post'
+        if ! [[ -x "${fn}" ]]; then
+            download "./${fn}" "${URL}/${fn}" "${@-}"
+        fi
+        fn='.bash_logout'
+        download "./${fn}" "${URL}/${fn}" "${@-}"
+        if which screen &>/dev/null; then
+            fn='.screenrc'
+            download "./${fn}" "${URL}/${fn}" "${@-}"
+        fi
+        if which vim &>/dev/null; then
+            fn='.vimrc'
+            download "./${fn}" "${URL}/${fn}" "${@-}"
+        fi
+    else
+        fn='.bash_profile'
+        download "./${fn}" "${URL}/${fn}"
+        fn='.bash_profile.local'
+        if ! [[ -x "./${fn}" ]]; then
+            download "./${fn}" "${URL}/${fn}"
+        fi
+        fn='.bashrc'
+        download "./${fn}" "${URL}/${fn}"
+        fn='.bashrc.builtins.post'
+        download "./${fn}" "${URL}/${fn}"
+        fn='.bashrc.local.post'
+        if ! [[ -x "${fn}" ]]; then
+            download "./${fn}" "${URL}/${fn}"
+        fi
+        fn='.bash_logout'
+        download "./${fn}" "${URL}/${fn}"
+        if which screen &>/dev/null; then
+            fn='.screenrc'
+            download "./${fn}" "${URL}/${fn}"
+        fi
+        if which vim &>/dev/null; then
+            fn='.vimrc'
+            download "./${fn}" "${URL}/${fn}"
+        fi
+    fi
+}
+
 if [[ ${#} -gt 0 ]]; then
-    download './.bash_profile' "${URL}/.bash_profile" "${@-}"
-    download './.bashrc' "${URL}/.bashrc" "${@-}"
-    download './.bash_logout' "${URL}/.bash_logout" "${@-}"
-    if which screen &>/dev/null; then
-        download './.screenrc' "${URL}/.screenrc" "${@-}"
-    fi
-    if which vim &>/dev/null; then
-        download './.vimrc' "${URL}/.vimrc" "${@-}"
-    fi
+    install_dotfiles "${@-}"
 else
-    download './.bash_profile' "${URL}/.bash_profile"
-    download './.bashrc' "${URL}/.bashrc"
-    download './.bash_logout' "${URL}/.bash_logout"
-    if which screen &>/dev/null; then
-        download './.screenrc' "${URL}/.screenrc"
-    fi
-    if which vim &>/dev/null; then
-        download './.vimrc' "${URL}/.vimrc"
-    fi
+    install_dotfiles
 fi

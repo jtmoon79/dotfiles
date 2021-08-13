@@ -1,0 +1,402 @@
+# .bashrc.builtins.post
+#
+# built-in customizations for .bashrc
+# changes to this file will be overwritten by `dotfiles/install.sh`
+#
+
+# ===============
+# history control
+# ===============
+
+# don't put duplicate lines or lines starting with space in the history.
+export HISTCONTROL=ignoreboth
+# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+export HISTSIZE=5000
+export HISTFILESIZE=400000
+export HISTTIMEFORMAT="%Y%m%dT%H%M%S "
+# append to the history file, don't overwrite it
+shopt -s histappend
+
+# ------------------------
+# globbing and completions
+# ------------------------
+
+# see https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
+
+# includes filenames beginning with a ‘.’ in the results of filename expansion. The filenames ‘.’
+# and ‘..’ must always be matched explicitly, even if dotglob is set.
+shopt -s dotglob
+# patterns which fail to match filenames during filename expansion result in an expansion error.
+# XXX: prints debugging messages on Debian bash 4.2, leave off
+#shopt -s failglob
+# the pattern ‘**’ used in a filename expansion context will match all files and zero or more
+# directories and subdirectories. If the pattern is followed by a ‘/’, only directories and
+# subdirectories match.
+shopt -s globstar 2>/dev/null  # not always available
+# Bash attempts spelling correction on directory names during word completion if the directory name
+# initially supplied does not exist.
+shopt -s dirspell 2>/dev/null  # not always available
+
+# the following *should* be enabled by default, but be certain because they are important
+shopt -s promptvars
+shopt -s progcomp
+shopt -s progcomp_alias 2>/dev/null  # not always available
+shopt -s complete_fullquote 2>/dev/null  # not always available
+
+# ---------------
+# misc...
+# ---------------
+
+# check the window size after each command and, if necessary, update the values
+# of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make `less` more friendly for non-text input files, see lesspipe(1)
+if [[ -x /usr/bin/lesspipe ]]; then
+    eval "$(SHELL=/bin/sh /usr/bin/lesspipe)"
+fi
+
+# =====================
+# Localization settings
+# =====================
+
+# from https://www.gnu.org/software/gettext/manual/html_node/Locale-Environment-Variables.html
+#
+#     When a program looks up locale dependent values, it does this according to the following
+#     environment variables, in priority order:
+#         LANGUAGE
+#         LC_ALL
+#         LC_xxx, according to selected locale category: LC_CTYPE, LC_NUMERIC, LC_TIME, LC_COLLATE, LC_MONETARY, LC_MESSAGES, ...
+#         LANG
+#
+# from https://www.gnu.org/software/gettext/manual/html_node/The-LANGUAGE-variable.html
+#     GNU gettext gives preference to LANGUAGE over LC_ALL and LANG for the purpose of message handling
+#
+# also see https://unix.stackexchange.com/questions/149111/what-should-i-set-my-locale-to-and-what-are-the-implications-of-doing-so/149129#149129
+#          https://unix.stackexchange.com/questions/87745/what-does-lc-all-c-do/87763#87763
+
+function locale_get () {
+    # get an available locale, preferring $1 if passed, then preferring others
+    # for reference, a sampling of `locale -a` output on OpenSUSE 15.1 Linux
+    #
+    #     C
+    #     C.UTF-8
+    #     …
+    #     en_GB.utf8
+    #     en_US.utf8
+    #     …
+    #     POSIX
+    #     …
+    #     tt_RU@iqtelif
+    #     …
+    #     ug_CN
+    #     uk_UA
+    #     uz_UZ
+    #     uz_UZ@cyrillic
+    #     uz_UZ.utf8
+    #
+    # XXX: English-centric
+
+    declare locales=
+    if ! __bash_installed locale || ! locales=$(locale -a 2>/dev/null); then
+        # a fallback value likely to be valid on constrained systems (i.e. Alpine Linux)
+        echo -n 'C.UTF-8'
+        return 1
+    fi
+
+    # shellcheck disable=SC2120
+    if [[ "${1+x}" ]] && [[ "${locales}" =~ ${1} ]]; then
+        echo -n "${1}"
+        return
+    fi
+    declare locale=
+    for locale in \
+        'en_US.utf8' \
+        'en_US.UTF-8' \
+        'en_GB.utf8' \
+        'en_GB.UTF-8' \
+        'en_US' \
+        'C.UTF-8'
+    do
+        if [[ "${locales}" =~ ${locale} ]]; then
+            echo -n "${locale}"
+            return
+        fi
+    done
+    # undesirable fallback: uses ASCII, better than nothing
+    echo -n 'POSIX'
+}
+
+export LOCALE=${LOCALE-'UTF-8'}
+__locale_get=$(locale_get)
+export LANG=${LANG-${__locale_get}}
+export LC_ALL=${LC_ALL-${__locale_get}}  # see https://unix.stackexchange.com/a/87763/21203
+# $LANG affect can be seen with code:
+#
+#     for locale in $(locale -a); do (export LANG=$locale; echo -en "$locale\t"; date); done
+#
+
+if __bash_installed less; then
+    # from `man less`
+    #
+    #     If neither LESSCHARSET nor LESSCHARDEF is set, but any of the strings
+    #     "UTF-8", "UTF8", "utf-8" or "utf8" is found in the LC_ALL, LC_CTYPE or LANG
+    #      environment variables, then the default character set is utf-8.
+    #
+    unset LESSCHARSET
+fi
+
+# ----------
+# misc color
+# ----------
+
+if (__bash_installed gcc || __bash_installed 'g++') && ${__bashrc_color_apps}; then
+    # colored GCC warnings and errors
+    export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+fi
+
+# enable color support of ls and also add handy aliases
+if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
+    if [[ -r "${__bashrc_path_dir_bashrc}/.dircolors" ]]; then
+        eval "$(/usr/bin/dircolors -b "${__bashrc_path_dir_bashrc}/.dircolors")"
+    else
+        eval "$(/usr/bin/dircolors -b)"
+    fi
+
+    __bashrc_alias_check ls 'ls --color=auto'
+    if __bash_installed dir; then
+        __bashrc_alias_check dir 'dir --color=auto'
+    fi
+    if __bash_installed vdir; then
+        __bashrc_alias_check vdir 'vdir --color=auto'
+    fi
+fi
+
+__bashrc_alias_greps_color
+
+# -------------
+# other aliases
+# -------------
+
+# TODO: add CLICOLOR, from FreeBSD `ls`
+#
+#      -G      Enable colorized output.  This option is equivalent to defining
+#             CLICOLOR in the environment.  (See below.)  This functionality
+#             can be compiled out by removing the definition of COLORLS.  This
+#             option is not defined in IEEE Std 1003.1-2001 (“POSIX.1”).
+#
+#      CLICOLOR            Use ANSI color sequences to distinguish file types.
+#                         See LSCOLORS below.  In addition to the file types
+#                         mentioned in the -F option some extra attributes
+#                         (setuid bit set, etc.) are also displayed.  The
+#                         colorization is dependent on a terminal type with the
+#                         proper termcap(5) capabilities.  The default “cons25”
+#                         console has the proper capabilities, but to display
+#                         the colors in an xterm(1), for example, the TERM
+#                         variable must be set to “xterm-color”.  Other
+#                         terminal types may require similar adjustments.
+#                         Colorization is silently disabled if the output is
+#                         not directed to a terminal unless the CLICOLOR_FORCE
+#                         variable is defined.
+#
+#     LSCOLORS            The value of this variable describes what color to
+#                         use for which attribute when colors are enabled with
+#                         CLICOLOR.  This string is a concatenation of pairs of
+#                         the format fb, where f is the foreground color and b
+#                         is the background color.
+
+# TODO: all alias creation should be moved into an example .bash_aliases
+#       that is part of this repository. They can use functions defined here.
+
+__bashrc_alias_safely_check l 'ls -lAa'
+__bashrc_alias_safely_check ll 'ls -lAa'
+__bashrc_alias_safely_check la 'ls -Aa'
+__bashrc_alias_safely_check ltr 'ls -Altr'
+__bashrc_alias_safely whence 'type -a'  # where, of a sort
+__bashrc_alias_safely_check psa 'ps -ef --forest'
+__bashrc_alias_safely_check envs env_sorted
+
+if ${__bashrc_installed_git}; then
+    __bashrc_alias_safely gitb 'git branch -avv'
+    __bashrc_alias_safely gitf 'git fetch -av'
+    __bashrc_alias_safely gits 'git status -vv'
+fi
+
+if __bash_installed mount sort column cut; then
+    __bashrc_alias_safely mnt 'mount | sort -k3 | column -t | cut -c -${COLUMNS}'
+fi
+
+# ============
+# search paths
+# ============
+
+# XXX: `$HOME` may be undefined in very constrained shells (like rescue shells or MinGW)
+#       but `~` is always defined
+__bashrc_path_add ~/bin
+
+__bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
+
+# ==================================================
+# add some interesting variables to the prompt table
+# ==================================================
+
+# preload the table with some common shell environment variables that are good to know
+bash_prompt_table_variable_add 'TERM'
+bash_prompt_table_variable_add 'bash_color_force'
+bash_prompt_table_variable_add 'DISPLAY'
+bash_prompt_table_variable_add 'COLORTERM'
+bash_prompt_table_variable_add 'SHLVL'
+bash_prompt_table_variable_add 'STY'
+bash_prompt_table_variable_add 'SSH_TTY'
+#bash_prompt_table_variable_add 'SSH_CONNECTION'
+bash_prompt_table_variable_add 'GPG_AGENT_INFO'
+bash_prompt_table_variable_add 'SSH_AUTH_SOCK'
+bash_prompt_table_variable_add 'SSH_AGENT_PID'
+bash_prompt_table_variable_add 'SSH_ASKPASS'
+
+#
+# show NIC IPv4 (among common NICs)
+#
+
+if __bashrc_IPv4_=$(print_dev_IPv4 eth0); then
+  IPv4_eth0=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_eth0
+elif __bashrc_IPv4_=$(print_dev_IPv4 em0); then
+  IPv4_em0=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_em0
+elif __bashrc_IPv4_=$(print_dev_IPv4 eth1); then
+  IPv4_eth1=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_eth1
+elif __bashrc_IPv4_=$(print_dev_IPv4 eth2); then
+  IPv4_eth2=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_eth2
+fi
+if __bashrc_IPv4_=$(print_dev_IPv4 tun0); then
+  IPv4_tun0=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_tun0
+fi
+
+#
+# show the Internet-facing IPv4
+#
+if __bashrc_IPv4_=$(bash_print_internet_IPv4); then
+  IPv4_Internet=${__bashrc_IPv4_}
+  bash_prompt_table_variable_add IPv4_Internet
+fi
+
+unset __bashrc_IPv4_
+
+#
+# show the OS
+#
+
+__bashrc_OS_=
+if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
+    OS_RELEASE=${__bashrc_OperatingSystem}
+    bash_prompt_table_variable_add OS_RELEASE
+elif __bashrc_OS_=$(bashrc_OS); then
+    OS_RELEASE=${__bashrc_OS_}
+    bash_prompt_table_variable_add OS_RELEASE
+fi
+unset __bashrc_OS_
+
+#
+# add other various interesting variables
+#
+
+# general
+bash_prompt_table_variable_add \
+  'TZ' \
+
+# Python
+bash_prompt_table_variable_add \
+'PYTHON_PIPENV' \
+  'PYTHON_PIP_VERSION' \
+  'PYTHON' \
+  'VIRTUAL_ENV' \
+  'Py_DEBUG' \
+  'PYTHONIOENCODING' \
+  'PYTHONDONTWRITEBYTECODE' \
+  'PYTHONDEBUG' \
+  'PYTHONINSPECT' \
+  'PYTHONOPTIMIZE' \
+  'PYTHONNOUSERSITE' \
+  'PYTHONUNBUFFERED' \
+  'PYTHONDONTWRITEBYTECODE' \
+  'PYTHONSTARTUP' \
+  'PYTHONHOME' \
+  'PYTHONCASEOK' \
+  'PYTHONHASHSEED' \
+
+# Perl - https://perldoc.perl.org/perlrun.html#ENVIRONMENT
+bash_prompt_table_variable_add \
+  'PERL5OPT' \
+  'PERLIO' \
+  'PERLIO_DEBUG' \
+  'PERLLIB' \
+  'PERL5LIB' \
+  'PERL5DB' \
+  'PERL5DB_THREADED' \
+  'PERL5SHELL' \
+  'PERL_ALLOW_NON_IFS_LSP' \
+  'PERL_DEBUG_MSTATS' \
+  'PERL_DESTRUCT_LEVEL' \
+  'PERL_UNICODE' \
+  'PERL_ENCODING' \
+  'PERL_USE_UNSAFE_INC' \
+
+# GNU screen
+bash_prompt_table_variable_add \
+  'SYSSCREENRC' \
+  'LOCKPRG' \
+  'SCREENCAP' \
+  'WINDOW' \
+
+# X11
+bash_prompt_table_variable_add \
+  'XSOCK' \
+  'XAUTH' \
+  'XAUTHORITY' \
+  'XLOCAL' \
+
+# tmux
+bash_prompt_table_variable_add \
+  'TMUX' \
+  'TMUX_TMPDIR' \
+  'EDITOR' \
+  'VISUAL' \
+
+# locale
+bash_prompt_table_variable_add \
+  'LC_CTYPE' \
+  'LC_ALL' \
+  'TZ' \
+
+# proxy
+bash_prompt_table_variable_add \
+  'http_proxy' \
+  'https_proxy' \
+  'proxy' \
+
+# several forms of "Temporary Directory"
+bash_prompt_table_variable_add \
+  'TEMP' \
+  'TMP' \
+  'TMPDIR' \
+
+# other Linux tools
+bash_prompt_table_variable_add 'PSFORMAT'  # ps
+bash_prompt_table_variable_add 'VERSION_CONTROL'  # cp, mv
+bash_prompt_table_variable_add 'MANOPT'    # man
+#bash_prompt_table_variable_add 'LS_COLORS' # ls
+bash_prompt_table_variable_add 'GZIP'      # gzip
+bash_prompt_table_variable_add 'ZIP'       # zip
+bash_prompt_table_variable_add 'ZIPOPT'
+bash_prompt_table_variable_add 'ZIP_OPTS'
+bash_prompt_table_variable_add 'BZIP'      # bzip2
+bash_prompt_table_variable_add 'BZIP2'
+bash_prompt_table_variable_add 'TAR_FILETYPE'  # tar
+bash_prompt_table_variable_add 'TAR_ARCHIVE'
+bash_prompt_table_variable_add 'TAR_FORMAT'
+bash_prompt_table_variable_add 'TAR_FD'
+bash_prompt_table_variable_add 'TAR_VOLUME'
