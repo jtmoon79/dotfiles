@@ -68,7 +68,7 @@ function install_dotfiles() {
         fn='.bash_profile'
         download "./${fn}" "${URL}/${fn}" "${@-}"
         fn='.bash_profile.local'
-        if ! [[ -x "./${fn}" ]]; then
+        if ! [[ -e "./${fn}" ]]; then
             download "./${fn}" "${URL}/${fn}" "${@-}"
         fi
         fn='.bashrc'
@@ -76,7 +76,7 @@ function install_dotfiles() {
         fn='.bashrc.builtins.post'
         download "./${fn}" "${URL}/${fn}" "${@-}"
         fn='.bashrc.local.post'
-        if ! [[ -x "${fn}" ]]; then
+        if ! [[ -e "${fn}" ]]; then
             download "./${fn}" "${URL}/${fn}" "${@-}"
         fi
         fn='.bash_logout'
@@ -93,7 +93,7 @@ function install_dotfiles() {
         fn='.bash_profile'
         download "./${fn}" "${URL}/${fn}"
         fn='.bash_profile.local'
-        if ! [[ -x "./${fn}" ]]; then
+        if ! [[ -e "./${fn}" ]]; then
             download "./${fn}" "${URL}/${fn}"
         fi
         fn='.bashrc'
@@ -101,7 +101,7 @@ function install_dotfiles() {
         fn='.bashrc.builtins.post'
         download "./${fn}" "${URL}/${fn}"
         fn='.bashrc.local.post'
-        if ! [[ -x "${fn}" ]]; then
+        if ! [[ -e "${fn}" ]]; then
             download "./${fn}" "${URL}/${fn}"
         fi
         fn='.bash_logout'
