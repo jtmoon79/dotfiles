@@ -1315,6 +1315,18 @@ function bashrc_prompt_git_info_mountpoint_array_add () {
     __bashrc_prompt_git_info_mountpoint_array_add "${@}"
 }
 
+function bashrc_prompt_git_info_mountpoint_array_print () {
+    # print the array one entry per line
+    declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
+    declare -i i=0
+    while [[ ${i} -lt ${len_array} ]]; do
+        echo "${__bashrc_prompt_git_info_mountpoint_array[${i}]}"
+        i+=1
+    done
+    echo
+    echo "__bashrc_prompt_git_info_enable is ${__bashrc_prompt_git_info_enable}"
+}
+
 function __bashrc_prompt_git_info_mountpoint_array_contains () {
     # is path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
     # if contains return 0
