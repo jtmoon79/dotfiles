@@ -1754,8 +1754,13 @@ function bash_print_host_IPv4() {
     declare host_=${1-}
     declare out=
     if __bash_installed host; then
+        # Ubuntu 18 and older version of `host` does not have -U option
+        declare host_opts1=
+        if (host --help 2>&1 || true) | grep -m1 -q -Ee '[[:space:]]-U[[:space:]]'; then
+            host_opts1='-U'
+        fi
         # make the DNS request with short timeouts
-        if ! out=$(host -4 -t A -W 2 -U "${host_}" 2>/dev/null); then
+        if ! out=$(host -4 -t A -W 2 ${host_opts1} "${host_}" 2>/dev/null); then
             return 1
         fi
         # in en-US locale the `host` output should look like:
