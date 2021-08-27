@@ -1039,8 +1039,13 @@ function bash_prompt_table_variable_insert_at_index () {
 
 function bash_prompt_table_variable_insert_after_var () {
     # insert variable $1 to $bash_prompt_table_variables_array after var $2
+    # if var $2 is not found, fallback to inserting $1 at index $3
+    # if index $3 is not given then append to end of array
     declare -r var=$1
     declare -r after_var=$2
+    # TODO: create a helper function to get last index of last element of
+    #       $bash_prompt_table_variables_array
+    declare -ri index_fallback=${3-999999999}
     declare -ri len=${#bash_prompt_table_variables_array[@]}
 
     # special case of zero size array
@@ -1050,7 +1055,9 @@ function bash_prompt_table_variable_insert_after_var () {
 
     declare -i insert_at=
     if ! insert_at=$(__bash_prompt_table_variable_index ${after_var}); then
-        return 1
+        # did not find $after_var, insert $var at fallback index
+        bash_prompt_table_variable_insert_at_index "${var}" ${index_fallback}
+        return
     fi
     insert_at=$((${insert_at} + 1))
     bash_prompt_table_variable_insert_at_index "${var}" ${insert_at}
