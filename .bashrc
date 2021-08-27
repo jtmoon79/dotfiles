@@ -914,6 +914,148 @@ function bash_prompt_table_variable_add () {
     return ${ret}
 }
 
+function __bash_prompt_table_shift_from () {
+    # shift all variables in $bash_prompt_table_variables_array starting at index $1
+    # echoes inserted index value
+    #
+    # helper to bash_prompt_table_variable_insert_at_index()
+    #
+    # for example, given arbitrary array
+    #
+    #    A[1]='Foo'
+    #    A[3]='Bar'
+    #    A[4]='Baz'
+    #    A[8]='Pop'
+    #
+    # $ __bash_prompt_table_shift_from 3
+    #
+    #    A[1]='Foo'
+    #    A[3]=''
+    #    A[4]='Bar'
+    #    A[8]='Baz'
+    #    A[9]='Pop'
+    #
+    # if $1 is larger than last index, simply increment last index and set to empty
+    # $ __bash_prompt_table_shift_from 999
+    #
+    #    A[1]='Foo'
+    #    A[3]=''
+    #    A[4]='Bar'
+    #    A[8]='Baz'
+    #    A[9]='Pop'
+    #    A[10]=''
+    #
+    # if $1 is lesser than first index, set new index to first index
+    # $ __bash_prompt_table_shift_from 0
+    #
+    #    A[1]=''
+    #    A[3]='Foo'
+    #    A[4]=''
+    #    A[8]='Bar'
+    #    A[9]='Baz'
+    #    A[10]='Pop'
+    #    A[11]=''
+    #
+    if ! __bash_installed tac; then
+        return 1
+    fi
+
+    declare -ri at=$1
+    declare -ri len=${#bash_prompt_table_variables_array[@]}
+    # special case of zero size array
+    if [[ ${len} -eq 0 ]]; then
+        return
+    fi
+    declare -i i=
+    declare -i j=-1
+    for i in $(echo -n "${!bash_prompt_table_variables_array[*]}" ' ' | tac -s ' '); do
+        if [[ ${j} -eq -1 ]]; then  # set $j on first iteration
+            j=$((${i} + 1))
+        fi
+        if [[ ${at} -gt ${i} ]]; then
+            bash_prompt_table_variables_array[${j}]=''
+            echo -n ${j}
+            return
+        fi
+        bash_prompt_table_variables_array[${j}]=${bash_prompt_table_variables_array[${i}]}
+        j=${i}
+    done
+    # special case where $at < first index of array
+    if [[ ${at} -le ${i} ]]; then
+        bash_prompt_table_variables_array[${i}]=''
+        echo -n ${i}
+        return
+    fi
+    echo -n ${j}
+}
+
+function __bash_prompt_table_variable_index () {
+    # search for variable $1 in $bash_prompt_table_variables_array
+    # if found then echo index number, return 0
+    # if not found then return 1
+    declare -r var=$1
+    declare -ri len=${#bash_prompt_table_variables_array[@]}
+
+    # special case of zero size array
+    if [[ ${len} -eq 0 ]]; then
+        return 1
+    fi
+    declare -i i=0
+    for i in ${!bash_prompt_table_variables_array[*]}; do
+        if [[ "${bash_prompt_table_variables_array[${i}]}" == "${var}" ]]; then
+            echo -n "${i}"
+            return
+        fi
+    done
+    return 1
+}
+
+function bash_prompt_table_variable_insert_at_index () {
+    # insert variable $1 to $bash_prompt_table_variables_array at index $2
+    # if $2 is past end of array, append to end of $bash_prompt_table_variables_array
+    declare -r var=$1
+    declare -ri at=$2
+    declare -ri len=${#bash_prompt_table_variables_array[@]}
+
+    # special case of zero size array
+    if [[ ${len} -eq 0 ]]; then
+        bash_prompt_table_variables_array[0]=${var}
+        return
+    fi
+
+    declare -i insert_at=
+    # need changes from function __bash_prompt_table_shift_from() to persist. Obviously runing in subshell
+    # means changes to the global array will not persist so...
+    # HACK: run the function twice, first run to test and get index value, second run so changes persist
+    # XXX: is there a cleaner way to do this that does not require running the same function twice?
+    #      perhaps the function should be redesigned? or brought into this function?
+    if insert_at=$(__bash_prompt_table_shift_from ${at}); then
+        __bash_prompt_table_shift_from ${at} &>/dev/null
+        bash_prompt_table_variables_array[${insert_at}]=${var}
+    else
+        return 1
+    fi
+}
+
+function bash_prompt_table_variable_insert_after_var () {
+    # insert variable $1 to $bash_prompt_table_variables_array after var $2
+    declare -r var=$1
+    declare -r after_var=$2
+    declare -ri len=${#bash_prompt_table_variables_array[@]}
+
+    # special case of zero size array
+    if [[ ${len} -eq 0 ]]; then
+        return 1
+    fi
+
+    declare -i insert_at=
+    if ! insert_at=$(__bash_prompt_table_variable_index ${after_var}); then
+        return 1
+    fi
+    insert_at=$((${insert_at} + 1))
+    bash_prompt_table_variable_insert_at_index "${var}" ${insert_at}
+}
+
 function bash_prompt_table_variable_rm () {
     # remove a variable(s) from the $bash_prompt_table_variables_array
     declare -i i=0
