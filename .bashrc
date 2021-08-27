@@ -1097,6 +1097,21 @@ function bash_prompt_table_variable_print () {
         )" ${1-0}
 }
 
+function bash_prompt_table_variable_print_values () {
+    # print $bash_prompt_table_variables_array with values
+    if ! __bash_installed column; then
+        return 1
+    fi
+    (
+        declare -i i=0
+        for i in ${!bash_prompt_table_variables_array[*]}; do
+            var=${bash_prompt_table_variables_array[${i}]}
+            echo -e "bash_prompt_table_variables_array[${i}]=${bash_prompt_table_variables_array[${i}]}\t'${!var}'"
+            i=$((i + 1))
+        done
+    ) 2>/dev/null | column -t -s $'\t'
+}
+
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal () {
     # pass a single-character string, prints the numeric ordinal value
