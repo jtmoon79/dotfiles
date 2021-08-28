@@ -127,8 +127,6 @@
 #
 # TODO: add color to prompt bullet, change it if user is root
 #
-# TODO: change prompt bullet if user is root
-#
 # TODO: consider creating a `help` or similar alias that will dump information and
 #       provide extended examples.
 #
