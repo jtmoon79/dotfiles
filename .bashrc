@@ -971,6 +971,10 @@ function __bash_prompt_table_shift_from () {
     if ! __bash_installed tac; then
         return 1
     fi
+    # busybox `tac` does not support `-s`
+    if (echo '' | tac -s ' ') &>/dev/null; then
+        return 1
+    fi
 
     declare -ri at=$1
     declare -ri len=${#bash_prompt_table_variables_array[@]}
