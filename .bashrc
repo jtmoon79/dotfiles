@@ -1026,7 +1026,7 @@ function bash_prompt_table_variable_insert_at_index () {
     # insert variable $1 to $bash_prompt_table_variables_array at index $2
     # if $2 is past end of array, append to end of $bash_prompt_table_variables_array
     declare -r var=$1
-    declare -ri at=$2
+    declare -ri at=${2-0}
     declare -ri len=${#bash_prompt_table_variables_array[@]}
 
     # special case of zero size array
