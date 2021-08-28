@@ -246,7 +246,32 @@ __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 # add some interesting variables to the prompt table
 # ==================================================
 
-# preload the table with some common shell environment variables that are good to know
+#
+# add NIC IPv4 (among common NICs)
+#
+
+bash_prompt_table_variable_add_net eth0
+bash_prompt_table_variable_add_net em0
+bash_prompt_table_variable_add_net eth1
+bash_prompt_table_variable_add_net eth2
+bash_prompt_table_variable_add_net "Local Area Connection"
+bash_prompt_table_variable_add_Internet
+
+#
+# add the OS
+#
+
+__bashrc_OS_=
+if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
+    OS_RELEASE=${__bashrc_OperatingSystem}
+    bash_prompt_table_variable_add OS_RELEASE
+elif __bashrc_OS_=$(bashrc_OS); then
+    OS_RELEASE=${__bashrc_OS_}
+    bash_prompt_table_variable_add OS_RELEASE
+fi
+unset __bashrc_OS_
+
+# preload the table with some common shell environment variables that might be good to know
 bash_prompt_table_variable_add 'TERM'
 bash_prompt_table_variable_add 'bash_color_force'
 bash_prompt_table_variable_add 'DISPLAY'
@@ -259,52 +284,6 @@ bash_prompt_table_variable_add 'GPG_AGENT_INFO'
 bash_prompt_table_variable_add 'SSH_AUTH_SOCK'
 bash_prompt_table_variable_add 'SSH_AGENT_PID'
 bash_prompt_table_variable_add 'SSH_ASKPASS'
-
-#
-# show NIC IPv4 (among common NICs)
-#
-
-if __bashrc_IPv4_=$(print_dev_IPv4 eth0); then
-  IPv4_eth0=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_eth0
-elif __bashrc_IPv4_=$(print_dev_IPv4 em0); then
-  IPv4_em0=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_em0
-elif __bashrc_IPv4_=$(print_dev_IPv4 eth1); then
-  IPv4_eth1=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_eth1
-elif __bashrc_IPv4_=$(print_dev_IPv4 eth2); then
-  IPv4_eth2=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_eth2
-fi
-if __bashrc_IPv4_=$(print_dev_IPv4 tun0); then
-  IPv4_tun0=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_tun0
-fi
-
-#
-# show the Internet-facing IPv4
-#
-if __bashrc_IPv4_=$(bash_print_internet_IPv4); then
-  IPv4_Internet=${__bashrc_IPv4_}
-  bash_prompt_table_variable_add IPv4_Internet
-fi
-
-unset __bashrc_IPv4_
-
-#
-# show the OS
-#
-
-__bashrc_OS_=
-if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
-    OS_RELEASE=${__bashrc_OperatingSystem}
-    bash_prompt_table_variable_add OS_RELEASE
-elif __bashrc_OS_=$(bashrc_OS); then
-    OS_RELEASE=${__bashrc_OS_}
-    bash_prompt_table_variable_add OS_RELEASE
-fi
-unset __bashrc_OS_
 
 #
 # add other various interesting variables

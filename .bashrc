@@ -1837,7 +1837,7 @@ function __bashrc_alias_greps_color () {
 # network helpers
 # ===============
 
-function print_dev_IPv4() {
+function print_dev_IPv4_Linux () {
     # given passed NIC, print the first found IPv4 address by scraping from
     # outputs of either `ip` or `ifconfig`
     # TODO: this function should use only bash built-in features, rely less on
@@ -1898,11 +1898,17 @@ function print_dev_IPv4() {
     # prefer `ip` as it is more consistent and will replace `ifconfig`
     if __bash_installed ip; then
         out_=$(ip address show dev "${1-}" 2>/dev/null) || return 1
-        echo -n "${out_}" \
+        out_=$(
+            echo -n "${out_}" \
             | grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
             | tr -s ' ' \
             | cut -f3 -d ' ' \
             | cut -f1 -d '/'
+        ) || return 1
+        if [[ "${out_}" = '' ]]; then
+            return 1
+        fi
+        echo -n "${out_}"
     elif __bash_installed ifconfig; then
         out_=$(ifconfig "${1-}" 2>/dev/null) || return 1
         # most `ifconfig` print a leading ' ' but some print leading '\t' (FreeBSD)
@@ -1917,16 +1923,25 @@ function print_dev_IPv4() {
         #     inet 10.10.10.100 netmask 0xffffff00 broadcast 10.10.10.255
         #     inet 172.0.0.1 netmask 255.255.240.0 broadcast 172.0.0.255
         line1=$(echo -n "${line1## }" | tr -s ' ') || return 1
-        echo -n "${line1}" \
+        out_=$(
+            echo -n "${line1}" \
             | cut -f2 -d ' ' \
             | cut -f1 -d '/' \
             | cut -f2 -d ':'
+        ) || return 1
+        if [[ "${out_}" = '' ]]; then
+            return 1
+        fi
+        echo -n "${out_}"
+    else
+        # XXX: should not get here, but just in case of bad programming
+        return 1
     fi
 }
 
 function print_dev_IPv4_Win () {
     # print the interface IP Address for some Windows-accessible interface
-    # using netsh.exe. WSL2 Linux only.
+    # using netsh.exe. Only applicable to WSL2 Linux or cygwin.
     # tested using netsh.exe on Windows 10 Pro
     #
     # example netsh.exe output:
@@ -1941,20 +1956,28 @@ function print_dev_IPv4_Win () {
     #    Gateway Metric:                       1
     #    InterfaceMetric:                      20
     #
-    declare -r netsh='/mnt/c/Windows/System32/netsh.exe'
+    declare netsh='/mnt/c/Windows/System32/netsh.exe'
     if ! [[ -e "${netsh}" ]]; then
-        return 1
+        netsh='/cygdrive/c/WINDOWS/system32/netsh.exe'
+        if ! [[ -e "${netsh}" ]]; then
+            return 1
+        fi
     fi
     if ! __bash_installed grep tr cut; then
         return 1
     fi
     declare -r name=${1}
-    (
+    declare out=
+    out=$(
         "${netsh}" interface ipv4 show addresses name="${name}" \
            | grep -m1 -Fe 'IP Address:' \
            | tr -d ' \r\n' \
            | cut -f 2 -d ':'
-    )
+    ) || return 1
+    if [[ "${out}" = '' ]]; then
+        return 1
+    fi
+    echo -n "${out}"
 }
 
 function bash_print_host_IPv4() {
@@ -2024,6 +2047,49 @@ function bash_print_internet_IPv4() {
         return 1
     fi
     echo -n "${out}"
+}
+
+function print_dev_IPv4 () {
+    # wrapper to attempt printing network device printing function
+    # using Linux function and then the Windows function.
+    print_dev_IPv4_Linux "${@}" || print_dev_IPv4_Win "${@}"
+}
+
+function bash_prompt_table_variable_add_net () {
+    # add a network device IP Address to the $bash_prompt_table_variables_array
+    # added as IPv4_${1}
+    #
+    #    $ bash_prompt_table_variable_add_net 'eth0'
+    #
+    # will add variable 'IPv4_eth0' to the $bash_prompt_table_variables_array
+    # and the variable will be set to that IP Address.
+    #
+    # remaining arguments are passed to bash_prompt_table_variable_insert_at_index(),
+    # user can insert near the beginning of the prompt table with command:
+    #
+    #    $ bash_prompt_table_variable_add_net 'eth1' 5
+    #
+    declare -r devname=${1}
+    shift
+    declare ipv4=
+    if ! ipv4=$(print_dev_IPv4 "${devname}" 2>/dev/null); then
+        return 1
+    fi
+    declare -g IPv4_${devname}=${ipv4}
+    bash_prompt_table_variable_insert_at_index "IPv4_${devname}" "${@}"
+}
+
+function bash_prompt_table_variable_add_Internet () {
+    #
+    # add the Internet-facing IPv4 to $bash_prompt_table_variables_array
+    #
+    declare ipv4=
+    if ipv4=$(bash_print_internet_IPv4 2>/dev/null); then
+        IPv4_Internet=${ipv4}
+        bash_prompt_table_variable_add IPv4_Internet
+    else
+        return 1
+    fi
 }
 
 # ============
