@@ -1912,6 +1912,39 @@ function print_dev_IPv4() {
     fi
 }
 
+function print_dev_IPv4_Win () {
+    # print the interface IP Address for some Windows-accessible interface
+    # using netsh.exe. WSL2 Linux only.
+    # tested using netsh.exe on Windows 10 Pro
+    #
+    # example netsh.exe output:
+    #
+    # $ netsh.exe interface ipv4 show addresses name="Local Area Connection"
+    #
+    #   Configuration for interface "Local Area Connection"
+    #    DHCP enabled:                         Yes
+    #    IP Address:                           192.168.1.2
+    #    Subnet Prefix:                        192.168.1.0/24 (mask 255.255.255.0)
+    #    Default Gateway:                      0.0.0.0
+    #    Gateway Metric:                       1
+    #    InterfaceMetric:                      20
+    #
+    declare -r netsh='/mnt/c/Windows/System32/netsh.exe'
+    if ! [[ -e "${netsh}" ]]; then
+        return 1
+    fi
+    if ! __bash_installed grep tr cut; then
+        return 1
+    fi
+    declare -r name=${1}
+    (
+        "${netsh}" interface ipv4 show addresses name="${name}" \
+           | grep -m1 -Fe 'IP Address:' \
+           | tr -d ' \r\n' \
+           | cut -f 2 -d ':'
+    )
+}
+
 function bash_print_host_IPv4() {
     # given $1 is an URI host, print the IPv4 address (DNS A Record)
     # with the help of `host` or `dig`
