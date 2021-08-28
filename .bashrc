@@ -972,7 +972,7 @@ function __bash_prompt_table_shift_from () {
         return 1
     fi
     # busybox `tac` does not support `-s`
-    if (echo '' | tac -s ' ') &>/dev/null; then
+    if ! { echo '' | tac -s ' '; } &>/dev/null; then
         return 1
     fi
 
