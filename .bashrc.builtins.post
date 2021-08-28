@@ -3,6 +3,12 @@
 # built-in customizations for .bashrc
 # changes to this file will be overwritten by `dotfiles/install.sh`
 #
+# this file makes actual customizations
+#
+# Features:
+#   - attempts to set LOCALE to best choice of UTF-8
+#   - adds network IPv4 to prompt table
+#
 
 # ===============
 # history control

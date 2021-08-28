@@ -3,6 +3,9 @@
 # changes to this file will be overwritten by `dotfiles/install.sh`
 # add customizations to neighboring `.bashrc.local.post` file
 #
+# This file defines useful fuctions, makes very few changes. See neighboring files
+# `.bashrc.builtins.post` and `.bashrc.local.post` which make shell changes.
+#
 # A mish-mash of bashrc ideas that are worthwhile, some original ideas, others
 # copied. This file is expected to be sourced by it's companion ./.bash_profile
 # This file mostly creates new functions and private variables. These can be used
@@ -12,12 +15,9 @@
 # Features:
 #   - prompt prints: timer, return code, datetime,
 #     table of variables (adjustable), git prompt line.
-#   - attempts to set LOCALE to best choice of UTF-8
 #   - allows "live" modification of some prompt features
 #   - allows override of various features via ./.bashrc.local.pre, e.g.
 #     color, tables of variables, prompt parts, etc.
-#   - optional source from ./.bashrc.local.pre, ./.bashrc.local, ./.bashrc.local.post
-#   - optional source from ./.bash_paths - per-line paths to add to $PATH
 #   - attempts sourcing of /usr/share/bash-completion/bash_completion
 #   - fast to install: see companion install.sh at source repository.
 #   - fast to update: see bash_update_dots* functions.
