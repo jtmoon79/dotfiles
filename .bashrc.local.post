@@ -3,24 +3,84 @@
 # add customizations to this file
 # this file will not be overwritten by `dotfiles/install.sh`
 #
-# list of useful functions defined in `dotfiles/.bashrc`:
-#   bash_prompt_table_variable_add
-#   bashrc_prompt_git_info_mountpoint_array_add
-#   bashrc_source_file
-#   bashrc_path_add
-#   bashrc_prompt_table_enable
-#   bashrc_prompt_table_disable
-#   bashrc_prompt_git_info_enable
-#   bashrc_prompt_git_info_disable
-#   bash_alias_add
+# list of useful functions defined in `dotfiles/.bashrc`, with examples:
 #
-# list of useful variables defined in `dotfiles/.bashrc`:
+#   bash_prompt_table_variable_add
+#   # adds a variable to the prompt table
+#
+#      $ bash_prompt_table_variable_add TZ
+#
+#   bash_prompt_table_variable_rm
+#   # removes a variable from the prompt table
+#
+#      $ bash_prompt_table_variable_rm IPv4_eth1
+#
+#   bash_prompt_table_variable_insert_after_var
+#   # adds a variable to the prompt table, after the second variable
+#
+#      $ bash_prompt_table_variable_insert_after_var GZIP_OPTS TZ
+#
+#   bashrc_prompt_git_info_mountpoint_array_add
+#   # git info in prompt will check for repositories under this mount
+#
+#      $ bashrc_prompt_git_info_mountpoint_array_add /mnt/d
+#
+#   bash_prompt_table_variable_add_net
+#   # adds a network interface, Linux or Windows,  and it's IPv4 Address to the prompt table
+#
+#      $ bash_prompt_table_variable_add_net "Virtual Box"
+#
+#   bashrc_source_file
+#   # source a file safely and with debug info
+#
+#      $ bashrc_source_file ~/.config/my-secret-bashrc
+#
+#   bashrc_path_add
+#   # add a path to the $PATH safely (check if path exists, no redundancies)
+#
+#      $ bashrc_path_add /opt/bin /opt/sbin
+#
+#   bashrc_prompt_table_enable
+#   # turn on prompt table, enabled by default
+#
+#      $ bashrc_prompt_table_enable
+#
+#   bashrc_prompt_table_disable
+#   # turn off prompt table
+#
+#      $ bashrc_prompt_table_disable
+#
+#   bashrc_prompt_git_info_enable
+#   # turn on git info prompt, enabled by default
+#
+#      $ bashrc_prompt_git_info_enable
+#
+#   bashrc_prompt_git_info_disable
+#   # turn off git info prompt
+#
+#      $ bashrc_prompt_git_info_disable
+#
+#   bash_alias_add
+#   # add an alias safely (do not overwrite previous)
+#
+#      $ bash_alias_add mnt 'mount | sort -k3 | column -t | cut -c -${COLUMNS}'
+#
+# list of useful variables defined in `dotfiles/.bashrc`, with examples:
+#
 #   bash_prompt_bullet
+#   # a string, replaces prompt marker string
+#
+#      $ bash_prompt_bullet='•'
+#
 #   bash_color_force
+#   # true/false, forces color for prompt and a few other places
+#
+#      $ bash_color_force=true
 #
 # a few utility functions defined in `dotfiles/.bashrc`:
+#
 #   line_count
 #   ordinal
 #   character
-#   
+#
 
