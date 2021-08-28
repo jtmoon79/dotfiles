@@ -778,8 +778,15 @@ function __bashrc_prompt_last_exit_code_show () {
     echo -en "${__bashrc_prompt_last_exit_code_banner-}"
 }
 
-__bashrc_prompt_bullet_default='‣'  # $ ‣ • →  ► ⮕  ⭢ (global)
-# make sure $bash_prompt_bullet is set
+# bullet ideas
+#   $ ‣ • ◦ → ▶ ► ⮕ ⭢
+__bashrc_prompt_bullet_default='‣'  # (global)
+# set different bullet for root user
+if __bash_installed id && [[ "$(id -u 2>/dev/null)" = "0" ]]; then
+    __bashrc_prompt_bullet_default='▶'
+fi
+# user can override $bash_prompt_bullet in .bashrc.local.pre or .bashrc.local.post
+# however, make sure $bash_prompt_bullet at least exists
 if ! [[ "${bash_prompt_bullet+x}" ]]; then
     bash_prompt_bullet=${__bashrc_prompt_bullet_default}
 fi
