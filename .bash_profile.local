@@ -3,3 +3,10 @@
 # add customizations to this file
 # this file will not be overwritten by `dotfiles/install.sh`
 #
+# list of useful variables defined in `dotfiles/.bashrc.builtins.post`, with examples:
+#
+#   bash_prompt_net
+#   # override NICs added to prompt table, can shorten startup time
+#
+#      $ bash_prompt_net="eth0 LAN"
+#
