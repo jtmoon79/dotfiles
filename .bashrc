@@ -326,8 +326,15 @@ function __bashrc_path_add () {
 }
 
 function bashrc_path_add () {
-    # public-facing wrapper for __bashrc_path_add
-    __bashrc_path_add "${@}"
+    # public-facing wrapper for __bashrc_path_add, allows multiple arguments
+    declare path_=
+    declare -i ret=0
+    for path_ in "${@}"; do
+        if ! __bashrc_path_add "${path_}"; then
+            ret=1
+        fi
+    done
+    return ${ret}
 }
 
 function __bashrc_path_add_from_file () {
