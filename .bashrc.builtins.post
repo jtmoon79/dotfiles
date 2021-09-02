@@ -104,7 +104,7 @@ function locale_get () {
     # XXX: English-centric
 
     declare locales=
-    if ! __bash_installed locale || ! locales=$(locale -a 2>/dev/null); then
+    if ! __bash_installed locale || ! locales=$(command -p locale -a 2>/dev/null); then
         # a fallback value likely to be valid on constrained systems (i.e. Alpine Linux)
         echo -n 'C.UTF-8'
         return 1
@@ -169,12 +169,12 @@ if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
         eval "$(/usr/bin/dircolors -b)"
     fi
 
-    __bashrc_alias_check ls 'ls --color=auto'
+    __bashrc_alias_check ls 'command -p ls --color=auto'
     if __bash_installed dir; then
-        __bashrc_alias_check dir 'dir --color=auto'
+        __bashrc_alias_check dir 'command -p dir --color=auto'
     fi
     if __bash_installed vdir; then
-        __bashrc_alias_check vdir 'vdir --color=auto'
+        __bashrc_alias_check vdir 'command -p vdir --color=auto'
     fi
 fi
 
@@ -214,12 +214,12 @@ __bashrc_alias_greps_color
 # TODO: all alias creation should be moved into an example .bash_aliases
 #       that is part of this repository. They can use functions defined here.
 
-__bashrc_alias_safely_check l 'ls -lAa'
-__bashrc_alias_safely_check ll 'ls -lAa'
-__bashrc_alias_safely_check la 'ls -Aa'
-__bashrc_alias_safely_check ltr 'ls -Altr'
-__bashrc_alias_safely whence 'type -a'  # where, of a sort
-__bashrc_alias_safely_check psa 'ps -ef --forest'
+__bashrc_alias_safely_check l 'command -p ls -lAa'
+__bashrc_alias_safely_check ll 'command -p ls -lAa'
+__bashrc_alias_safely_check la 'command -p ls -Aa'
+__bashrc_alias_safely_check ltr 'command -p ls -Altr'
+__bashrc_alias_safely whence 'command -p type -a'  # where, of a sort
+__bashrc_alias_safely_check psa 'command -p ps -ef --forest'
 __bashrc_alias_safely_check envs env_sorted
 
 if ${__bashrc_installed_git}; then
@@ -229,7 +229,7 @@ if ${__bashrc_installed_git}; then
 fi
 
 if __bash_installed mount sort column cut; then
-    __bashrc_alias_safely mnt 'mount | sort -k3 | column -t | cut -c -${COLUMNS}'
+    __bashrc_alias_safely mnt 'command -p mount | command -p sort -k3 | command -p column -t | command -p cut -c -${COLUMNS}'
 fi
 
 # ============
@@ -238,7 +238,7 @@ fi
 
 # XXX: `$HOME` may be undefined in very constrained shells (like rescue shells or MinGW)
 #       but `~` is always defined
-__bashrc_path_add ~/bin
+bash_path_add ~/bin
 
 __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 
@@ -275,15 +275,23 @@ bash_prompt_table_variable_add_Internet
 # add the OS
 #
 
-__bashrc_OS_=
+__bashrc_os_release_out_=
 if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
     OS_RELEASE=${__bashrc_OperatingSystem}
     bash_prompt_table_variable_add OS_RELEASE
-elif __bashrc_OS_=$(bashrc_OS); then
-    OS_RELEASE=${__bashrc_OS_}
+elif __bashrc_os_release_out_=$(bash_OS); then
+    OS_RELEASE=${__bashrc_os_release_out_}
     bash_prompt_table_variable_add OS_RELEASE
 fi
-unset __bashrc_OS_
+unset __bashrc_os_release_out_
+
+# add the kernel
+__bashrc_kernel_name_out_=
+if __bashrc_kernel_out_=$(command -p uname -s -r 2> /dev/null); then
+    KERNEL_NAME=${__bashrc_kernel_out_}
+    bash_prompt_table_variable_add KERNEL_NAME
+fi
+unset __bashrc_kernel_name_out_
 
 # preload the table with some common shell environment variables that might be good to know
 bash_prompt_table_variable_add 'TERM'

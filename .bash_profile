@@ -58,37 +58,34 @@ fi
 
 function __bash_installed () {
     # are all passed args found in the $PATH?
-    if ! which which &>/dev/null; then
+    if ! command -p which which &>/dev/null; then
         return 1
     fi
-    declare prog=
-    for prog in "${@}"; do
-        if ! which "${prog}" &>/dev/null; then
-            return 1
-        fi
-    done
+    if ! command -p which "${@:-}" &>/dev/null; then
+        return 1
+    fi
     return 0
 }
 
 function readlink_portable () {
-    # make best attempt to use the available readlink (or realpath) but do not
+    # make best attempt to use the available `readlink` (or `realpath`) but do not
     # fail if $1 is not found.
-    # readlink options among different readlink implementations (GNU coreutils and BSD) vary.
-    # So make sure readlink exists and understands the options passed before
-    # using it.
+    #
+    # `readlink` options among different `readlink` implementations (GNU coreutils and BSD) vary.
+    # So make sure `readlink` exists and understands the options passed before using it.
     declare out=
 
     if __bash_installed readlink; then
         # GNU coreutils readlink supports '-e'
-        if out=$(readlink -n -e -- "${@}" 2>/dev/null); then
+        if out=$(command -p readlink -n -e -- "${@}" 2>/dev/null); then
             echo -n "${out}"
             return 0
         # BSD readlink supports '-f'
-        elif out=$(readlink -n -f -- "${@}" 2>/dev/null); then
+        elif out=$(command -p readlink -n -f -- "${@}" 2>/dev/null); then
             echo -n "${out}"
             return 0
         # old versions of readlink may not support '-n'
-        elif out=$(readlink -e -- "${@}" 2>/dev/null); then
+        elif out=$(command -p readlink -e -- "${@}" 2>/dev/null); then
             echo -n "${out}"
             return 0
         fi
@@ -97,12 +94,12 @@ function readlink_portable () {
     echo -n "${@}"
 }
 
-function __bash_profile_path_dir_ () {
+function __bash_profile_path_dir_print () {
     # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
     if __bash_installed dirname; then
-        path=$(dirname -- "${BASH_SOURCE:-}")
+        path=$(command -p dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
         path=~  # in case something is wrong, fallback to ~
@@ -110,7 +107,7 @@ function __bash_profile_path_dir_ () {
     echo -n "${path}"
 }
 
-__bash_profile_path_dir=$(__bash_profile_path_dir_)
+__bash_profile_path_dir=$(__bash_profile_path_dir_print)
 
 function __bash_profile_source_file () {
     declare sourcef=
@@ -130,7 +127,8 @@ function __bash_profile_source_file () {
     __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
 }
 
-__bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note *this* file!
+# note *this* file .bash_profile
+__bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")
 
 # useful for setting $force_multiplexer
 __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
@@ -165,7 +163,7 @@ then
             #
             # TODO: what about tmux in non-English locale?
             #
-            __bash_profile_tmux_detached=$(tmux ls | grep -v -m1 -Fe 'attached' | grep -v -Fe 'no server running' | cut -d: -f1) 2>/dev/null
+            __bash_profile_tmux_detached=$(tmux ls | command -p grep -v -m1 -Fe 'attached' | command -p grep -v -Fe 'no server running' | command -p cut -d: -f1) 2>/dev/null
         fi
         # `tmux` which will clear the console, so `sleep` to let user see what is about to happen
         if [[ -z "${__bash_profile_tmux_detached}" ]] ; then
@@ -203,7 +201,7 @@ then
             #
             # TODO: what about screen in non-English locale?
             #
-            __bash_profile_screen_detached=$(screen -list | grep -m1 -Fe '(Detached)' | tr -s '[:blank:]' | cut -f2)
+            __bash_profile_screen_detached=$(screen -list | command -p grep -m1 -Fe '(Detached)' | command -p tr -s '[:blank:]' | command -p cut -f2)
         fi
         # `screen` which will clear the console, so `sleep` to let user see what is about to happen
         if [[ -z "${__bash_profile_screen_detached}" ]]; then
@@ -212,12 +210,12 @@ then
             # without `-l` this will break logins
             echo "${PS4-}exec screen -l -RR -U" >&2
             sleep 0.5
-            exec screen -l -RR -U
+            command exec screen -l -RR -U
         else
             # found detached screen
             echo "${PS4-}exec screen -r '${__bash_profile_screen_detached}'" >&2
             sleep 0.5
-            exec screen -r "${__bash_profile_screen_detached}"
+            command exec screen -r "${__bash_profile_screen_detached}"
         fi
     fi
 fi

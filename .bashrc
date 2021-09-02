@@ -184,6 +184,11 @@ shopt -s shift_verbose
 # important helper `__bash_installed`
 # ------------------------------
 
+# TODO: use `command -p which` to check paths. How to confine paths to only check those in `command -p`?
+# TODO: should `bash_installed` only use `command -p -V` to check for existence? That might be more portable.
+# TODO: rename to `bash_installed`. No need to hide this function.
+# TODO: add different function for using `which` with current `PATH` setting
+
 # XXX: overwrites function in .bash_profile
 __bash_installed_which_warning=false
 __bash_installed_which=false
@@ -192,7 +197,7 @@ function __bash_installed () {
 
     # check that 'which' exists
     # cache that knowledge for slightly faster future calls to this function
-    if ! ${__bash_installed_which} && ! which which &> /dev/null; then
+    if ! ${__bash_installed_which} && ! command -p which which &> /dev/null; then
         if ${__bash_installed_which_warning}; then
             return 1
         fi
@@ -204,13 +209,11 @@ function __bash_installed () {
         return 1
     fi
     __bash_installed_which=true
-    declare prog=
     # XXX: bash 3 wants this one particular array expansion to have fallback value
-    for prog in "${@:-}"; do
-        if ! which "${prog}" &>/dev/null; then
-            return 1
-        fi
-    done
+    # TODO: why are other resolutions of `${@}` not changed to `${@-}`?
+    if ! command -p which "${@:-}" &>/dev/null; then
+        return 1
+    fi
 }
 
 # run once so $__bash_installed_which_warning is properly set
@@ -240,12 +243,12 @@ if ! [[ "${__bash_processed_files_array+x}" ]] ; then
     unset __bash_processed_files_array[0]
 fi
 
-function __bashrc_path_dir_bashrc_ () {
+function __bashrc_path_dir_bashrc_print () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
     if __bash_installed dirname; then
-        path=$(dirname -- "${BASH_SOURCE:-}")
+        path=$(command -p dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
         path=~  # in case something is wrong, fallback to ~
@@ -254,7 +257,7 @@ function __bashrc_path_dir_bashrc_ () {
 }
 
 #__bashrc_path_dir_bashrc=
-__bashrc_path_dir_bashrc=$(__bashrc_path_dir_bashrc_)
+__bashrc_path_dir_bashrc=$(__bashrc_path_dir_bashrc_print)
 if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
     __bashrc_path_dir_bashrc=~
 fi
@@ -266,7 +269,8 @@ if ! [[ "${__bash_sourced_files_array+x}" ]]; then
     unset __bash_sourced_files_array[0]
     echo "WARNING: __bash_sourced_files_array was not already created" >&2
 fi
-__bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")  # note this file!
+# note this .bashrc file!
+__bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")
 
 function __bashrc_source_file () {
     # source a file with some preliminary checks, print a debug message
@@ -285,7 +289,7 @@ function __bashrc_source_file () {
     source "${sourcef}"
 }
 
-function bashrc_source_file () {
+function bash_source_file () {
     # public-facing wrapper for __bashrc_source_file
     __bashrc_source_file "${@}"
 }
@@ -329,7 +333,7 @@ function __bashrc_path_add () {
     export PATH=${PATH}:${path}
 }
 
-function bashrc_path_add () {
+function bash_path_add () {
     # public-facing wrapper for __bashrc_path_add, allows multiple arguments
     declare path_=
     declare -i ret=0
@@ -359,7 +363,7 @@ function __bashrc_path_add_from_file () {
 # other misc. helper functions
 # ============================
 
-function bashrc_OS () {
+function bash_OS () {
     # print a useful string about this OS
     # See also
     #    http://whatsmyos.com/
@@ -497,22 +501,23 @@ function bashrc_OS () {
     echo -n "${os_flavor}${os}"
 }
 
-__bashrc_OperatingSystem=$(bashrc_OS)
+__bashrc_OperatingSystem=$(bash_OS)
 
 function __bashrc_replace_str () {
     # Given string $1, replace substring $2 with string $3 then echo the result.
     #
     # This function is the most portable method for doing such. Programs like
     # `sed` and `awk` vary too much or may not be available. Often, a bash
-    # substring replacement
-    # (e.g. `${foo//abc/123}`) suffices but bash 3.2 does not recognize '\t' as
-    # tab character.
+    # substring replacement (e.g. `${foo//abc/123}`) suffices but bash 3.2
+    # does not recognize '\t' as tab character.
+    #
+    # portable string replacement not reliant on `sed`, `awk`
     #
     # tested variations on implemention of this with function using command:
     #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __bashrc_replace_str "${table}" "  " " " >/dev/null; done;'
     #
 
-    if [[ ${#} != 3 ]]; then
+    if [[ ${#} -ne 3 ]]; then
         return 1
     fi
 
@@ -570,6 +575,9 @@ function line_count () {
     # input 'a\nb' yields "2"
     # input 'a\nb\n' yields "2"
     # input 'a\nb\nc' yields "3"
+    #
+    # portable line count, not reliant on `wc -l`
+    #
     declare line=
     declare -i count=0
     while read -rs line; do
@@ -578,7 +586,7 @@ function line_count () {
     if [[ "${line}" != '' ]]; then
         count+=1
     fi
-    echo -n "${count}"
+    command echo -n "${count}"
 }
 
 function env_sorted () {
@@ -592,7 +600,8 @@ function env_sorted () {
     # cause immediate exit if any program fail in the pipeline fails. This function will return
     # that failure code.
     (
-        set -o pipefail;
+        set -e
+        set -o pipefail
         env --null 2>/dev/null \
            | sort --zero-terminated 2>/dev/null \
            | tr '\000' '\n' 2>/dev/null
@@ -804,7 +813,7 @@ fi
 #       completes.
 #
 # TODO: consider adjusting title when ssh-ing to other places, e.g. "ssh foo@bar ..." then swap back
-#       in.
+#       in. I have no idea how to do that.
 #
 
 # save the current title? https://unix.stackexchange.com/a/28520/21203
@@ -822,8 +831,8 @@ function __bashrc_title_set () {
     if [[ "${SSH_CONNECTION+x}" ]]; then
         ssh_connection=" (via ${SSH_CONNECTION})"
     fi
-    declare user_=${USER-$(whoami)}  # MinGW bash may not set $USER
-    declare host_=${HOSTNAME-$(hostname)}  # some bash may not set $HOSTNAME
+    declare user_=${USER-$(command -p whoami)}  # MinGW bash may not set $USER
+    declare host_=${HOSTNAME-$(command -p hostname)}  # some bash may not set $HOSTNAME
     echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__bashrc_title_set_TTY} hosted by ${__bashrc_title_set_OS} running ${__bashrc_title_set_kernel}${ssh_connection}\007"
 }
 
@@ -864,7 +873,6 @@ fi
 
 function __bashrc_prompt_table_max () {
     # return maximum integer
-    # function name is odd so it is less likely to be overwritten
     if [[ ${1} -gt ${2} ]]; then
         echo -n "${1}"
     else
@@ -873,11 +881,11 @@ function __bashrc_prompt_table_max () {
 }
 
 function __bashrc_window_column_count () {
-    # safely get the columns wide (if a command fails, $cols will become value 0)
+    # safely get the columns wide, fallback to reasonable default if attempts fail
     declare -i cols
     cols=${COLUMNS:-0}
     if [[ ${cols} -le 0 ]]; then
-        cols=$(tput cols 2>/dev/null || true)
+        cols=$(command -p tput cols 2>/dev/null || true)
     fi
     if [[ ${cols} -le 0 ]]; then
         cols=80  # previous attempts failed, fallback to 80
@@ -885,7 +893,7 @@ function __bashrc_window_column_count () {
     echo -n ${cols}
 }
 
-__bashrc_prompt_table_tty=$(tty 2>/dev/null || true)  # global, set once
+__bashrc_prompt_table_tty=$(command -p tty 2>/dev/null || true)  # global, set once
 
 __bashrc_prompt_table_column_default='│'  # ┃ ║ ║ │ │ (global)
 if ! [[ "${bash_prompt_table_column+x}" ]]; then
@@ -978,7 +986,7 @@ function __bash_prompt_table_shift_from () {
         return 1
     fi
     # busybox `tac` does not support `-s`
-    if ! { echo '' | tac -s ' '; } &>/dev/null; then
+    if ! { echo '' | command -p tac -s ' '; } &>/dev/null; then
         return 1
     fi
 
@@ -990,7 +998,7 @@ function __bash_prompt_table_shift_from () {
     fi
     declare -i i=
     declare -i j=-1
-    for i in $(echo -n "${!bash_prompt_table_variables_array[*]}" ' ' | tac -s ' '); do
+    for i in $(echo -n "${!bash_prompt_table_variables_array[*]}" ' ' | command -p tac -s ' '); do
         if [[ ${j} -eq -1 ]]; then  # set $j on first iteration
             j=$((${i} + 1))
         fi
@@ -1131,19 +1139,19 @@ function bash_prompt_table_variable_print_values () {
             echo -e "bash_prompt_table_variables_array[${i}]=${bash_prompt_table_variables_array[${i}]}\t'${!var}'"
             i=$((i + 1))
         done
-    ) 2>/dev/null | column -t -s $'\t'
+    ) 2>/dev/null | command -p column -t -s $'\t'
 }
 
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal () {
     # pass a single-character string, prints the numeric ordinal value
-    (LC_CTYPE=C printf '%d' "'${1:0:1}")
+    (LC_CTYPE=C command -p printf '%d' "'${1:0:1}")
 }
 
 function character () {
     # pass a number, prints the character
     [ "${1}" -lt 256 ] || return 1
-    printf "\\$(printf '%03o' "${1}")"
+    command -p printf "\\$(printf '%03o' "${1}")"
 }
 
 function __bashrc_prompt_table_expr_length () {
@@ -1163,13 +1171,13 @@ function __bashrc_prompt_table_blank_n_printf1 () {
     # XXX: presumes `seq`
     #printf '%0.s ' {1..${1}}  # does not correctly expand
     # shellcheck disable=SC2046
-    printf '%0.s ' $(seq 1 ${1})
+    command -p printf '%0.s ' $(seq 1 ${1})
 }
 
 function __bashrc_prompt_table_blank_n_printf2 () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5801221/471376
-    printf "%${1}s" ' '
+    command -p printf "%${1}s" ' '
 }
 
 function __bashrc_prompt_table_blank_n_for_echo () {
@@ -1185,7 +1193,7 @@ function __bashrc_prompt_table_blank_n_awk () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/23978009/471376
     # XXX: presumes `awk`
-    awk "BEGIN { while (c++ < ${1}) printf \" \" ; }"
+    command -p awk "BEGIN { while (c++ < ${1}) printf \" \" ; }"
 }
 
 function __bashrc_prompt_table_blank_n_yes_head () {
@@ -1199,7 +1207,7 @@ function __bashrc_prompt_table_blank_n_head_zero () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/16617155/471376
     # XXX: presumes `head` and `tr`
-    head -c ${1} /dev/zero | tr '\0' ' '
+    command -p head -c ${1} /dev/zero | command -p tr '\0' ' '
 }
 
 # XXX: hacky method to quickly print blanks without relying on installed programs
@@ -1378,11 +1386,11 @@ function __bashrc_prompt_table () {
     fi
 }
 
-function bashrc_prompt_table_enable() {
+function bash_prompt_table_enable() {
     # public-facing 'on' switch for prompt table
     __bashrc_prompt_table_enable=true
 }
-function bashrc_prompt_table_disable() {
+function bash_prompt_table_disable() {
     # public-facing 'off' switch for prompt table
     __bashrc_prompt_table_enable=false
 }
@@ -1434,11 +1442,11 @@ function __bashrc_prompt_git_info_do () {
     && [[ ${#__bashrc_prompt_git_info_mountpoint_array[@]} -ne 0 ]]
 }
 
-function bashrc_prompt_git_info_enable() {
+function bash_prompt_git_info_enable() {
     # public-facing 'on' switch for prompt git info
     __bashrc_prompt_git_info_enable=true
 }
-function bashrc_prompt_git_info_disable() {
+function bash_prompt_git_info_disable() {
     # public-facing 'off' switch for prompt git info
     __bashrc_prompt_git_info_enable=false
 }
@@ -1448,7 +1456,7 @@ function __bash_path_mount_point () {
     if ! ${__bashrc_installed_stat}; then
         return 1
     fi
-    stat '--format=%m' --dereference "${1}" 2>/dev/null
+    command -p stat '--format=%m' --dereference "${1}" 2>/dev/null
 }
 
 # allow forcing git prompt for mount paths that might be ignored (i.e. some remote paths)
@@ -1456,8 +1464,14 @@ function __bash_path_mount_point () {
 __bashrc_prompt_git_info_mountpoint_array[0]=
 unset __bashrc_prompt_git_info_mountpoint_array[0]
 
-function __bashrc_prompt_git_info_mountpoint_array_add () {
+function bash_prompt_git_info_mountpoint_array_add () {
     # add path to list of paths that should force git prompt
+    #
+    # this function will reduce the path to it's mount point, then add that mount point path
+    # to the private global $__bashrc_prompt_git_info_mountpoint_array
+    if [[ ${#} -eq 0 ]]; then
+        return 1
+    fi
     declare -i ret=0
     declare arg=
     for arg in "${@}"; do
@@ -1491,18 +1505,15 @@ function __bashrc_prompt_git_info_mountpoint_array_add () {
         else
             __bashrc_prompt_git_info_mountpoint_array[${len_array}]=${arg_mp}
         fi
-        echo "${PS4-}${FUNCNAME-__bashrc_prompt_git_info_mountpoint_array_add} '${arg_mp}'" >&2
+        echo "${PS4-}${FUNCNAME-bashrc_prompt_git_info_mountpoint_array_add} '${arg_mp}'" >&2
     done
     return ${ret}
 }
-__bashrc_prompt_git_info_mountpoint_array_add "/"  # mount point '/' is very likely not a remote filesystem
+# mount point '/' is very likely not a remote filesystem
+bash_prompt_git_info_mountpoint_array_add "/"
 
-function bashrc_prompt_git_info_mountpoint_array_add () {
-    # public-facing wrapper for __bashrc_prompt_git_info_mountpoint_array_add
-    __bashrc_prompt_git_info_mountpoint_array_add "${@}"
-}
 
-function bashrc_prompt_git_info_mountpoint_array_print () {
+function bash_prompt_git_info_mountpoint_array_print () {
     # print the array one entry per line
     declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
     declare -i i=0
@@ -1515,7 +1526,7 @@ function bashrc_prompt_git_info_mountpoint_array_print () {
 }
 
 function __bashrc_prompt_git_info_mountpoint_array_contains () {
-    # is path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
+    # is mount point path for path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
     # if contains return 0
     # else return 1
     declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
@@ -1564,7 +1575,7 @@ function __bashrc_prompt_git_info () {
         # preferrably not for remote mount points. Remote mounts often take a
         # long time for `git worktree list` to finish.
         # The user can add to acceptable paths via
-        # `__bashrc_prompt_git_info_mountpoint_array_add "/some/path"`.
+        # `bash_prompt_git_info_mountpoint_array_add "/some/path"`.
         declare mountpoint=
         mountpoint=$(__bash_path_mount_point "${PWD}")
         declare mountpoint_okay=false
@@ -1595,17 +1606,25 @@ function __bashrc_prompt_git_info () {
             fi
            __git_ps1 2>/dev/null)" || true
     #out+="$(git rev-parse --symbolic-full-name HEAD) $()"
+    # a few example outputs of `__git_ps1` where current branch is "master", one example per line:
+    #     (master $=)
+    #     (master *$=)
+    #     (master *$>)
 
     # change to red if repository non-clean; check for literal substring '*='
     if ${__bashrc_prompt_color}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]] || [[ "${out}" =~ '*$=' ]] || [[ "${out}" =~ '*$>' ]]; then
+            # local changes
             out='\e[31m'"${out}"'\e[0m'  # red
         elif [[ "${out}" =~ '<)' ]]; then
+            # behind remote branch, no local changes
             out='\e[93m'"${out}"'\e[0m'  # light yellow
         elif [[  "${out}" =~ 'GIT_DIR!' ]]; then
+            # in a `.git` git repository data directory
             out='\e[1m\e[95m'"${out}"'\e[0m'  #  bold light magenta
         fi
+            # else local and remote are in same state, local is not disturbed
     fi
     # use echo to interpret color sequences here, PS1 will not attempt to interpret this functions
     # output
@@ -1766,7 +1785,7 @@ function __bashrc_prompt_live_updates () {
 }
 
 # do not overwrite prior definition of __bashrc_prompt_extras
-if ! type -t __bashrc_prompt_extras &>/dev/null; then
+if ! command type -t __bashrc_prompt_extras &>/dev/null; then
     function __bashrc_prompt_extras () {
         # stub function. Override this function in `.bashrc.local.post`.
         # This function runs on every prompt refresh before the table is printed.
@@ -1786,25 +1805,25 @@ PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_upda
 
 function __bashrc_alias_safely () {
     # create alias if it does not obscure a program in the $PATH
-    if type "${1}" &>/dev/null; then
+    if command type "${1}" &>/dev/null; then
         return 1
     fi
-    alias "${1}"="${2}"
+    command alias "${1}"="${2}"
 }
 
 function __bashrc_alias_check () {
     # create alias if running the alias succeeds
-    (cd ~ && (${2})) &>/dev/null || return
-    alias "${1}"="${2}"
+    (command cd ~ && (${2})) &>/dev/null || return
+    command alias "${1}"="${2}"
 }
 
 function __bashrc_alias_safely_check () {
     # create alias if it does not obscure a program in the $PATH and running the alias succeeds
-    if type "${1}" &>/dev/null; then
+    if command type "${1}" &>/dev/null; then
         return 1
     fi
-    if (set -o pipefail; cd ~ && (${2})) &>/dev/null; then
-        alias "${1}"="${2}"
+    if (set -o pipefail; command cd ~ && (${2})) &>/dev/null; then
+        command alias "${1}"="${2}"
     else
         return 1
     fi
@@ -1837,7 +1856,7 @@ function __bashrc_alias_greps_color () {
         # run simplest match with the grep program to make sure it understands option '--color=auto'
         if __bash_installed "${grep_path}" \
             && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
-            && (echo '' | "${grep_path}" --color=auto '' &>/dev/null); then
+            && (echo '' | command -p "${grep_path}" --color=auto '' &>/dev/null); then
             alias "${grep_base}"="${grep_path} --color=auto"
         fi
     done
@@ -1907,37 +1926,37 @@ function print_dev_IPv4_Linux () {
     declare out_=
     # prefer `ip` as it is more consistent and will replace `ifconfig`
     if __bash_installed ip; then
-        out_=$(ip address show dev "${1-}" 2>/dev/null) || return 1
+        out_=$(command -p ip address show dev "${1-}" 2>/dev/null) || return 1
         out_=$(
             echo -n "${out_}" \
-            | grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
-            | tr -s ' ' \
-            | cut -f3 -d ' ' \
-            | cut -f1 -d '/'
+            | command -p grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
+            | command -p tr -s ' ' \
+            | command -p cut -f3 -d ' ' \
+            | command -p cut -f1 -d '/'
         ) || return 1
         if [[ "${out_}" = '' ]]; then
             return 1
         fi
         echo -n "${out_}"
     elif __bash_installed ifconfig; then
-        out_=$(ifconfig "${1-}" 2>/dev/null) || return 1
+        out_=$(command -p ifconfig "${1-}" 2>/dev/null) || return 1
         # most `ifconfig` print a leading ' ' but some print leading '\t' (FreeBSD)
         declare line1=
         line1=$(
             echo -n "${out_}" \
-            | grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
-            | tr -d '	'
+            | command -p grep -m1 -Ee '[[:space:]]inet[[:space:]]' \
+            | command -p tr -d '	'
         ) || return 1
         # possible variations:
         #     inet addr:192.168.1.2 Bcast:192.168.1.255 Mask:255.255.255.0
         #     inet 10.10.10.100 netmask 0xffffff00 broadcast 10.10.10.255
         #     inet 172.0.0.1 netmask 255.255.240.0 broadcast 172.0.0.255
-        line1=$(echo -n "${line1## }" | tr -s ' ') || return 1
+        line1=$(command echo -n "${line1## }" | tr -s ' ') || return 1
         out_=$(
-            echo -n "${line1}" \
-            | cut -f2 -d ' ' \
-            | cut -f1 -d '/' \
-            | cut -f2 -d ':'
+            command echo -n "${line1}" \
+            | command -p cut -f2 -d ' ' \
+            | command -p cut -f1 -d '/' \
+            | command -p cut -f2 -d ':'
         ) || return 1
         if [[ "${out_}" = '' ]]; then
             return 1
@@ -1980,9 +1999,9 @@ function print_dev_IPv4_Win () {
     declare out=
     out=$(
         "${netsh}" interface ipv4 show addresses name="${name}" \
-           | grep -m1 -Fe 'IP Address:' \
-           | tr -d ' \r\n' \
-           | cut -f 2 -d ':'
+           | command -p grep -m1 -Fe 'IP Address:' \
+           | command -p tr -d ' \r\n' \
+           | command -p cut -f 2 -d ':'
     ) || return 1
     if [[ "${out}" = '' ]]; then
         return 1
@@ -1996,14 +2015,14 @@ function bash_print_host_IPv4() {
 
     declare host_=${1-}
     declare out=
-    if __bash_installed host; then
+    if __bash_installed host grep; then
         # Ubuntu 18 and older version of `host` does not have -U option
         declare host_opts1=
-        if (host --help 2>&1 || true) | grep -m1 -q -Ee '[[:space:]]-U[[:space:]]'; then
+        if (command -p host --help 2>&1 || true) | command -p grep -m1 -q -Ee '[[:space:]]-U[[:space:]]'; then
             host_opts1='-U'
         fi
         # make the DNS request with short timeouts
-        if ! out=$(host -4 -t A -W 2 ${host_opts1} "${host_}" 2>/dev/null); then
+        if ! out=$(command -p host -4 -t A -W 2 ${host_opts1} "${host_}" 2>/dev/null); then
             return 1
         fi
         # in en-US locale the `host` output should look like:
@@ -2044,7 +2063,8 @@ function bash_print_internet_IPv4() {
 
     declare out=
     # make the web request with short timeouts
-    if ! out=$(curl \
+    if ! out=$(command -p \
+        curl \
         --header "Host: ${ihost}" \
         --max-time 2 \
         --connect-timeout 2 \
@@ -2085,6 +2105,7 @@ function bash_prompt_table_variable_add_net () {
     if ! ipv4=$(print_dev_IPv4 "${devname}" 2>/dev/null); then
         return 1
     fi
+    # create a global variable from the generated variable name and value
     declare -g IPv4_${devname}=${ipv4}
     bash_prompt_table_variable_insert_at_index "IPv4_${devname}" "${@}"
 }
@@ -2112,9 +2133,9 @@ function __bashrc_download_from_to () {
     declare -r path=${1}
     shift
     if __bash_installed curl; then
-        (set -x; curl "${@}" --output "${path}" "${url}")
+        (set -x; command -p curl "${@}" --output "${path}" "${url}")
     elif __bash_installed wget; then
-        (set -x; wget "${@}" -O "${path}" "${url}")
+        (set -x; command -p wget "${@}" -O "${path}" "${url}")
     else
         return 1
     fi
@@ -2224,7 +2245,7 @@ fi
 # print information this .bashrc has done for the user
 # ====================================================
 
-function bashrc_start_info () {
+function bash_start_info () {
     # echo information about this shell instance for the user with pretty formatting and indentation
 
     # TODO: show newly introduced environment variables
@@ -2238,7 +2259,7 @@ function bashrc_start_info () {
         boff='\e[0m'
     fi
 
-    function __bashrc_start_info_time_start() {
+    function __bash_start_info_time_start() {
         # __bash_start_beg_time should be set by calling .bash_profile
         # XXX: a smoother way to do this would be overriding the prompt_timer values
         #      once during startup
@@ -2255,9 +2276,9 @@ function bashrc_start_info () {
     }
 
     if [[ "${1-}" == '--minimal' ]]; then
-        echo -e "Run ${b}bashrc_start_info${boff} for detailed information about this shell instance."
+        echo -e "Run ${b}bash_start_info${boff} for detailed information about this shell instance."
         echo -e "Run ${b}bash_update_dots${boff} to update."
-        __bashrc_start_info_time_start
+        __bash_start_info_time_start
         return
     fi
 
@@ -2267,10 +2288,10 @@ Using bash ${BASH_VERSION}, process ID $$
 "
 
     # echo information functions available
-    declare funcs=$(__bashrc_replace_str "$(declare -F)" 'declare -f ' '	')
+    declare funcs=$(__bashrc_replace_str "$(declare -F | command -p grep -Ee 'declare .. bash*')" 'declare -f ' '	')
     declare -i funcs_c=$(echo -n "${funcs}" | line_count)
     echo -e "\
-${b}functions (×${funcs_c}) in this shell (declare -F):${boff}
+${b}public functions (×${funcs_c}) in this shell (declare -F):${boff}
 
 ${funcs}
 "
@@ -2367,7 +2388,7 @@ ${b}Paths (×${paths_c}):${boff}
         echo -e "\
 ${b}System and Users (w):${boff}
 
-	$(__bashrc_tab_str "$(w)")
+	$(__bashrc_tab_str "$(command -p w)")
 "
     fi
 
@@ -2395,7 +2416,10 @@ ${b}Special Features of this .bashrc:${boff}
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
-	$(__bashrc_start_info_time_start)
+	$(__bash_start_info_time_start)
+
+	See full list of hidden and public variables used by these bash dot files using command:
+		( declare -p && declare -F ) | grep -E -e '^declare .. __bash.*' -e '^declare .. _bash.*' -e '^declare .. bash.*'
 
 	Turn off *all* prompt activity with:
 		trap '' DEBUG
@@ -2404,6 +2428,6 @@ ${b}Special Features of this .bashrc:${boff}
 "
 }
 
-bashrc_start_info --minimal >&2
+bash_start_info --minimal >&2
 
 set +u

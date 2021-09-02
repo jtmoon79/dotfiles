@@ -20,45 +20,46 @@
 #
 #      $ bash_prompt_table_variable_insert_after_var GZIP_OPTS TZ
 #
-#   bashrc_prompt_git_info_mountpoint_array_add
+#   bash_prompt_git_info_mountpoint_array_add
 #   # git info in prompt will check for repositories under this mount
+#   # in WSL2 Linux, there may be git repositories on the local Windows "D:\" drive
 #
-#      $ bashrc_prompt_git_info_mountpoint_array_add /mnt/d
+#      $ bash_prompt_git_info_mountpoint_array_add /mnt/d
 #
 #   bash_prompt_table_variable_add_net
 #   # adds a network interface, Linux or Windows,  and it's IPv4 Address to the prompt table
 #
 #      $ bash_prompt_table_variable_add_net "Virtual Box"
 #
-#   bashrc_source_file
+#   bash_source_file
 #   # source a file safely and with debug info
 #
-#      $ bashrc_source_file ~/.config/my-secret-bashrc
+#      $ bash_source_file ~/.config/my-secret-bashrc
 #
-#   bashrc_path_add
+#   bash_path_add
 #   # add a path to the $PATH safely (check if path exists, no redundancies)
 #
-#      $ bashrc_path_add /opt/bin /opt/sbin
+#      $ bash_path_add /opt/bin /opt/sbin
 #
-#   bashrc_prompt_table_enable
+#   bash_prompt_table_enable
 #   # turn on prompt table, enabled by default
 #
-#      $ bashrc_prompt_table_enable
+#      $ bash_prompt_table_enable
 #
-#   bashrc_prompt_table_disable
+#   bash_prompt_table_disable
 #   # turn off prompt table
 #
-#      $ bashrc_prompt_table_disable
+#      $ bash_prompt_table_disable
 #
-#   bashrc_prompt_git_info_enable
+#   bash_prompt_git_info_enable
 #   # turn on git info prompt, enabled by default
 #
-#      $ bashrc_prompt_git_info_enable
+#      $ bash_prompt_git_info_enable
 #
-#   bashrc_prompt_git_info_disable
+#   bash_prompt_git_info_disable
 #   # turn off git info prompt
 #
-#      $ bashrc_prompt_git_info_disable
+#      $ bash_prompt_git_info_disable
 #
 #   bash_alias_add
 #   # add an alias safely (do not overwrite previous)
@@ -83,4 +84,3 @@
 #   ordinal
 #   character
 #
-
