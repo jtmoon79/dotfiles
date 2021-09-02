@@ -1,7 +1,10 @@
 # .bashrc
 #
 # changes to this file will be overwritten by `dotfiles/install.sh`
-# add customizations to neighboring `.bashrc.local.post` file
+# add customizations to neighboring `.bashrc.local.post` file.
+#
+# Install this file and neighboring dotfiles using instructions in
+#     https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
 # This file defines useful fuctions, makes very few changes. See neighboring files
 # `.bashrc.builtins.post` and `.bashrc.local.post` which make shell changes.
@@ -27,7 +30,6 @@
 #   - not POSIX compliant!
 #
 # Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
-# Install using https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
 # Designed from Debian-derived Linux. Attempts to work with other Linux and Unix
 # in varying environments. Avoids reliance on tools like `grep`, `sed`, etc.
@@ -131,6 +133,10 @@
 #       provide extended examples.
 #
 # TODO: move these bash files to new sub-directory in dotfiles project
+#
+# TODO: add link to source repo in intro https://github.com/jtmoon79/dotfiles
+#
+# TODO: move more settings into .bashrc.local
 #
 
 

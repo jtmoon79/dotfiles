@@ -19,6 +19,7 @@
 # This file works best with companion `dotfiles/.bashrc`,
 # `dotfiles/.bashrc.builtins.post`, `dotfiles/.bashrc.local.post`.
 # Run `dotfiles/install.sh` to install those companion files.
+# https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
 # XXX: this calls multiplexers backwards
 #      this file is processed by bash instance and which in-turn starts a multiplexer instance
