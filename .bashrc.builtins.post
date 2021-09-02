@@ -104,7 +104,7 @@ function locale_get () {
     # XXX: English-centric
 
     declare locales=
-    if ! __bash_installed locale || ! locales=$(command -p locale -a 2>/dev/null); then
+    if ! bash_installed locale || ! locales=$(command -p locale -a 2>/dev/null); then
         # a fallback value likely to be valid on constrained systems (i.e. Alpine Linux)
         echo -n 'C.UTF-8'
         return 1
@@ -142,7 +142,7 @@ export LC_ALL=${LC_ALL-${__locale_get}}  # see https://unix.stackexchange.com/a/
 #     for locale in $(locale -a); do (export LANG=$locale; echo -en "$locale\t"; date); done
 #
 
-if __bash_installed less; then
+if bash_installed less; then
     # from `man less`
     #
     #     If neither LESSCHARSET nor LESSCHARDEF is set, but any of the strings
@@ -156,7 +156,7 @@ fi
 # misc color
 # ----------
 
-if (__bash_installed gcc || __bash_installed 'g++') && ${__bashrc_color_apps}; then
+if (bash_installed gcc || bash_installed 'g++') && ${__bashrc_color_apps}; then
     # colored GCC warnings and errors
     export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 fi
@@ -170,10 +170,10 @@ if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
     fi
 
     __bashrc_alias_check ls 'command -p ls --color=auto'
-    if __bash_installed dir; then
+    if bash_installed dir; then
         __bashrc_alias_check dir 'command -p dir --color=auto'
     fi
-    if __bash_installed vdir; then
+    if bash_installed vdir; then
         __bashrc_alias_check vdir 'command -p vdir --color=auto'
     fi
 fi
@@ -228,7 +228,7 @@ if ${__bashrc_installed_git}; then
     __bashrc_alias_safely gits 'git status -vv'
 fi
 
-if __bash_installed mount sort column cut; then
+if bash_installed mount sort column cut; then
     __bashrc_alias_safely mnt 'command -p mount | command -p sort -k3 | command -p column -t | command -p cut -c -${COLUMNS}'
 fi
 

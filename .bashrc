@@ -180,57 +180,71 @@ export BASH_VERSION_MAJOR \
 # prints an error message when the shift count exceeds the number of positional parameters
 shopt -s shift_verbose
 
-# ------------------------------
-# important helper `__bash_installed`
-# ------------------------------
+# ----------------------------------------
+# very important helper `bash_installed`
+# ----------------------------------------
 
 # TODO: use `command -p which` to check paths. How to confine paths to only check those in `command -p`?
 # TODO: should `bash_installed` only use `command -p -V` to check for existence? That might be more portable.
 # TODO: rename to `bash_installed`. No need to hide this function.
 # TODO: add different function for using `which` with current `PATH` setting
 
-# XXX: overwrites function in .bash_profile
+# XXX: this function overwrites that in .bash_profile
 __bash_installed_which_warning=false
-__bash_installed_which=false
-function __bash_installed () {
+__bash_installed_which=
+function bash_installed () {
     # are all passed args found in the $PATH?
 
-    # check that 'which' exists
-    # cache that knowledge for slightly faster future calls to this function
-    if ! ${__bash_installed_which} && ! command -p which which &> /dev/null; then
-        if ${__bash_installed_which_warning}; then
+    if ! [[ "${__bash_installed_which}" = '' ]]; then
+        # assuming `which` was found then this will be the path taken for all remaining calls to this function
+        # after the first call
+        # XXX: bash 3 wants this one particular array expansion to have fallback value
+        # TODO: why are other resolutions of `${@}` not changed to `${@-}`?
+        if ! command -p "${__bash_installed_which}" "${@:-}" &>/dev/null; then
             return 1
         fi
-        # print one warning
+        return 0
+    fi
+
+    # if `which` was never found, then print this warning
+    if ${__bash_installed_which_warning}; then
+        return 1
+    fi
+
+    # check that 'which' exists, cache the `which` path before any more paths are added to $PATH
+    # this presumes that default $PATH will be the safest and most standard
+    if [[ "${__bash_installed_which}" = '' ]] && ! command -p which which &> /dev/null; then
+        # print warning once
         __bash_installed_which_warning=true
         echo "WARNING: 'which' was not found in current \$PATH. This will limit features from this '${0}'" >&2
         echo "         Current Path:" >&2
         echo "         ${PATH}" >&2
         return 1
+    elif [[ "${__bash_installed_which}" = '' ]]; then
+        # should only be set once
+        __bash_installed_which=$(which which 2>/dev/null)
     fi
-    __bash_installed_which=true
-    # XXX: bash 3 wants this one particular array expansion to have fallback value
-    # TODO: why are other resolutions of `${@}` not changed to `${@-}`?
-    if ! command -p which "${@:-}" &>/dev/null; then
-        return 1
+
+    if [[ ${#} -eq 0 ]]; then
+        return 0
+    elif ! [[ "${__bash_installed_which}" = '' ]]; then
+        # this is the first call of this function `bash_installed` but it was called with passed parameters
+        # so go ahead and check those parameters
+        bash_installed "${@-}"
     fi
 }
 
-# run once so $__bash_installed_which_warning is properly set
-__bash_installed
+# run `bash_installed` once so $__bash_installed_which_warning and $__bash_installed_which is properly set
+bash_installed
+
 # other sanity warnings (most likely the PATH is screwed up)
-# TODO: replace presumed use of these with bash built-in alternatives
-for __bashrc_prog_sanity_check in dirname cat; do
-    if ! __bash_installed "${__bashrc_prog_sanity_check}"; then
+# TODO: replace presumed use of these programs with bash built-in alternatives
+for __bashrc_prog_sanity_check in dirname cat tr cut; do
+    if ! bash_installed "${__bashrc_prog_sanity_check}"; then
         echo "WARNING: typical Unix program '${__bashrc_prog_sanity_check}' not found in PATH; this shell will behave poorly" >&2
     fi
 done
 unset __bashrc_prog_sanity_check
-
-function is_installed () {
-    # user-facing function wrapper
-    __bash_installed "${@}"
-}
 
 # ---------------------------------------
 # functions for sourcing other bash files
@@ -247,7 +261,7 @@ function __bashrc_path_dir_bashrc_print () {
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
-    if __bash_installed dirname; then
+    if bash_installed dirname; then
         path=$(command -p dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
@@ -454,7 +468,7 @@ function bash_OS () {
             #
             #    CentOS release 6.7 (Final)
             #
-            if is_installed tr; then
+            if bash_installed tr; then
                 cat /etc/centos-release | tr -d '\n'
             else
                 cat /etc/centos-release
@@ -495,7 +509,7 @@ function bash_OS () {
         return
     fi
 
-    if __bash_installed showrev; then
+    if bash_installed showrev; then
         os_flavor='Solaris '
     fi
     echo -n "${os_flavor}${os}"
@@ -593,7 +607,7 @@ function env_sorted () {
     # Print environment sorted
     # Accounts for newlines within environment values (common in $LS_COLORS)
 
-    if ! __bash_installed env sort tr; then
+    if ! bash_installed env sort tr; then
         return 1
     fi
     # The programs env and sort may not supported the passed options. Shell option `pipefail` will
@@ -795,7 +809,7 @@ function __bashrc_prompt_last_exit_code_show () {
 #   $ ‣ • ◦ → ▶ ► ⮕ ⭢
 __bashrc_prompt_bullet_default='‣'  # (global)
 # set different bullet for root user
-if __bash_installed id && [[ "$(id -u 2>/dev/null)" = "0" ]]; then
+if bash_installed id && [[ "$(id -u 2>/dev/null)" = "0" ]]; then
     __bashrc_prompt_bullet_default='▶'
 fi
 # user can override $bash_prompt_bullet in .bashrc.local.pre or .bashrc.local.post
@@ -982,7 +996,7 @@ function __bash_prompt_table_shift_from () {
     #    A[10]='Pop'
     #    A[11]=''
     #
-    if ! __bash_installed tac; then
+    if ! bash_installed tac; then
         return 1
     fi
     # busybox `tac` does not support `-s`
@@ -1129,7 +1143,7 @@ function bash_prompt_table_variable_print () {
 
 function bash_prompt_table_variable_print_values () {
     # print $bash_prompt_table_variables_array with values
-    if ! __bash_installed column; then
+    if ! bash_installed column; then
         return 1
     fi
     (
@@ -1407,12 +1421,12 @@ function bash_prompt_table_print () {
 __bashrc_prompt_git_info_enable=${__bashrc_prompt_git_info_enable-true}  # global
 
 __bashrc_installed_git=false  # global
-if __bash_installed git; then
+if bash_installed git; then
     __bashrc_installed_git=true
 fi
 
 __bashrc_installed_stat=false  # global
-if __bash_installed stat; then
+if bash_installed stat; then
     __bashrc_installed_stat=true
 fi
 
@@ -1854,7 +1868,7 @@ function __bashrc_alias_greps_color () {
         declare grep_base=
         grep_base=${grep_path##*/}  # get basename
         # run simplest match with the grep program to make sure it understands option '--color=auto'
-        if __bash_installed "${grep_path}" \
+        if bash_installed "${grep_path}" \
             && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
             && (echo '' | command -p "${grep_path}" --color=auto '' &>/dev/null); then
             alias "${grep_base}"="${grep_path} --color=auto"
@@ -1872,10 +1886,10 @@ function print_dev_IPv4_Linux () {
     # TODO: this function should use only bash built-in features, rely less on
     #       `grep` etc.
 
-    if ! __bash_installed ip && ! __bash_installed ifconfig; then
+    if ! bash_installed ip && ! bash_installed ifconfig; then
         return 1
     fi
-    if ! __bash_installed grep tr cut; then
+    if ! bash_installed grep tr cut; then
         return 1
     fi
 
@@ -1925,7 +1939,7 @@ function print_dev_IPv4_Linux () {
 
     declare out_=
     # prefer `ip` as it is more consistent and will replace `ifconfig`
-    if __bash_installed ip; then
+    if bash_installed ip; then
         out_=$(command -p ip address show dev "${1-}" 2>/dev/null) || return 1
         out_=$(
             echo -n "${out_}" \
@@ -1938,7 +1952,7 @@ function print_dev_IPv4_Linux () {
             return 1
         fi
         echo -n "${out_}"
-    elif __bash_installed ifconfig; then
+    elif bash_installed ifconfig; then
         out_=$(command -p ifconfig "${1-}" 2>/dev/null) || return 1
         # most `ifconfig` print a leading ' ' but some print leading '\t' (FreeBSD)
         declare line1=
@@ -1992,7 +2006,7 @@ function print_dev_IPv4_Win () {
             return 1
         fi
     fi
-    if ! __bash_installed grep tr cut; then
+    if ! bash_installed grep tr cut; then
         return 1
     fi
     declare -r name=${1}
@@ -2015,7 +2029,7 @@ function bash_print_host_IPv4() {
 
     declare host_=${1-}
     declare out=
-    if __bash_installed host grep; then
+    if bash_installed host grep; then
         # Ubuntu 18 and older version of `host` does not have -U option
         declare host_opts1=
         if (command -p host --help 2>&1 || true) | command -p grep -m1 -q -Ee '[[:space:]]-U[[:space:]]'; then
@@ -2031,7 +2045,7 @@ function bash_print_host_IPv4() {
         #
         # remove everything before last non-space character
         out=${out##* }
-    elif __bash_installed dig; then
+    elif bash_installed dig; then
         # make the DNS request with short timeouts, one try
         if ! out=$(dig -4 -t A +short +tries=1 +timeout=2 "${host_}" 2>/dev/null); then
             return 1
@@ -2054,7 +2068,7 @@ function bash_print_internet_IPv4() {
     declare -r ihost="ifconfig.me"
     declare ipv4=
 
-    if ! __bash_installed curl; then
+    if ! bash_installed curl; then
         return 1
     fi
     if ! ipv4=$(bash_print_host_IPv4 "${ihost}"); then
@@ -2132,9 +2146,9 @@ function __bashrc_download_from_to () {
     shift
     declare -r path=${1}
     shift
-    if __bash_installed curl; then
+    if bash_installed curl; then
         (set -x; command -p curl "${@}" --output "${path}" "${url}")
-    elif __bash_installed wget; then
+    elif bash_installed wget; then
         (set -x; command -p wget "${@}" -O "${path}" "${url}")
     else
         return 1
@@ -2151,9 +2165,9 @@ function __bashrc_download_from_to () {
 }
 
 function __bashrc_downloader_used () {
-    if __bash_installed curl; then
+    if bash_installed curl; then
         echo 'curl'
-    elif __bash_installed wget; then
+    elif bash_installed wget; then
         echo 'wget'
     else
         return 1
@@ -2161,9 +2175,9 @@ function __bashrc_downloader_used () {
 }
 
 function __bashrc_downloader_used_example_argument () {
-    if __bash_installed curl; then
+    if bash_installed curl; then
         echo '--insecure'
-    elif __bash_installed wget; then
+    elif bash_installed wget; then
         echo '--no-check-certificate'
     else
         return 1
@@ -2195,14 +2209,14 @@ function __bash_update_dotbash () {
 }
 
 function __bash_update_dotvimrc () {
-    if ! __bash_installed vim; then
+    if ! bash_installed vim; then
         return
     fi
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
 }
 
 function __bash_update_dotscreenrc () {
-    if ! __bash_installed screen; then
+    if ! bash_installed screen; then
         return
     fi
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
@@ -2348,7 +2362,7 @@ $(for src in "${__bash_processed_files_array[@]}"; do echo "	${src}"; done)
     fi
 
     # echo multiplexer server status
-    if [[ -n "${TMUX-}" ]] && __bash_installed tmux; then
+    if [[ -n "${TMUX-}" ]] && bash_installed tmux; then
         echo -e "\
 ${b}tmux Settings:${boff}
 
@@ -2356,10 +2370,10 @@ ${b}tmux Settings:${boff}
 	tmux sessions:
 		$(__bashrc_tab_str "$(tmux list-sessions)" 2)
 "
-    elif [[ -n "${STY-}" ]] && __bash_installed screen; then
+    elif [[ -n "${STY-}" ]] && bash_installed screen; then
         # shellcheck disable=SC2155
         declare __screen_list=$(screen -list 2>/dev/null)
-        if __bash_installed tail; then
+        if bash_installed tail; then
             __screen_list=$(echo -n "${__screen_list}" | tail -n +2)
             __screen_list=${__screen_list:1}
         fi
@@ -2384,7 +2398,7 @@ ${b}Paths (×${paths_c}):${boff}
 "
 
     # echo information about other users, system uptime
-    if __bash_installed w; then
+    if bash_installed w; then
         echo -e "\
 ${b}System and Users (w):${boff}
 

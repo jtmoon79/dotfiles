@@ -56,7 +56,7 @@ else
     echo "WARNING: __bash_sourced_files_array already exists which is unexpected" >&2
 fi
 
-function __bash_installed () {
+function bash_installed () {
     # are all passed args found in the $PATH?
     if ! command -p which which &>/dev/null; then
         return 1
@@ -75,7 +75,7 @@ function readlink_portable () {
     # So make sure `readlink` exists and understands the options passed before using it.
     declare out=
 
-    if __bash_installed readlink; then
+    if bash_installed readlink; then
         # GNU coreutils readlink supports '-e'
         if out=$(command -p readlink -n -e -- "${@}" 2>/dev/null); then
             echo -n "${out}"
@@ -98,7 +98,7 @@ function __bash_profile_path_dir_print () {
     # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
     # .bashrc from different paths.
     declare path=${BASH_SOURCE:-}/..
-    if __bash_installed dirname; then
+    if bash_installed dirname; then
         path=$(command -p dirname -- "${BASH_SOURCE:-}")
     fi
     if ! [[ -d "${path}" ]]; then
@@ -143,10 +143,10 @@ if [[ "$-" =~ 'i' ]] \
 then
     # first try tmux
     # taken from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
-    if [[ "${force_multiplexer-}" = 'tmux' ]] && __bash_installed tmux; then
+    if [[ "${force_multiplexer-}" = 'tmux' ]] && bash_installed tmux; then
         # try to attach-session to detached tmux session, otherwise create new-session
         __bash_profile_tmux_detached=
-        if __bash_installed grep cut; then
+        if bash_installed grep cut; then
             # get the tmux ID of a deattached session
             #
             # based on `tmux ls` output like:
@@ -179,12 +179,12 @@ then
             exec tmux attach-session -t "${__bash_profile_tmux_detached}"
         fi
     # try screen
-    elif [[ "${force_multiplexer-}" = 'screen' ]] && __bash_installed screen; then
+    elif [[ "${force_multiplexer-}" = 'screen' ]] && bash_installed screen; then
         # try to attach to Detached session, otherwise start a new session
         __bash_profile_screen_detached=
         # XXX: if screen does start a new instance, then `__bash_profile_source_file .bashrc` else do
         #      not how to determine ahead of time?
-        if __bash_installed grep tr cut; then
+        if bash_installed grep tr cut; then
             # based on `screen -list` output like:
             #
             #There are screens on:
@@ -222,9 +222,11 @@ fi
 
 # inform the local X server to allow this shell instance to launch GUI programs
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
-if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && __bash_installed xhost &>/dev/null; then
+if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && bash_installed xhost &>/dev/null; then
     # XXX: this is lax security, how to make the X server allowance more restricted?
     #      see https://wiki.archlinux.org/index.php/Xhost#Usage
+    # TODO: can the current xhost settings be checked before calling this? (to avoid duplicate calls)
+    # TODO: should this be a switch that is set in the .bash_profile.local ?
     xhost +local:
 fi
 
