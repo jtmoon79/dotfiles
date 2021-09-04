@@ -258,8 +258,10 @@ if ! [[ "${__bash_processed_files_array+x}" ]] ; then
 fi
 
 function __bashrc_path_dir_bashrc_print () {
+    # print the directory path for this bash file
     # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
     # .bashrc from different paths.
+    [[ ${#} -eq 0 ]] || return 1
     declare path=${BASH_SOURCE:-}/..
     if bash_installed dirname; then
         path=$(command -p dirname -- "${BASH_SOURCE:-}")
@@ -288,7 +290,7 @@ __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portabl
 
 function __bashrc_source_file () {
     # source a file with some preliminary checks, print a debug message
-    #
+    [[ ${#} -eq 1 ]] || return 1
     # shellcheck disable=SC2155
     declare sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
@@ -322,9 +324,10 @@ __bashrc_PATH_original=${PATH}
 # has specified
 
 function __bashrc_path_add () {
-    # append path $1 to $PATH but only if it is
+    # append path $1 to $PATH but only if it is:
     # - valid executable directory
     # - not already in $PATH
+    [[ ${#} -eq 1 ]] || return 1
 
     declare -r path=${1}
     if [[ ! -d "${path}" ]] || [[ ! -x "${path}" ]]; then  # must be valid executable directory
@@ -349,6 +352,7 @@ function __bashrc_path_add () {
 
 function bash_path_add () {
     # public-facing wrapper for __bashrc_path_add, allows multiple arguments
+    [[ ${#} -gt 0 ]] || return 1
     declare path_=
     declare -i ret=0
     for path_ in "${@}"; do
@@ -361,6 +365,7 @@ function bash_path_add () {
 
 function __bashrc_path_add_from_file () {
     # attempt to add paths found in the file $1, assuming a path per-line
+    [[ ${#} -eq 1 ]] || return 1
     declare path=
     declare -r paths_file=${1}
     if [[ -r "${paths_file}" ]]; then
@@ -387,6 +392,7 @@ function bash_OS () {
     #       what it is aiming to do.
     # TODO: this funciton could use $OSTYPE
     # TODO: not tested adequately on non-Linux
+    [[ ${#} -eq 0 ]] || return 1
 
     declare uname_=$(uname -s) 2>/dev/null
     declare os='unknown'
@@ -531,9 +537,7 @@ function __bashrc_replace_str () {
     #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __bashrc_replace_str "${table}" "  " " " >/dev/null; done;'
     #
 
-    if [[ ${#} -ne 3 ]]; then
-        return 1
-    fi
+    [[ ${#} -eq 3 ]] || return 1
 
     # try bash substring replacement because it's faster, make sure it supports replacing in-line
     # tab character
@@ -572,8 +576,11 @@ function __bashrc_replace_str () {
 
 function __bashrc_tab_str () {
     # prepend tabs after each newline
-    # optional $1 is tab count
-    # optional $2 is replacement string
+    # optional $2 is tab count
+    # optional $3 is replacement string
+    [[ ${#} -gt 0 ]] || return 1
+    [[ ${#} -le 3 ]] || return 1
+
     declare -ri tab_count=${2-1}
     declare -r repl=${3-
 }
@@ -592,6 +599,7 @@ function line_count () {
     #
     # portable line count, not reliant on `wc -l`
     #
+    [[ ${#} -eq 0 ]] || return 1
     declare line=
     declare -i count=0
     while read -rs line; do
@@ -606,6 +614,7 @@ function line_count () {
 function env_sorted () {
     # Print environment sorted
     # Accounts for newlines within environment values (common in $LS_COLORS)
+    [[ ${#} -eq 0 ]] || return 1
 
     if ! bash_installed env sort tr; then
         return 1
@@ -638,6 +647,8 @@ __bashrc_env_0_original=$(env_sorted)
 #       see https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
 function __bashrc_prompt_color_eval () {
+    [[ ${#} -eq 0 ]] || return 1
+
     # set a fancy prompt
     declare __bashrc_color=false
     case "${TERM}" in
@@ -839,6 +850,7 @@ __bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem}}  # gl
 #__bashrc_title_set_user=${USER-}
 
 function __bashrc_title_set () {
+    [[ ${#} -eq 0 ]] || return 1
     # title will only accept one line of text
     declare ssh_connection=
     # shellcheck disable=SC2153
@@ -852,6 +864,7 @@ function __bashrc_title_set () {
 
 function __bashrc_title_reset () {  # can be called called in ./.bash_logout
     # BUG: does not work in most environments
+    [[ ${#} -eq 0 ]] || return 1
     echo -en '\033]0;'"${__bashrc_title_set_prev-}"'\007'
 }
 
@@ -922,6 +935,7 @@ fi
 
 function bash_prompt_table_variable_add () {
     # add variable(s) to $bash_prompt_table_variables_array, do not add if already present
+    [[ ${#} -gt 0 ]] || return 1
     declare -i i=0
     declare -i ret=0
     declare found=
@@ -996,6 +1010,8 @@ function __bash_prompt_table_shift_from () {
     #    A[10]='Pop'
     #    A[11]=''
     #
+    [[ ${#} -eq 1 ]] || return 1
+
     if ! bash_installed tac; then
         return 1
     fi
@@ -1004,7 +1020,7 @@ function __bash_prompt_table_shift_from () {
         return 1
     fi
 
-    declare -ri at=$1
+    declare -ri at=${1}
     declare -ri len=${#bash_prompt_table_variables_array[@]}
     # special case of zero size array
     if [[ ${len} -eq 0 ]]; then
@@ -1037,7 +1053,9 @@ function __bash_prompt_table_variable_index () {
     # search for variable $1 in $bash_prompt_table_variables_array
     # if found then echo index number, return 0
     # if not found then return 1
-    declare -r var=$1
+    [[ ${#} -eq 1 ]] || return 1
+
+    declare -r var=${1}
     declare -ri len=${#bash_prompt_table_variables_array[@]}
 
     # special case of zero size array
@@ -1057,7 +1075,10 @@ function __bash_prompt_table_variable_index () {
 function bash_prompt_table_variable_insert_at_index () {
     # insert variable $1 to $bash_prompt_table_variables_array at index $2
     # if $2 is past end of array, append to end of $bash_prompt_table_variables_array
-    declare -r var=$1
+    [[ ${#} -ge 1 ]] || return 1
+    [[ ${#} -le 2 ]] || return 1
+
+    declare -r var=${1}
     declare -ri at=${2-0}
     declare -ri len=${#bash_prompt_table_variables_array[@]}
 
@@ -1085,8 +1106,10 @@ function bash_prompt_table_variable_insert_after_var () {
     # insert variable $1 to $bash_prompt_table_variables_array after var $2
     # if var $2 is not found, fallback to inserting $1 at index $3
     # if index $3 is not given then append to end of array
-    declare -r var=$1
-    declare -r after_var=$2
+    [[ ${#} -eq 2 ]] || return 1
+
+    declare -r var=${1}
+    declare -r after_var=${2}
     # TODO: create a helper function to get last index of last element of
     #       $bash_prompt_table_variables_array
     declare -ri index_fallback=${3-999999999}
@@ -1109,6 +1132,8 @@ function bash_prompt_table_variable_insert_after_var () {
 
 function bash_prompt_table_variable_rm () {
     # remove a variable(s) from the $bash_prompt_table_variables_array
+    [[ ${#} -ge 1 ]] || return 1
+
     declare -i i=0
     declare -i ret=0
     declare found=
@@ -1143,9 +1168,12 @@ function bash_prompt_table_variable_print () {
 
 function bash_prompt_table_variable_print_values () {
     # print $bash_prompt_table_variables_array with values
+    [[ ${#} -eq 0 ]] || return 1
+
     if ! bash_installed column; then
         return 1
     fi
+
     (
         declare -i i=0
         for i in ${!bash_prompt_table_variables_array[*]}; do
@@ -1159,11 +1187,15 @@ function bash_prompt_table_variable_print_values () {
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal () {
     # pass a single-character string, prints the numeric ordinal value
+    [[ ${#} -eq 1 ]] || return 1
+
     (LC_CTYPE=C command -p printf '%d' "'${1:0:1}")
 }
 
 function character () {
     # pass a number, prints the character
+    [[ ${#} -eq 1 ]] || return 1
+
     [ "${1}" -lt 256 ] || return 1
     command -p printf "\\$(printf '%03o' "${1}")"
 }
@@ -1173,6 +1205,8 @@ function __bashrc_prompt_table_expr_length () {
     #      use `${#!var}` or `expr length "${!var}"`.
     #      Bash 4.x does not support `${#!var}`
     #      Bash 3.x does not support `expr length ...` operation.
+    [[ ${#} -eq 1 ]] || return 1
+
     echo -n "${#1}"
 }
 
@@ -1183,6 +1217,8 @@ function __bashrc_prompt_table_blank_n_printf1 () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/22048085/471376
     # XXX: presumes `seq`
+    [[ ${#} -eq 1 ]] || return 1
+
     #printf '%0.s ' {1..${1}}  # does not correctly expand
     # shellcheck disable=SC2046
     command -p printf '%0.s ' $(seq 1 ${1})
@@ -1191,12 +1227,16 @@ function __bashrc_prompt_table_blank_n_printf1 () {
 function __bashrc_prompt_table_blank_n_printf2 () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5801221/471376
+    [[ ${#} -eq 1 ]] || return 1
+
     command -p printf "%${1}s" ' '
 }
 
 function __bashrc_prompt_table_blank_n_for_echo () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5801221/471376
+    [[ ${#} -eq 1 ]] || return 1
+
     declare -i i=0
     for ((; i<${1}; i++)) {
         echo -ne ' '
@@ -1213,6 +1253,8 @@ function __bashrc_prompt_table_blank_n_awk () {
 function __bashrc_prompt_table_blank_n_yes_head () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/5799335/471376
+    [[ ${#} -eq 1 ]] || return 1
+
     # XXX: `yes` `head` (LOL!)
     echo -n "$(yes ' ' | head -n${1})"
 }
@@ -1220,6 +1262,8 @@ function __bashrc_prompt_table_blank_n_yes_head () {
 function __bashrc_prompt_table_blank_n_head_zero () {
     # XXX: this is for internal debugging
     # copied from https://stackoverflow.com/a/16617155/471376
+    [[ ${#} -eq 1 ]] || return 1
+
     # XXX: presumes `head` and `tr`
     command -p head -c ${1} /dev/zero | command -p tr '\0' ' '
 }
@@ -1229,11 +1273,15 @@ function __bashrc_prompt_table_blank_n_head_zero () {
 __bashrc_prompt_table_blank_n_buffer='                                                                                                                                                                        '
 
 function __bashrc_prompt_table_blank_n_longstr () {
+    [[ ${#} -eq 1 ]] || return 1
+
     echo -ne "${__bashrc_prompt_table_blank_n_buffer:0:${1}}"
 }
 
 function __bashrc_prompt_table_blank_n () {
     # XXX: this is for internal debugging
+    [[ ${#} -eq 1 ]] || return 1
+
     # wrapper to preferred method
     __bashrc_prompt_table_blank_n_printf2 "${1}"
 }
@@ -1402,15 +1450,21 @@ function __bashrc_prompt_table () {
 
 function bash_prompt_table_enable() {
     # public-facing 'on' switch for prompt table
+    [[ ${#} -eq 0 ]] || return 1
+
     __bashrc_prompt_table_enable=true
 }
 function bash_prompt_table_disable() {
     # public-facing 'off' switch for prompt table
+    [[ ${#} -eq 0 ]] || return 1
+
     __bashrc_prompt_table_enable=false
 }
 
 function bash_prompt_table_print () {
     # Print the *entire* prompt table.
+    [[ ${#} -eq 0 ]] || return 1
+
     __bashrc_prompt_table --no-truncate
 }
 
@@ -1458,15 +1512,21 @@ function __bashrc_prompt_git_info_do () {
 
 function bash_prompt_git_info_enable() {
     # public-facing 'on' switch for prompt git info
+    [[ ${#} -eq 0 ]] || return 1
+
     __bashrc_prompt_git_info_enable=true
 }
 function bash_prompt_git_info_disable() {
     # public-facing 'off' switch for prompt git info
+    [[ ${#} -eq 0 ]] || return 1
+
     __bashrc_prompt_git_info_enable=false
 }
 
 function __bash_path_mount_point () {
     # for the path $1, print the mount point
+    [[ ${#} -eq 1 ]] || return 1
+
     if ! ${__bashrc_installed_stat}; then
         return 1
     fi
@@ -1483,9 +1543,8 @@ function bash_prompt_git_info_mountpoint_array_add () {
     #
     # this function will reduce the path to it's mount point, then add that mount point path
     # to the private global $__bashrc_prompt_git_info_mountpoint_array
-    if [[ ${#} -eq 0 ]]; then
-        return 1
-    fi
+    [[ ${#} -gt 0 ]] || return 1
+
     declare -i ret=0
     declare arg=
     for arg in "${@}"; do
@@ -1523,12 +1582,14 @@ function bash_prompt_git_info_mountpoint_array_add () {
     done
     return ${ret}
 }
+
 # mount point '/' is very likely not a remote filesystem
 bash_prompt_git_info_mountpoint_array_add "/"
 
-
 function bash_prompt_git_info_mountpoint_array_print () {
     # print the array one entry per line
+    [[ ${#} -eq 0 ]] || return 1
+
     declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
     declare -i i=0
     while [[ ${i} -lt ${len_array} ]]; do
@@ -1543,6 +1604,8 @@ function __bashrc_prompt_git_info_mountpoint_array_contains () {
     # is mount point path for path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
     # if contains return 0
     # else return 1
+    [[ ${#} -eq 1 ]] || return 1
+
     declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
     declare arg_mp=
     if ! arg_mp=$(__bash_path_mount_point "${1-}"); then
@@ -1819,6 +1882,8 @@ PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_upda
 
 function __bashrc_alias_safely () {
     # create alias if it does not obscure a program in the $PATH
+    [[ ${#} -eq 2 ]] || return 1
+
     if command type "${1}" &>/dev/null; then
         return 1
     fi
@@ -1827,12 +1892,16 @@ function __bashrc_alias_safely () {
 
 function __bashrc_alias_check () {
     # create alias if running the alias succeeds
+    [[ ${#} -eq 2 ]] || return 1
+
     (command cd ~ && (${2})) &>/dev/null || return
     command alias "${1}"="${2}"
 }
 
 function __bashrc_alias_safely_check () {
     # create alias if it does not obscure a program in the $PATH and running the alias succeeds
+    [[ ${#} -eq 2 ]] || return 1
+
     if command type "${1}" &>/dev/null; then
         return 1
     fi
@@ -1854,6 +1923,7 @@ function bash_alias_add ()  {
 
 function __bashrc_alias_greps_color () {
     # alias various forms of `grep` programs for `--color=auto`
+    [[ ${#} -eq 0 ]] || return 1
 
     declare grep_path=
     if ! ${__bashrc_color_apps}; then
@@ -1885,6 +1955,7 @@ function print_dev_IPv4_Linux () {
     # outputs of either `ip` or `ifconfig`
     # TODO: this function should use only bash built-in features, rely less on
     #       `grep` etc.
+    [[ ${#} -eq 1 ]] || return 1
 
     if ! bash_installed ip && ! bash_installed ifconfig; then
         return 1
@@ -1999,6 +2070,8 @@ function print_dev_IPv4_Win () {
     #    Gateway Metric:                       1
     #    InterfaceMetric:                      20
     #
+    [[ ${#} -eq 1 ]] || return 1
+
     declare netsh='/mnt/c/Windows/System32/netsh.exe'
     if ! [[ -e "${netsh}" ]]; then
         netsh='/cygdrive/c/WINDOWS/system32/netsh.exe'
@@ -2026,8 +2099,9 @@ function print_dev_IPv4_Win () {
 function bash_print_host_IPv4() {
     # given $1 is an URI host, print the IPv4 address (DNS A Record)
     # with the help of `host` or `dig`
-
-    declare host_=${1-}
+    [[ ${#} -eq 1 ]] || return 1
+    
+    declare host_=${1}
     declare out=
     if bash_installed host grep; then
         # Ubuntu 18 and older version of `host` does not have -U option
@@ -2064,6 +2138,7 @@ function bash_print_host_IPv4() {
 function bash_print_internet_IPv4() {
     # attempt to print the Internet-facing IPv4 address of this host using
     # helper website 'ifconfig.me'
+    [[ ${#} -eq 0 ]] || return 1
 
     declare -r ihost="ifconfig.me"
     declare ipv4=
@@ -2113,6 +2188,8 @@ function bash_prompt_table_variable_add_net () {
     #
     #    $ bash_prompt_table_variable_add_net 'eth1' 5
     #
+    [[ ${#} -ge 1 ]] || return 1
+
     declare -r devname=${1}
     shift
     declare ipv4=
@@ -2128,6 +2205,8 @@ function bash_prompt_table_variable_add_Internet () {
     #
     # add the Internet-facing IPv4 to $bash_prompt_table_variables_array
     #
+    [[ ${#} -eq 0 ]] || return 1
+
     declare ipv4=
     if ipv4=$(bash_print_internet_IPv4 2>/dev/null); then
         IPv4_Internet=${ipv4}
@@ -2142,6 +2221,10 @@ function bash_prompt_table_variable_add_Internet () {
 # ============
 
 function __bashrc_download_from_to () {
+    # download from URL $1 to path $2, extraneous arguments are passed
+    # to the available downloader
+    [[ ${#} -ge 2 ]] || return 1
+
     declare -r url=${1}
     shift
     declare -r path=${1}
@@ -2165,6 +2248,8 @@ function __bashrc_download_from_to () {
 }
 
 function __bashrc_downloader_used () {
+    [[ ${#} -eq 0 ]] || return 1
+
     if bash_installed curl; then
         echo 'curl'
     elif bash_installed wget; then
@@ -2175,6 +2260,8 @@ function __bashrc_downloader_used () {
 }
 
 function __bashrc_downloader_used_example_argument () {
+    [[ ${#} -eq 0 ]] || return 1
+
     if bash_installed curl; then
         echo '--insecure'
     elif bash_installed wget; then
@@ -2265,6 +2352,7 @@ function bash_start_info () {
     # TODO: show newly introduced environment variables
     #       But how to diff input from stdin? Creating temporary files to feed to diff is too risky for
     #       a startup script.
+    [[ ${#} -le 1 ]] || return 1
 
     declare b=''
     declare boff=''

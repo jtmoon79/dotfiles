@@ -57,6 +57,8 @@ else
 fi
 
 function bash_installed () {
+    [[ ${#} -gt 0 ]] || return 1
+
     # are all passed args found in the $PATH?
     if ! command -p which which &>/dev/null; then
         return 1
@@ -73,6 +75,8 @@ function readlink_portable () {
     #
     # `readlink` options among different `readlink` implementations (GNU coreutils and BSD) vary.
     # So make sure `readlink` exists and understands the options passed before using it.
+    [[ ${#} -gt 0 ]] || return 1
+
     declare out=
 
     if bash_installed readlink; then
@@ -97,7 +101,10 @@ function readlink_portable () {
 function __bash_profile_path_dir_print () {
     # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
     # .bashrc from different paths.
+    [[ ${#} -eq 0 ]] || return 1
+
     declare path=${BASH_SOURCE:-}/..
+
     if bash_installed dirname; then
         path=$(command -p dirname -- "${BASH_SOURCE:-}")
     fi
@@ -110,8 +117,12 @@ function __bash_profile_path_dir_print () {
 __bash_profile_path_dir=$(__bash_profile_path_dir_print)
 
 function __bash_profile_source_file () {
+    # source file $1, note it was sourced
+    [[ ${#} -eq 1 ]] || return 1
+
     declare sourcef=
     sourcef=$(readlink_portable "${1}")
+
     if ! [[ -f "${sourcef}" ]]; then
         return 1  # file does not exist; do not warn
     fi
