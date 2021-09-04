@@ -102,6 +102,7 @@ function locale_get () {
     #     uz_UZ.utf8
     #
     # XXX: English-centric
+    [[ ${#} -le 1 ]] || return 1
 
     declare locales=
     if ! bash_installed locale || ! locales=$(command -p locale -a 2>/dev/null); then
