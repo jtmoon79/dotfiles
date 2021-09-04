@@ -195,7 +195,7 @@ __bash_installed_which=
 function bash_installed () {
     # are all passed args found in the $PATH?
 
-    if ! [[ "${__bash_installed_which}" = '' ]]; then
+    if [[ "${__bash_installed_which}" != '' ]]; then
         # assuming `which` was found then this will be the path taken for all remaining calls to this function
         # after the first call
         # XXX: bash 3 wants this one particular array expansion to have fallback value
@@ -288,7 +288,7 @@ fi
 # note this .bashrc file!
 __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")
 
-function __bashrc_source_file () {
+function bashrc_source_file () {
     # source a file with some preliminary checks, print a debug message
     [[ ${#} -eq 1 ]] || return 1
     # shellcheck disable=SC2155
@@ -305,13 +305,8 @@ function __bashrc_source_file () {
     source "${sourcef}"
 }
 
-function bash_source_file () {
-    # public-facing wrapper for __bashrc_source_file
-    __bashrc_source_file "${@}"
-}
-
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
-__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
+bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
 
 # shellcheck disable=SC2034
 __bashrc_PATH_original=${PATH}
@@ -862,7 +857,8 @@ function __bashrc_title_set () {
     echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__bashrc_title_set_TTY} hosted by ${__bashrc_title_set_OS} running ${__bashrc_title_set_kernel}${ssh_connection}\007"
 }
 
-function __bashrc_title_reset () {  # can be called called in ./.bash_logout
+function __bashrc_title_reset () {
+    # can be called called in ./.bash_logout
     # BUG: does not work in most environments
     [[ ${#} -eq 0 ]] || return 1
     echo -en '\033]0;'"${__bashrc_title_set_prev-}"'\007'
@@ -2100,7 +2096,7 @@ function bash_print_host_IPv4() {
     # given $1 is an URI host, print the IPv4 address (DNS A Record)
     # with the help of `host` or `dig`
     [[ ${#} -eq 1 ]] || return 1
-    
+
     declare host_=${1}
     declare out=
     if bash_installed host grep; then
@@ -2128,6 +2124,15 @@ function bash_print_host_IPv4() {
         #
         #    34.117.59.81
         #
+        # but can look like:
+        #
+        #    a-record1.example.com
+        #    a-record2.example.com
+        #    34.117.59.81
+        #
+        if bash_installed tail; then
+            out=$(echo -n "${out}" | command -p tail -n1 2>/dev/null)
+        fi
     fi
     if [[ "${out}" = '' ]]; then
         return 1
@@ -2329,16 +2334,16 @@ function bash_update_dots () {
 # Do not source ./.bash_profile as that will source this ./.bashrc (circular dependency)
 
 # .bashrc.local for host-specific customizations
-__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
-__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
-__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
-__bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
+bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
+bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
+bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
+bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
     # XXX: other "official" completion files often have variable expansion errors
     set +u
-    __bashrc_source_file /usr/share/bash-completion/bash_completion
-    __bashrc_source_file /etc/bash_completion
+    bashrc_source_file /usr/share/bash-completion/bash_completion
+    bashrc_source_file /etc/bash_completion
     set -u
 fi
 
