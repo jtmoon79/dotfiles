@@ -31,10 +31,10 @@
 #
 #      $ bash_prompt_table_variable_add_net "Virtual Box"
 #
-#   bash_source_file
+#   bashrc_source_file
 #   # source a file safely and with debug info
 #
-#      $ bash_source_file ~/.config/my-secret-bashrc
+#      $ bashrc_source_file ~/.config/my-secret-bashrc
 #
 #   bash_path_add
 #   # add a path to the $PATH safely (check if path exists, no redundancies)
