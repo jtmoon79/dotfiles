@@ -139,6 +139,7 @@
 # TODO: move more settings into .bashrc.local
 #
 
+# BUG: aliases are not getting set 2021/09/04
 
 # If not running interactively, do not do anything
 case "$-" in
