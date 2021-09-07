@@ -932,6 +932,9 @@ fi
 
 function bash_prompt_table_variable_add () {
     # add variable(s) to $bash_prompt_table_variables_array, do not add if already present
+    # TODO: check that $arg is valid variable name
+    #           bash_prompt_table_variable_add bad-var-name
+    #       results in constant error on every prompt "invalid variable name"
     [[ ${#} -gt 0 ]] || return 1
     declare -i i=0
     declare -i ret=0
