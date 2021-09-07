@@ -2202,8 +2202,17 @@ function bash_prompt_table_variable_add_net () {
         return 1
     fi
     # create a global variable from the generated variable name and value
-    declare -g IPv4_${devname}=${ipv4}
-    bash_prompt_table_variable_insert_at_index "IPv4_${devname}" "${@}"
+    declare devname_varname=${devname}
+    # trying to great a variable name from the device name, but clean up the device name so
+    # it is allowed as a variable name, e.g. `USB (LAN)` -> `USB__LAN_`
+    devname_varname=${devname_varname//'-'/_}
+    devname_varname=${devname_varname//' '/_}
+    devname_varname=${devname_varname//'('/_}
+    devname_varname=${devname_varname//')'/_}
+    devname_varname=${devname_varname//'['/_}
+    devname_varname=${devname_varname//']'/_}
+    declare -g IPv4_${devname_varname}=${ipv4}
+    bash_prompt_table_variable_insert_at_index "IPv4_${devname_varname}" "${@}"
 }
 
 function bash_prompt_table_variable_add_Internet () {
@@ -2314,7 +2323,7 @@ function __bash_update_dotscreenrc () {
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
 }
 
-function __bash_update_dots () {
+function bash_update_dots () {
     # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell
     # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
     __bash_update_dotbash "${@}"
@@ -2322,10 +2331,7 @@ function __bash_update_dots () {
     __bash_update_dotscreenrc "${@}"
 }
 
-function bash_update_dots () {
-    # user-facing function wrapper
-    __bash_update_dots "${@}"
-}
+# TODO: add call to remote `install.sh` script, or just perform that here
 
 # =========================
 # source other bashrc files
@@ -2351,7 +2357,7 @@ fi
 # print information this .bashrc has done for the user
 # ====================================================
 
-function bash_start_info () {
+function bash_about () {
     # echo information about this shell instance for the user with pretty formatting and indentation
 
     # TODO: show newly introduced environment variables
@@ -2366,7 +2372,7 @@ function bash_start_info () {
         boff='\e[0m'
     fi
 
-    function __bash_start_info_time_start() {
+    function __bash_about_time_start() {
         # __bash_start_beg_time should be set by calling .bash_profile
         # XXX: a smoother way to do this would be overriding the prompt_timer values
         #      once during startup
@@ -2383,9 +2389,9 @@ function bash_start_info () {
     }
 
     if [[ "${1-}" == '--minimal' ]]; then
-        echo -e "Run ${b}bash_start_info${boff} for detailed information about this shell instance."
+        echo -e "Run ${b}bash_about${boff} for detailed information about this shell instance."
         echo -e "Run ${b}bash_update_dots${boff} to update."
-        __bash_start_info_time_start
+        __bash_about_time_start
         return
     fi
 
@@ -2503,15 +2509,8 @@ ${b}System and Users (w):${boff}
     echo -e "\
 ${b}Special Features of this .bashrc:${boff}
 
-	Update a dot file by calling one of the functions:
-		${b}__bash_update_dotbash_profile${boff}  # update ./.bash_profile
-		${b}__bash_update_dotbashrc${boff}        # update ./.bashrc
-		${b}__bash_update_dotbash_logout${boff}   # update ./.bash_logout
-		${b}__bash_update_dotbash${boff}          # update prior .bash files
-		${b}__bash_update_dotbashrclocalpost${boff}  # update ./.bashrc.local.post
-		${b}__bash_update_dotscreenrc${boff}      # update ./.screenrc
-		${b}__bash_update_dotvimrc${boff}         # update ./.vimrc
-		${b}bash_update_dots${boff}               # update all of the above
+	Update dot files by calling ${b}bash_update_dots${boff}. This updates all dotfiles
+	in the current directory.
 	Parameters like '$(__bashrc_downloader_used_example_argument)' will be passed to the downloader $(__bashrc_downloader_used).
 
 	Force your preferred multiplexer by setting ${b}force_multiplexer${boff} to 'tmux' or 'screen' in file ~/.bash_profile.local (requires new bash login)
@@ -2523,7 +2522,7 @@ ${b}Special Features of this .bashrc:${boff}
 	Change table column lines by setting ${b}bash_prompt_table_column${boff} (currently '${bash_prompt_table_column}').
 	Change PS1 strftime format (prompt date time) by setting ${b}bash_prompt_strftime_format${boff} (currently '${bash_prompt_strftime_format}').
 	Override prompt by changing ${b}bash_prompt_bullet${boff} (currently '${b}${bash_prompt_bullet}${boff}').
-	$(__bash_start_info_time_start)
+	$(__bash_about_time_start)
 
 	See full list of hidden and public variables used by these bash dot files using command:
 		( declare -p && declare -F ) | grep -E -e '^declare .. __bash.*' -e '^declare .. _bash.*' -e '^declare .. bash.*'
@@ -2535,6 +2534,6 @@ ${b}Special Features of this .bashrc:${boff}
 "
 }
 
-bash_start_info --minimal >&2
+bash_about --minimal >&2
 
 set +u
