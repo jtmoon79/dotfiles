@@ -172,6 +172,10 @@ if [[ "${__bashrc_initialized+x}" ]] \
 fi
 export __bashrc_initialized=${__bashrc_initialized_flag}
 
+# stash current SHOPTS and ALIASES
+bash_at_init_BASHOPTS=${BASHOPTS-}
+bash_at_init_BASH_ALIASES=${BASH_ALIASES[@]-}
+
 # note Bash Version
 declare -i BASH_VERSION_MAJOR=${BASH_VERSINFO[0]}
 declare -i BASH_VERSION_MINOR=${BASH_VERSINFO[1]}
