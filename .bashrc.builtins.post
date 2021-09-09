@@ -254,6 +254,7 @@ __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 # if user has defined special override $bash_prompt_net, use that. User can save
 # some startup time this way.
 # presumed to be one entry per space, e.g. string value 'eth0 em1' is two NICs
+# BUG: does not handle spaces in names, e.g. "Local Area Connection"
 # XXX: $bash_prompt_net override should allow NICs with spaces in the name
 #      e.g. "Local Area Connection"
 if [[ -n "${bash_prompt_net+x}" ]]; then
