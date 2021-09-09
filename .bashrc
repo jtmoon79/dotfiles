@@ -959,7 +959,7 @@ function bash_prompt_table_variable_add () {
             for j in ${!bash_prompt_table_variables_array[*]}; do
                 continue
             done
-            j+=1
+            j=$((${j} + 1))
             bash_prompt_table_variables_array[${j}]=${arg}
         else  # return 1 if any variable was already present
             ret=1
@@ -1416,18 +1416,18 @@ function __bashrc_prompt_table () {
         if [[ ${v1l} -gt ${v2l} ]]; then
             fs1=''
             fs2=$(__bashrc_prompt_table_blank_n_alias $((v1l - v2l)))
-            rows_len+=${v1l}+${#s1}
+            rows_len=$((${rows_len}+${v1l}+${#s1}))
         elif [[ ${v1l} -lt ${v2l} ]]; then
             fs1=$(__bashrc_prompt_table_blank_n_alias $((v2l - v1l)))
             fs2=''
-            rows_len+=${v2l}+${#s1}
+            rows_len=$((${rows_len}+${v2l}+${#s1}))
         else
             fs1=''
             fs2=''
-            rows_len+=${v1l}+${#s1}
+            rows_len=$((${rows_len}+${v1l}+${#s1}))
         fi
-        row1+="${varn}${fs1}${s1}"
-        row2+="${vare}${fs2}${s1}"
+        row1="${row1}${varn}${fs1}${s1}"
+        row2="${row2}${vare}${fs2}${s1}"
     done
 
     # if there is nothing to print then return
