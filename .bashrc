@@ -311,6 +311,11 @@ function bashrc_source_file () {
     source "${sourcef}"
 }
 
+function bash_source_file () {
+    # backward-compatible wrapper
+    bashrc_source_file "${@}"
+}
+
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
 bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
 
