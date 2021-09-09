@@ -641,6 +641,177 @@ function env_sorted () {
 # shellcheck disable=SC2034
 __bashrc_env_0_original=$(env_sorted)
 
+function var_is_array () {
+    # each arg is the name of a variable, return 0 if all args are type array, else return 1
+    [[ ${#} -gt 0 ]] || return 1
+
+    declare arg=
+    for arg in "${@}"; do
+        declare out=$(declare -p "${arg}" 2>/dev/null)
+        if ! expr match "${out}" '^declare -.*[Aa].* ' &>/dev/null; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+function var_is_int () {
+    # each arg is the name of a variable, return 0 if all args are type integer, else return 1
+    [[ ${#} -gt 0 ]] || return 1
+
+    declare arg=
+    for arg in "${@}"; do
+        declare out=$(declare -p "${arg}" 2>/dev/null)
+        if ! expr match "${out}" '^declare -.*i.* ' &>/dev/null; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+function bash_print_special_vars () {
+    # print all the bash special and dynamic variables
+    # taken from:
+    #     https://wiki.bash-hackers.org/syntax/shellvars (https://archive.ph/u0EGp)
+    #
+    declare vars=(
+        '*'
+        '@'
+        '?'
+        '#'
+        '-'
+        '!'
+        '0'
+        '_'
+        BASH
+        BASHOPTS
+        BASHPID
+        BASH_ALIASES
+        BASH_ARGC
+        BASH_ARGV
+        BASH_ARGV0
+        BASH_CMDS
+        BASH_COMMAND
+        BASH_COMPAT
+        BASH_ENV
+        BASH_EXECUTION_STRING
+        BASH_LINENO
+        BASH_REMATCH
+        BASH_SOURCE
+        BASH_SUBSHELL
+        BASH_VERSINFO
+        BASH_VERSION
+        BASH_XTRACEFD
+        CDPATH
+        CHILD_MAX
+        COLUMNS
+        COMP_CWORD
+        COMP_KEY
+        COMP_LINE
+        COMP_POINT
+        COMPREPLY
+        COMP_TYPE
+        COMP_WORDBREAKS
+        COMP_WORDS
+        COPROC
+        DIRSTACK
+        EMACS
+        ENV
+        EPOCHREALTIME
+        EPOCHSECONDS
+        EUID
+        FCEDIT
+        FIGNORE
+        FUNCNAME
+        FUNCNEST
+        GLOBIGNORE
+        GROUPS
+        HISTCMD
+        HISTCONTROL
+        HISTFILE
+        HISTFILESIZE
+        HISTIGNORE
+        HISTSIZE
+        HISTTIMEFORMAT
+        HOME
+        HOSTFILE
+        HOSTNAME
+        HOSTTYPE
+        IFS
+        IGNOREEOF
+        INPUTRC
+        LANG
+        LC_ALL
+        LC_COLLATE
+        LC_CTYPE
+        LC_MESSAGES
+        LC_NUMERIC
+        LINENO
+        LINES
+        MACHTYPE
+        MAIL
+        MAILCHECK
+        MAILPATH
+        OLDPWD
+        OPTARG
+        OPTERR
+        OPTIND
+        OS_TYPE
+        PATH
+        PIPESTATUS
+        PPID
+        POSIXLY_CORRECT
+        PROMPT_COMMAND
+        PROMPT_COMMANDS
+        PROMPT_DIRTRIM
+        PS0
+        PS1
+        PS2
+        PS3
+        PS4
+        PWD
+        RANDOM
+        READLINE_LINE
+        READLINE_POINT
+        REPLY
+        SECONDS
+        SHELL
+        SHELLOPTS
+        SHLVL
+        SRANDOM
+        TIMEFORMAT
+        TMOUT
+        TMPDIR
+        UID
+        auto_resume
+        histchars
+    )
+    declare var=
+    for var in "${vars[@]}"; do
+        if [[ ! "${!var+x}" ]]; then
+            echo "VARIABLE '${var}' NOT DEFINED" >&2
+            continue
+        fi
+        if var_is_array "${var}"; then
+            declare -p "${var}"
+            #if [[ "${#var[@]}" -eq 0 ]]; then
+            #    echo "${var}=()"
+            #    continue
+            #fi
+            #declare index=
+            #for index in "${!var[@]}"; do
+            #    echo "${var[${index}]}='${!var[${index}]}'"
+            #done
+        elif var_is_int "${var}"; then
+            declare -p "${var}"
+            #echo "${var}=${!var}"
+        else
+            declare -p "${var}"
+            #echo "${var}='${!var}'"
+        fi
+    done
+}
+
 # ==============
 # prompt changes
 # ==============
