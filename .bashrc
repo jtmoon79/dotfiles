@@ -329,7 +329,7 @@ __bashrc_PATH_original=${PATH}
 # add PATHs sooner so calls to `__bash_installed` will search *all* paths the user
 # has specified
 
-function __bashrc_path_add () {
+function bash_path_add () {
     # append path $1 to $PATH but only if it is:
     # - valid executable directory
     # - not already in $PATH
@@ -352,17 +352,17 @@ function __bashrc_path_add () {
     then
         return 1
     fi
-    echo "${PS4-}${FUNCNAME-__bashrc_path_add} '${path}'" >&2
+    echo "${PS4-}bash_path_add '${path}'" >&2
     export PATH=${PATH}:${path}
 }
 
-function bash_path_add () {
-    # public-facing wrapper for __bashrc_path_add, allows multiple arguments
+function bash_paths_add () {
+    # public-facing wrapper for bash_path_add, allows multiple arguments
     [[ ${#} -gt 0 ]] || return 1
     declare path_=
     declare -i ret=0
     for path_ in "${@}"; do
-        if ! __bashrc_path_add "${path_}"; then
+        if ! bash_path_add "${path_}"; then
             ret=1
         fi
     done
@@ -377,7 +377,7 @@ function __bashrc_path_add_from_file () {
     if [[ -r "${paths_file}" ]]; then
         __bash_processed_files_array[${#__bash_processed_files_array[@]}]=$(readlink_portable "${paths_file}")
         while read -r path; do
-            __bashrc_path_add "${path}"
+            bash_path_add "${path}"
         done < "${paths_file}"
     else
         return 1
