@@ -26,10 +26,10 @@
 #
 #      $ bash_prompt_git_info_mountpoint_array_add /mnt/d
 #
-#   bash_prompt_table_variable_add_net
+#   bash_prompt_table_variable_add_net_IPv4
 #   # adds a network interface, Linux or Windows,  and it's IPv4 Address to the prompt table
 #
-#      $ bash_prompt_table_variable_add_net "Virtual Box"
+#      $ bash_prompt_table_variable_add_net_IPv4 "Virtual Box"
 #
 #   bashrc_source_file
 #   # source a file safely and with debug info

@@ -259,18 +259,18 @@ __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 if [[ -n "${bash_prompt_net+x}" ]]; then
     __bashrc_net_interface_=
     for __bashrc_net_interface_ in ${bash_prompt_net}; do
-        bash_prompt_table_variable_add_net "${__bashrc_net_interface_}"
+        bash_prompt_table_variable_add_net_IPv4 "${__bashrc_net_interface_}"
     done
     unset __bashrc_net_interface_
 else
     # if $bash_prompt_net not defined then try adding known common NIC names
-    bash_prompt_table_variable_add_net eth0
-    bash_prompt_table_variable_add_net em0
-    bash_prompt_table_variable_add_net eth1
-    bash_prompt_table_variable_add_net eth2
-    bash_prompt_table_variable_add_net "Local Area Connection"
+    bash_prompt_table_variable_add_net_IPv4 eth0
+    bash_prompt_table_variable_add_net_IPv4 em0
+    bash_prompt_table_variable_add_net_IPv4 eth1
+    bash_prompt_table_variable_add_net_IPv4 eth2
+    bash_prompt_table_variable_add_net_IPv4 "Local Area Connection"
 fi
-bash_prompt_table_variable_add_Internet
+bash_prompt_table_variable_add_Internet_IPv4_Name
 
 #
 # add the OS

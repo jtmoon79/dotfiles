@@ -2193,11 +2193,28 @@ function print_dev_IPv4 () {
     print_dev_IPv4_Linux "${@}" || print_dev_IPv4_Win "${@}"
 }
 
-function bash_prompt_table_variable_add_net () {
+function print_IPv4_DNS_PTR () {
+    # given $1 IPv4 address, print the first DNS PTR Record found
+    [[ ${#} -eq 1 ]] || return 1
+
+    if ! bash_installed dig head; then
+        return 1
+    fi
+
+    declare ipv4=${1}
+    declare out=
+    # make the DNS request with short timeouts, one try
+    if ! out=$(dig -4 +short +tries=1 +timeout=2 -x "${ipv4}" 2>/dev/null); then
+        return 1
+    fi
+    echo -n "${out}" | command -p head -n1
+}
+
+function bash_prompt_table_variable_add_net_IPv4 () {
     # add a network device IP Address to the $bash_prompt_table_variables_array
     # added as IPv4_${1}
     #
-    #    $ bash_prompt_table_variable_add_net 'eth0'
+    #    $ bash_prompt_table_variable_add_net_IPv4 'eth0'
     #
     # will add variable 'IPv4_eth0' to the $bash_prompt_table_variables_array
     # and the variable will be set to that IP Address.
@@ -2205,7 +2222,7 @@ function bash_prompt_table_variable_add_net () {
     # remaining arguments are passed to bash_prompt_table_variable_insert_at_index(),
     # user can insert near the beginning of the prompt table with command:
     #
-    #    $ bash_prompt_table_variable_add_net 'eth1' 5
+    #    $ bash_prompt_table_variable_add_net_IPv4 'eth1' 5
     #
     [[ ${#} -ge 1 ]] || return 1
 
@@ -2236,12 +2253,43 @@ function bash_prompt_table_variable_add_Internet () {
     [[ ${#} -eq 0 ]] || return 1
 
     declare ipv4=
-    if ipv4=$(bash_print_internet_IPv4 2>/dev/null); then
-        IPv4_Internet=${ipv4}
-        bash_prompt_table_variable_add IPv4_Internet
-    else
+    if ! ipv4=$(bash_print_internet_IPv4 2>/dev/null); then
         return 1
     fi
+    IPv4_Internet=${ipv4}
+    bash_prompt_table_variable_add IPv4_Internet
+}
+
+function bash_prompt_table_variable_add_IPv4_Name () {
+    #
+    # add IPv4 DNS PTR Record name to $bash_prompt_table_variables_array
+    # $1 is IPv4 for DNS reverse lookup
+    # $2 is variable name to add to the $bash_prompt_table_variables_array
+    #
+    [[ ${#} -eq 2 ]] || return 1
+
+    declare -r ipv4=${1}
+    declare -r name=${2}
+    if [[ "${ipv4-}" = '' ]] || [[ "${name-}" = '' ]]; then
+        return 1
+    fi
+    declare out=
+    if ! out=$(print_IPv4_DNS_PTR "${ipv4}" 2>/dev/null); then
+        return 1
+    fi
+    declare -g "${name}"=${out}
+    [[ "${!name}" != '' ]] &>/dev/null || return 1
+    bash_prompt_table_variable_add "${name}"
+}
+
+function bash_prompt_table_variable_add_Internet_IPv4_Name () {
+    # wrapper for adding Internet-related variables to $bash_prompt_table_variables_array
+    [[ ${#} -eq 0 ]] || return 1
+
+    if ! bash_prompt_table_variable_add_Internet; then
+        return 1
+    fi
+    bash_prompt_table_variable_add_IPv4_Name "${IPv4_Internet-}" 'IPv4_Internet_Name'
 }
 
 # ============
