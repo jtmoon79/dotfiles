@@ -136,7 +136,7 @@
 #
 # TODO: add link to source repo in intro https://github.com/jtmoon79/dotfiles
 #
-# TODO: move more settings into .bashrc.local
+# TODO: move more settings changes into .bashrc.local
 #
 
 # BUG: aliases are not getting set 2021/09/04
@@ -190,9 +190,7 @@ shopt -s shift_verbose
 # ----------------------------------------
 
 # TODO: use `command -p which` to check paths. How to confine paths to only check those in `command -p`?
-# TODO: should `bash_installed` only use `command -p -V` to check for existence? That might be more portable.
-# TODO: rename to `bash_installed`. No need to hide this function.
-# TODO: add different function for using `which` with current `PATH` setting
+# TODO: follow-on to prior, add new function for using `which` with current `PATH` setting
 
 # XXX: this function overwrites that in .bash_profile
 __bash_installed_which_warning=false
@@ -216,7 +214,8 @@ function bash_installed () {
         return 1
     fi
 
-    # check that 'which' exists, cache the `which` path before any more paths are added to $PATH
+    # check that 'which' exists, cache the `which` exists (via bash command caching) before any more paths are added
+    # to $PATH
     # this presumes that default $PATH will be the safest and most standard
     if [[ "${__bash_installed_which}" = '' ]] && ! command -p which which &> /dev/null; then
         # print warning once
@@ -299,10 +298,12 @@ function bashrc_source_file () {
     # shellcheck disable=SC2155
     declare sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
+       # missing file, no error
        return
     fi
     if [[ ! -r "${sourcef}" ]]; then
-        return 1  # file exists but is not readable
+        # file exists but is not readable, error
+        return 1
     fi
     echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
     __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
@@ -390,7 +391,7 @@ function bash_OS () {
     #
     # TODO: this function is a bit of a mess and needs some consistency about
     #       what it is aiming to do.
-    # TODO: this funciton could use $OSTYPE
+    # TODO: this function could use bash variable $OSTYPE
     # TODO: not tested adequately on non-Linux
     [[ ${#} -eq 0 ]] || return 1
 
