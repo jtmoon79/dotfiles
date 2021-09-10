@@ -978,6 +978,10 @@ function __bashrc_prompt_timer_start () {
 }
 
 __bashrc_prompt_timer_start
+# on startup, override value of #__bashrc_prompt_timer_cur to __bash_start_beg_time, only done once during startup
+if [[ ! "${__bash_start_beg_time+x}" ]]; then
+    __bashrc_prompt_timer_cur=${__bash_start_beg_time}
+fi
 
 function __bashrc_prompt_timer_stop () {
     # get time difference since last call, reset prompt timer
@@ -1965,8 +1969,29 @@ if ! [[ "${bash_prompt_strftime_format+x}" ]]; then
     bash_prompt_strftime_format=${__bashrc_prompt_strftime_format_default}
 fi
 
+__bashrc_prompt_count=0  # global
+
+function __bashrc_prompt_count_update () {
+    # helper to PROMPT_COMMAND
+    # takes no arguments
+    __bashrc_prompt_count=$((${__bashrc_prompt_count} + 1))
+}
+
+function bash_print_prompt_count () {
+    # print the prompt count
+    [[ ${#} -eq 0 ]] || return 1
+    echo -n "${__bashrc_prompt_count}"
+}
+
 function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
+    # takes no arguments
+
+    declare last_command_mesg='last command'
+    if [[ ${__bashrc_prompt_count} -eq 0 ]]; then
+        last_command_mesg='shell startup time'
+        __bashrc_prompt_first=false
+    fi
 
     if ${__bashrc_prompt_color}; then
         declare color_user=${__bashrc_prompt_color_user_fg}
@@ -1978,18 +2003,19 @@ function __bashrc_prompt_set () {
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array becomes unset there
         #      will be an empty line.
         PS1='
-\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}\[\033[2m\] (last command \[\033[22m\]${__bashrc_prompt_timer_show-0}\[\033[2m\]; \[\033[22m\]$(__bashrc_prompt_last_exit_code_show)\[\033[2m\])\[\033[22m\]\[\e[0m\]\[\e[0;'"${__bashrc_prompt_color_table_fg}"';'"${__bashrc_prompt_color_table_bg}"'m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0;0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}\[\033[2m\] ('"${last_command_mesg}"' \[\033[22m\]${__bashrc_prompt_timer_show-0}\[\033[2m\]; \[\033[22m\]$(__bashrc_prompt_last_exit_code_show)\[\033[2m\])\[\033[22m\]\[\e[0m\]\[\e[0;'"${__bashrc_prompt_color_table_fg}"';'"${__bashrc_prompt_color_table_bg}"'m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0;0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;'"${__bashrc_prompt_color_hostname}"'m\]\h\[\033[00m\]:\[\033[4;'"${__bashrc_prompt_color_cwd}"'m\]\w\[\033[24m
 '"${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
-\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)${__bashrc_prompt_git_info_show}${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\D{'"${bash_prompt_strftime_format}"'} ('"${last_command_mesg}"' ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)${__bashrc_prompt_git_info_show}${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \u@\h:\w
 '"${bash_prompt_bullet}"' '
     fi
 }
 
-__bashrc_prompt_set
+# no need to call function __bashrc_prompt_set, the function will be called in
+# __bashrc_prompt_live_updates due to $__bashrc_prompt_count
 
 # TODO: make this "live update" process simpler
 #       maybe add a register function that does this nitty gritty work of adding a `_last` secondary variable
@@ -2012,9 +2038,14 @@ __bashrc_prompt_bullet_last=             # global
 
 function __bashrc_prompt_live_updates () {
     # special "live" updates that monitor special variables
+    #echo "${PS4}__bashrc_prompt_live_updates" >&2
 
     declare call___bashrc_prompt_color_eval=false
     declare call___bashrc_prompt_set=false
+
+    if [[ ${__bashrc_prompt_count} -le 1 ]]; then
+        call___bashrc_prompt_set=true
+    fi
 
     # update if necessary
     if [[ "${bash_color_force+x}" ]] && [[ "${__bashrc_prompt_color_force_last-}" != "${bash_color_force-}" ]]; then
@@ -2132,7 +2163,7 @@ fi
 
 # order is important; additional commands must between functions __bashrc_prompt_last_exit_code_update and
 # __bashrc_prompt_timer_stop
-PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_extras; __bashrc_prompt_timer_stop'
+PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_extras; __bashrc_prompt_count_update; __bashrc_prompt_timer_stop'
 
 # =======
 # aliases
@@ -2701,7 +2732,7 @@ function bash_about () {
     if [[ "${1-}" == '--minimal' ]]; then
         echo -e "Run ${b}bash_about${boff} for detailed information about this shell instance."
         echo -e "Run ${b}bash_update_dots${boff} to update."
-        __bash_about_time_start
+        #__bash_about_time_start
         return
     fi
 
