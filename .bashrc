@@ -2707,6 +2707,10 @@ function bash_about () {
 
     # echo information about this bash
     echo "\
+This is custom bash dotfiles from https://github.com/jtmoon79/dotfiles .
+Designed to add helpful information and coloring to a bash prompt.
+Backwards compatible to bash 3.0.
+
 Using bash ${BASH_VERSION}, process ID $$
 "
 
