@@ -87,9 +87,6 @@
 #       e.g $color_prompt_user $color_prompt_table $color_prompt_hostname $color_prompt_path
 #           $color_prompt_table_row1 $color_prompt_table_row2 $color_prompt_table_cell_err
 #
-# TODO: prepend all variables that affect this .bashrc and .bash_profile with a string,
-#       e.g. `_bi_` for "bash init"
-#
 # XXX: bash <4.2 cannot declare empty arrays via "empty array" syntax
 #
 #          $ array=()
@@ -110,14 +107,6 @@
 # TODO: add flock to only allow one startup of .bashrc at a time
 #       prevents rare case of multiple bash windows using the same tty
 #       which can happen when launching multiple windows, like with `terminator`
-#
-# TODO: need to allow easy update of .bashrc.local.post without clobbering prior.
-#       Consider a __merge_file that is wrapped by a download then merge of temp
-#       .bashrc.local.post into ./.bashrc.local.post
-#       That would then allow moving that separating particualr settings in this
-#       .bashrc (aliases, prompt variables, etc.) into a .bashrc.local.post.
-#
-# TODO: would a "last prompt" timer be worthwhile? Or too much clutter?
 #
 # BUG: prompt timer will be 0 if a command is run in a subshell, e.g.
 #
