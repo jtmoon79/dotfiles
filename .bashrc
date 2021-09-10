@@ -606,6 +606,17 @@ function line_count () {
     command echo -n "${count}"
 }
 
+function am_i_root {
+    # is the current user root?
+
+    [[ "${#}" -eq 0 ]] || return 1
+
+    if [[ "$(command -p id -u 2>/dev/null)" = "0" ]]; then
+        return 0
+    fi
+    return 1
+}
+
 function env_sorted () {
     # Print environment sorted
     # Accounts for newlines within environment values (common in $LS_COLORS)
@@ -1041,7 +1052,7 @@ function __bashrc_prompt_last_exit_code_show () {
 #   $ ‣ • ◦ → ▶ ► ⮕ ⭢
 __bashrc_prompt_bullet_default='‣'  # (global)
 # set different bullet for root user
-if bash_installed id && [[ "$(id -u 2>/dev/null)" = "0" ]]; then
+if am_i_root; then
     __bashrc_prompt_bullet_default='▶'
 fi
 # user can override $bash_prompt_bullet in .bashrc.local.pre or .bashrc.local.post
@@ -1110,18 +1121,39 @@ __bashrc_prompt_color_user_root_default='31'  # red
 if [[ ! "${__bashrc_prompt_color_user_root+x}" ]]; then
     __bashrc_prompt_color_user_root=${__bashrc_prompt_color_user_root_default}
 fi
+
+__bashrc_prompt_color_prompt_bullet_user_default='36'  # aqua blue (cyan)
+if [[ ! "${__bashrc_prompt_color_prompt_bullet_user+x}" ]]; then
+    __bashrc_prompt_color_prompt_bullet_user=${__bashrc_prompt_color_prompt_bullet_user_default}
+fi
+__bashrc_prompt_color_prompt_bullet_root_default='31'  # red
+if [[ ! "${__bashrc_prompt_color_prompt_bullet_root+x}" ]]; then
+    __bashrc_prompt_color_prompt_bullet_root=${__bashrc_prompt_color_prompt_bullet_root_default}
+fi
+# use $__bashrc_prompt_color_prompt_bullet in $PS1
+if [[ ! "${__bashrc_prompt_color_prompt_bullet+x}" ]]; then
+    __bashrc_prompt_color_prompt_bullet=${__bashrc_prompt_color_prompt_bullet_user}
+    # set different bullet color for root user
+    if am_i_root; then
+        __bashrc_prompt_color_prompt_bullet=${__bashrc_prompt_color_prompt_bullet_root}
+    fi
+fi
+
 __bashrc_prompt_color_dateline_default='37'  # light grey
 if [[ ! "${__bashrc_prompt_color_dateline+x}" ]]; then
     __bashrc_prompt_color_dateline=${__bashrc_prompt_color_dateline_default}
 fi
+
 __bashrc_prompt_color_hostname_default='34'  # blue
 if [[ ! "${__bashrc_prompt_color_hostname+x}" ]]; then
     __bashrc_prompt_color_hostname=${__bashrc_prompt_color_hostname_default}
 fi
+
 __bashrc_prompt_color_cwd_default='36'  # aqua blue (cyan)
 if [[ ! "${__bashrc_prompt_color_cwd+x}" ]]; then
     __bashrc_prompt_color_cwd=${__bashrc_prompt_color_cwd_default}
 fi
+
 __bashrc_prompt_color_table_fg_default='30'  # black
 if [[ ! "${__bashrc_prompt_color_table_fg+x}" ]]; then
     __bashrc_prompt_color_table_fg=${__bashrc_prompt_color_table_fg_default}
@@ -1994,7 +2026,7 @@ function __bashrc_prompt_set () {
         PS1='
 \e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}\[\033[2m\] ('"${last_command_mesg}"' \[\033[22m\]${__bashrc_prompt_timer_show-0}\[\033[2m\]; \[\033[22m\]$(__bashrc_prompt_last_exit_code_show)\[\033[2m\])\[\033[22m\]\[\e[0m\]\[\e[0;'"${__bashrc_prompt_color_table_fg}"';'"${__bashrc_prompt_color_table_bg}"'m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0;0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;'"${__bashrc_prompt_color_hostname}"'m\]\h\[\033[00m\]:\[\033[4;'"${__bashrc_prompt_color_cwd}"'m\]\w\[\033[24m
-'"${bash_prompt_bullet}"'\[\033[00m\] '
+\e['"${__bashrc_prompt_color_prompt_bullet}m${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
 \D{'"${bash_prompt_strftime_format}"'} ('"${last_command_mesg}"' ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)${__bashrc_prompt_git_info_show}${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
