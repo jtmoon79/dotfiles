@@ -669,7 +669,7 @@ function var_is_int () {
     return 0
 }
 
-function bash_print_special_vars () {
+function bash_print_special_shell_vars () {
     # print all the bash special and dynamic variables
     # taken from:
     #     https://wiki.bash-hackers.org/syntax/shellvars (https://archive.ph/u0EGp)
