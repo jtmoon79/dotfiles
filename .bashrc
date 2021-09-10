@@ -812,6 +812,57 @@ function bash_print_special_vars () {
     done
 }
 
+function bash_print_colors () {
+    # print different colors and color codes
+
+    [[ ${#} -eq 0 ]] || return 1
+
+    # ripped from https://askubuntu.com/a/279014/368900
+    declare -i x=
+    declare -i i=
+    declare -i a=
+    for x in {0..8}; do
+        for i in {30..37}; do
+            for a in {40..47}; do
+                echo -ne "\e[${x};${i};${a}""m\\\e[${x};${i};${a}""m\e[0;37;40m "
+            done
+            echo
+        done
+    done
+    echo
+
+    if ! bash_installed printf; then
+        return
+    fi
+
+    # print 256 colors
+    # ripped from https://misc.flogisoft.com/bash/tip_colors_and_formatting
+    declare -i fgbg=
+    declare -i color=
+    for fgbg in 38 48 ; do # Foreground / Background
+        for color in {0..255} ; do # Colors
+            # Display the color
+            printf "\e[${fgbg};5;%sm  %3s  \e[0m" $color $color
+            # Display 6 colors per lines
+            if [[ $((($color + 1) % 6)) == 4 ]] ; then
+                echo # New line
+            fi
+        done
+        echo  # newline
+    done
+}
+
+function bash_print_colors_using_msgcat () {
+    # print different colors
+    [[ ${#} -eq 0 ]] || return 1
+
+    if ! bash_installed msgcat; then
+        echo "Requires msgcat program which is part of the gettext package" >&2
+        return 1
+    fi
+    msgcat --color=test
+}
+
 # ==============
 # prompt changes
 # ==============
@@ -979,7 +1030,7 @@ function __bashrc_prompt_last_exit_code_update () {
     declare -ir last_exit=$?  # first save this value
     __bashrc_prompt_last_exit_code_banner=
     if [[ ${last_exit} -eq 0 ]]; then
-        __bashrc_prompt_last_exit_code_banner="return code ${last_exit}"  # normal
+        __bashrc_prompt_last_exit_code_banner="\001\033[02mreturn code \033[22m${last_exit}\033[00m\002"  # dim + normal
     else  # non-zero exit code
         if ${__bashrc_prompt_color}; then
             __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
@@ -1058,9 +1109,9 @@ __bashrc_title_set  # call once, no need to call again
 # have related `__install_program` global variables already set to `true`
 # or `false`.
 
-__bashrc_prompt_color_user_default='32'  # green
-if [[ ! "${__bashrc_prompt_color_user+x}" ]]; then
-    __bashrc_prompt_color_user=${__bashrc_prompt_color_user_default}
+__bashrc_prompt_color_user_fg_default='32'  # green
+if [[ ! "${__bashrc_prompt_color_user_fg+x}" ]]; then
+    __bashrc_prompt_color_user_fg=${__bashrc_prompt_color_user_fg_default}
 fi
 __bashrc_prompt_color_user_root_default='31'  # red
 if [[ ! "${__bashrc_prompt_color_user_root+x}" ]]; then
@@ -1069,6 +1120,22 @@ fi
 __bashrc_prompt_color_dateline_default='37'  # light grey
 if [[ ! "${__bashrc_prompt_color_dateline+x}" ]]; then
     __bashrc_prompt_color_dateline=${__bashrc_prompt_color_dateline_default}
+fi
+__bashrc_prompt_color_hostname_default='34'  # blue
+if [[ ! "${__bashrc_prompt_color_hostname+x}" ]]; then
+    __bashrc_prompt_color_hostname=${__bashrc_prompt_color_hostname_default}
+fi
+__bashrc_prompt_color_cwd_default='36'  # aqua blue (cyan)
+if [[ ! "${__bashrc_prompt_color_cwd+x}" ]]; then
+    __bashrc_prompt_color_cwd=${__bashrc_prompt_color_cwd_default}
+fi
+__bashrc_prompt_color_table_fg_default='30'  # black
+if [[ ! "${__bashrc_prompt_color_table_fg+x}" ]]; then
+    __bashrc_prompt_color_table_fg=${__bashrc_prompt_color_table_fg_default}
+fi
+__bashrc_prompt_color_table_bg_default='34'  # blue
+if [[ ! "${__bashrc_prompt_color_table_bg+x}" ]]; then
+    __bashrc_prompt_color_table_bg=${__bashrc_prompt_color_table_bg_default}
 fi
 
 
@@ -1902,7 +1969,7 @@ function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
 
     if ${__bashrc_prompt_color}; then
-        declare color_user=${__bashrc_prompt_color_user}
+        declare color_user=${__bashrc_prompt_color_user_fg}
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
             color_user=${__bashrc_prompt_color_user_root}
         fi
@@ -1911,8 +1978,8 @@ function __bashrc_prompt_set () {
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array becomes unset there
         #      will be an empty line.
         PS1='
-\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'} (last command ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))\[\e[0m\]\[\e[36m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
-\[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;36m\]\h\[\033[00m\]:\[\033[01;34m\]\w
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}\[\033[2m\] (last command \[\033[22m\]${__bashrc_prompt_timer_show-0}\[\033[2m\]; \[\033[22m\]$(__bashrc_prompt_last_exit_code_show)\[\033[2m\])\[\033[22m\]\[\e[0m\]\[\e[0;'"${__bashrc_prompt_color_table_fg}"';'"${__bashrc_prompt_color_table_bg}"'m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0;0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;'"${__bashrc_prompt_color_hostname}"'m\]\h\[\033[00m\]:\[\033[4;'"${__bashrc_prompt_color_cwd}"'m\]\w\[\033[24m
 '"${bash_prompt_bullet}"'\[\033[00m\] '
     else
         PS1='
@@ -1924,9 +1991,19 @@ function __bashrc_prompt_set () {
 
 __bashrc_prompt_set
 
+# TODO: make this "live update" process simpler
+#       maybe add a register function that does this nitty gritty work of adding a `_last` secondary variable
+#       hide all this in global arrays
+#            declare -a $__bashrc_live_update_vars             # vars to watch
+#            declare -A $__bashrc_live_update_var_to_varlast   # `_last` secondary variable
+#            declare -A $__bashrc_live_update_var_to_func      # function to call if a var changes
+#       function __bashrc_prompt_live_update_register_var () {
+#           # $1 is var name to watch for changes
+#           # $2 is name of function to call in case of changes
+
 # __bashrc_prompt_live_updates variables that must be globals
 __bashrc_prompt_color_force_last=        # global
-__bashrc_prompt_color_user_last=         # global
+__bashrc_prompt_color_user_fg_last=      # global
 __bashrc_prompt_color_user_root_last=    # global
 __bashrc_prompt_color_dateline_last=     # global
 __bashrc_prompt_table_column_last=       # global
@@ -1946,15 +2023,15 @@ function __bashrc_prompt_live_updates () {
     fi
     __bashrc_prompt_color_force_last=${bash_color_force-}  # global
 
-    # if `unset __bashrc_prompt_color_user` occurred then reset to default
-    if ! [[ "${__bashrc_prompt_color_user+x}" ]]; then
-        __bashrc_prompt_color_user=${__bashrc_prompt_color_user_default}  # global
+    # if `unset __bashrc_prompt_color_user_fg` occurred then reset to default
+    if ! [[ "${__bashrc_prompt_color_user_fg+x}" ]]; then
+        __bashrc_prompt_color_user_fg=${__bashrc_prompt_color_user_fg_default}  # global
     fi
     # update if necessary
-    if [[ "${__bashrc_prompt_color_user_last-}" != "${__bashrc_prompt_color_user}" ]]; then
+    if [[ "${__bashrc_prompt_color_user_fg_last-}" != "${__bashrc_prompt_color_user_fg}" ]]; then
         call___bashrc_prompt_set=true
     fi
-    __bashrc_prompt_color_user_last=${__bashrc_prompt_color_user}  # global
+    __bashrc_prompt_color_user_fg_last=${__bashrc_prompt_color_user_fg}  # global
 
     # if `unset __bashrc_prompt_color_user_root` occurred then reset to default
     if ! [[ "${__bashrc_prompt_color_user_root+x}" ]]; then
