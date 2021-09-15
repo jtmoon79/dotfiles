@@ -281,7 +281,7 @@ fi
 # note this .bashrc file!
 __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portable "${BASH_SOURCE:-}")
 
-function bashrc_source_file () {
+function bash_source_file () {
     # source a file with some preliminary checks, print a debug message
     [[ ${#} -eq 1 ]] || return 1
     # shellcheck disable=SC2155
@@ -300,13 +300,13 @@ function bashrc_source_file () {
     source "${sourcef}"
 }
 
-function bash_source_file () {
+function bashrc_source_file () {
     # backward-compatible wrapper
     bashrc_source_file "${@}"
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
-bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
+bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
 
 # shellcheck disable=SC2034
 __bashrc_PATH_original=${PATH}
@@ -2702,16 +2702,16 @@ function bash_update_dots () {
 # Do not source ./.bash_profile as that will source this ./.bashrc (circular dependency)
 
 # .bashrc.local for host-specific customizations
-bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
-bashrc_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
-bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
-bashrc_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
+bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
+bash_source_file "${__bashrc_path_dir_bashrc}/.bash_aliases"
+bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
+bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
     # XXX: other "official" completion files often have variable expansion errors
     set +u
-    bashrc_source_file /usr/share/bash-completion/bash_completion
-    bashrc_source_file /etc/bash_completion
+    bash_source_file /usr/share/bash-completion/bash_completion
+    bash_source_file /etc/bash_completion
     set -u
 fi
 
