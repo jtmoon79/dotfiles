@@ -329,7 +329,8 @@ function bash_path_add () {
     [[ ${#} -eq 1 ]] || return 1
 
     declare -r path=${1}
-    if [[ ! -d "${path}" ]] || [[ ! -x "${path}" ]]; then  # must be valid executable directory
+    # must be valid executable directory or symlink
+    if [[ ! -d "${path}" && ! -L "${path}" ]] || [[ ! -x "${path}" ]]; then
         return 1
     fi
     # test if any attempts at primitive matching find a match (substring $path within $PATH?)
