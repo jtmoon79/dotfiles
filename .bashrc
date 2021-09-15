@@ -616,6 +616,10 @@ function am_i_root {
 
     [[ "${#}" -eq 0 ]] || return 1
 
+    if ! bash_installed id; then
+        return 1
+    fi
+
     if [[ "$(command -p id -u 2>/dev/null)" = "0" ]]; then
         return 0
     fi
