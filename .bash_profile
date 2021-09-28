@@ -139,7 +139,6 @@ __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 if [[ "$-" =~ 'i' ]] \
     && [[ -z "${TMUX+x}" ]] \
     && [[ -z "${STY+x}" ]] \
-    `# force_multiplexer is defined and not empty` \
     && ( [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] )
 then
     # first try tmux
