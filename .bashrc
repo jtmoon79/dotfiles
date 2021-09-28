@@ -1,19 +1,34 @@
 # .bashrc
 #
-# changes to this file will be overwritten by `dotfiles/install.sh`
-# add customizations to neighboring `.bashrc.local.post` file.
+# Changes to this file will be overwritten by `dotfiles/install.sh`.
+# Add customizations to neighboring `.bashrc.local.post` file.
 #
 # Install this file and neighboring dotfiles using instructions in
 #     https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
-# This file defines useful fuctions, makes very few changes. See neighboring files
-# `.bashrc.builtins.post` and `.bashrc.local.post` which make shell changes.
+# These dotfiles are intended for anyone that has to login to many different
+# Unix-based hosts very often. The `install.sh` script (URL above) is fast to
+# run.
+# The entire original motivation was a table of information about the host and
+# to modify the `$PATH`.
+# Other features like colors and command timer tracking have since been added.
 #
-# A mish-mash of bashrc ideas that are worthwhile, some original ideas, others
-# copied. This file is expected to be sourced by it's companion ./.bash_profile
-# This file mostly creates new functions and private variables. These can be used
-# to customize the shell in neighboring files `.bashrc.builtins.post`,
+# This file defines useful fuctions, makes very few changes. See neighboring
+# files `.bashrc.builtins.post` and `.bashrc.local.post` which make shell
+# changes.
+#
+# This .bashrc file is a mish-mash of ideas that are worthwhile, some original
+# ideas, others copied.
+# This file is expected to be sourced by it's companion `.bash_profile`.
+# This file mostly creates new functions and private variables. These can be
+# used to customize the shell in neighboring files `.bashrc.builtins.post`,
 # `.bashrc.local.post`. This file does forcibly create a new prompt style.
+#
+# These bash dot files are mainly derived for Debian-derived Linux.
+# They attempts to work with other Linux and Unix in varying environments.
+# As such, these dot files avoid reliance on external tools like `grep`, `sed`,
+# etc. because those tools vary too much (BSD versions, busybox versions)
+# or are not available (minimal Alpine Linux, other custom minimal Linux).
 #
 # Features:
 #   - prompt prints: timer, return code, datetime,
@@ -28,12 +43,9 @@
 #
 # Anti-Features:
 #   - not POSIX compliant!
+#   - presumes English-preferring user (see `locale_get`)
 #
-# Source at https://github.com/jtmoon79/dotfiles/blob/master/.bashrc
-#
-# Designed from Debian-derived Linux. Attempts to work with other Linux and Unix
-# in varying environments. Avoids reliance on tools like `grep`, `sed`, etc.
-# because those tools vary too much or are not available.
+# Source at https://github.com/jtmoon79/dotfiles/blob/master
 #
 # (sometimes) tested against
 # - bash 4.x on Linux Ubuntu 18
@@ -42,50 +54,27 @@
 # - bash 3.2 on FreeBSD 10
 # - bash docker images within docker-tests.sh
 #
-# Excellent references:
+# Excellent references for understanding bash scripting language:
 #   https://tiswww.case.edu/php/chet/bash/bashref.html#index-command (https://archive.vn/mRrbc)
-#   https://mywiki.wooledge.org/BashFAQ/061 (http://archive.fo/sGtzb)
+#   https://mywiki.wooledge.org/BashFAQ/ (http://archive.fo/sGtzb)
+#   https://fvue.nl/wiki/Bash:_Error_handling (https://archive.ph/rSl6r)
 #   https://misc.flogisoft.com/bash/tip_colors_and_formatting (http://archive.fo/NmIkP)
 #   https://shreevatsa.wordpress.com/2008/03/30/zshbash-startup-files-loading-order-bashrc-zshrc-etc/ (http://archive.fo/fktxC)
 #   http://www.solipsys.co.uk/new/BashInitialisationFiles.html (http://archive.ph/CUzSH)
 #   https://github.com/webpro/awesome-dotfiles (http://archive.fo/WuiJW)
 #   https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
-#   http://git.savannah.gnu.org/cgit/bash.git/tree/
 #   https://wiki.bash-hackers.org/commands/builtin/printf (http://archive.ph/wip/jDPjC)
 #   https://www.shell-tips.com/bash/math-arithmetic-calculation/ (https://archive.vn/dOUw0)
 #
-# TODO: change all `true` and `false` "boolean" variables to be the full path
-#       to the programs.  `true` implies a $PATH search whereas `/bin/true` does
-#       not.
-#       UPDATE: yet `/bin/true` is many times slower than `true`. Why is that?
+# bash key combinations:
+#   https://www.howtogeek.com/howto/ubuntu/keyboard-shortcuts-for-bash-command-shell-for-ubuntu-debian-suse-redhat-linux-etc/
 #
-#               $ time (for i in {0..100}; do true; done)
-#               0.002s
+# bash source code:
+#    http://git.savannah.gnu.org/cgit/bash.git/tree/
 #
-#               $ time (for i in {0..100}; do /bin/true; done)
-#               0.162s
-#
-#       UPDATE: `true` is a bash built-in, just not well documented. From
-#               `man bash`, the clue is this sentence:
-#
-#                   The :, true, false, and test builtins do not accept options
-#                   and do not treat -- specially
-#
-#                Otherwise, `true` and `false` have no man page entry.
-#                Also:
-#
-#                   $ command -V true
-#                   true is a shell builtin
-#
-#                   $ time (for i in {0..100}; do $(which true); done)
-#                   2.602s
-#
-# TODO: add jobs to prompt when jobs are present. Should behave like git prompt; not visible when no jobs.
-#
-# TODO: allow more selection of colors for various parts of the prompt
-#       e.g $color_prompt_user $color_prompt_table $color_prompt_hostname $color_prompt_path
-#           $color_prompt_table_row1 $color_prompt_table_row2 $color_prompt_table_cell_err
+# Chet Ramey, author of bash since 1994, home page:
+#    https://tiswww.case.edu/php/chet/ (https://archive.ph/X1LGq)
 #
 # XXX: bash <4.2 cannot declare empty arrays via "empty array" syntax
 #
@@ -104,6 +93,14 @@
 #      existing `readonly` variable is an error. Some tedium is necessary to do
 #      so without an error. This file refrains from use of `readonly`.
 #
+# TODO: add jobs to prompt when jobs are present. Should behave like git prompt;
+#       not visible when no jobs.
+#
+# TODO: allow more selection of colors for various parts of the prompt
+#       e.g $color_prompt_user $color_prompt_table $color_prompt_hostname
+#       $color_prompt_path $color_prompt_table_row1 $color_prompt_table_row2
+#       $color_prompt_table_cell_err
+#
 # TODO: add flock to only allow one startup of .bashrc at a time
 #       prevents rare case of multiple bash windows using the same tty
 #       which can happen when launching multiple windows, like with `terminator`
@@ -116,10 +113,8 @@
 #
 #          ... last command 0s ...
 #
-# TODO: add color to prompt bullet, change it if user is root
-#
-# TODO: consider creating a `help` or similar alias that will dump information and
-#       provide extended examples.
+# TODO: consider creating a `help` or similar alias that will dump information
+#       and provide extended examples.
 #
 # TODO: move these bash files to new sub-directory in dotfiles project
 #
@@ -127,8 +122,8 @@
 #
 # TODO: move more settings changes into .bashrc.local
 #
-
 # BUG: aliases are not getting set 2021/09/04
+#
 
 # If not running interactively, do not do anything
 case "$-" in
@@ -171,15 +166,18 @@ declare -i BASH_VERSION_MINOR=${BASH_VERSINFO[1]}
 export BASH_VERSION_MAJOR \
        BASH_VERSION_MINOR
 
-# prints an error message when the shift count exceeds the number of positional parameters
+# prints an error message when the shift count exceeds the number of positional
+# parameters
 shopt -s shift_verbose
 
 # ----------------------------------------
 # very important helper `bash_installed`
 # ----------------------------------------
 
-# TODO: use `command -p which` to check paths. How to confine paths to only check those in `command -p`?
-# TODO: follow-on to prior, add new function for using `which` with current `PATH` setting
+# TODO: use `command -p which` to check paths. How to confine paths to only
+# check those in `command -p`?
+# TODO: follow-on to prior, add new function for using `which` with current
+#       `PATH` setting
 
 # XXX: this function overwrites that in .bash_profile
 __bash_installed_which_warning=false
@@ -188,9 +186,10 @@ function bash_installed () {
     # are all passed args found in the $PATH?
 
     if [[ "${__bash_installed_which}" != '' ]]; then
-        # assuming `which` was found then this will be the path taken for all remaining calls to this function
-        # after the first call
-        # XXX: bash 3 wants this one particular array expansion to have fallback value
+        # assuming `which` was found then this will be the path taken for all
+        # remaining calls to this function after the first call
+        # XXX: bash 3 wants this one particular array expansion to have fallback
+        #      value
         # TODO: why are other resolutions of `${@}` not changed to `${@-}`?
         if ! command -p "${__bash_installed_which}" "${@:-}" &>/dev/null; then
             return 1
@@ -203,8 +202,8 @@ function bash_installed () {
         return 1
     fi
 
-    # check that 'which' exists, cache the `which` exists (via bash command caching) before any more paths are added
-    # to $PATH
+    # check that 'which' exists, cache the `which` exists (via bash command
+    # caching) before any more paths are added to $PATH.
     # this presumes that default $PATH will be the safest and most standard
     if [[ "${__bash_installed_which}" = '' ]] && ! command -p which which &> /dev/null; then
         # print warning once
@@ -221,13 +220,14 @@ function bash_installed () {
     if [[ ${#} -eq 0 ]]; then
         return 0
     elif ! [[ "${__bash_installed_which}" = '' ]]; then
-        # this is the first call of this function `bash_installed` but it was called with passed parameters
-        # so go ahead and check those parameters
+        # this is the first call of this function `bash_installed` but it was
+        # called with passed parameters so go ahead and check those parameters
         bash_installed "${@-}"
     fi
 }
 
-# run `bash_installed` once so $__bash_installed_which_warning and $__bash_installed_which is properly set
+# run `bash_installed` once so $__bash_installed_which_warning and
+# $__bash_installed_which is properly set
 bash_installed
 
 # other sanity warnings (most likely the PATH is screwed up)
@@ -252,8 +252,8 @@ fi
 
 function __bashrc_path_dir_bashrc_print () {
     # print the directory path for this bash file
-    # do not assume this is run from path $HOME. This allows sourcing companion .bash_profile and
-    # .bashrc from different paths.
+    # do not assume this is run from path $HOME. This allows sourcing companion
+    # .bash_profile and .bashrc from different paths.
     [[ ${#} -eq 0 ]] || return 1
     declare path=${BASH_SOURCE:-}/..
     if bash_installed dirname; then
@@ -271,7 +271,8 @@ if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
     __bashrc_path_dir_bashrc=~
 fi
 
-# .bash_profile should have created $__bash_sourced_files_array only create if not already created
+# .bash_profile should have created $__bash_sourced_files_array only create if
+# not already created
 if ! [[ "${__bash_sourced_files_array+x}" ]]; then
     # XXX: backward-compatible array declaration
     __bash_sourced_files_array[0]=''  # global array
@@ -305,7 +306,8 @@ function bashrc_source_file () {
     bashrc_source_file "${@}"
 }
 
-# .bashrc.local for host-specific customizations to run before the remainder of this .bashrc
+# .bashrc.local for host-specific customizations to run before the remainder of
+# this .bashrc
 bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.pre"
 
 # shellcheck disable=SC2034
@@ -317,10 +319,11 @@ __bashrc_PATH_original=${PATH}
 
 # TODO: allow prepending path to front of $PATH
 #       bash_path_prepend ()
-#       change bash_path_add to __bash_path_add and allow $2 for position to insert
+#       change bash_path_add to __bash_path_add and allow $2 for position to
+#       insert
 
-# add PATHs sooner so calls to `__bash_installed` will search *all* paths the user
-# has specified
+# add PATHs sooner so calls to `__bash_installed` will search *all* paths the
+# user has specified
 
 function bash_path_add () {
     # append path $1 to $PATH but only if it is:
@@ -333,8 +336,10 @@ function bash_path_add () {
     if [[ ! -d "${path}" && ! -L "${path}" ]] || [[ ! -x "${path}" ]]; then
         return 1
     fi
-    # test if any attempts at primitive matching find a match (substring $path within $PATH?)
-    # uses primitive substring matching and avoid =~ operator as the path $1 could have regex
+    # test if any attempts at primitive matching find a match (substring $path
+    # within $PATH?)
+    # uses primitive substring matching and avoid =~ operator as the path $1
+    # could have regex
     # significant characters
     #      test front
     #      test back
@@ -381,6 +386,22 @@ function __bashrc_path_add_from_file () {
 # ============================
 # other misc. helper functions
 # ============================
+
+# ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
+function ordinal () {
+    # pass a single-character string, prints the numeric ordinal value
+    [[ ${#} -eq 1 ]] || return 1
+
+    (LC_CTYPE=C command -p printf '%d' "'${1:0:1}")
+}
+
+function character () {
+    # pass a number, prints the character
+    [[ ${#} -eq 1 ]] || return 1
+
+    [ "${1}" -lt 256 ] || return 1
+    command -p printf "\\$(printf '%03o' "${1}")"
+}
 
 function bash_OS () {
     # print a useful string about this OS
@@ -534,18 +555,22 @@ function __bashrc_replace_str () {
     # portable string replacement not reliant on `sed`, `awk`
     #
     # tested variations on implemention of this with function using command:
-    #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func; for i in {1..10000}; do __bashrc_replace_str "${table}" "  " " " >/dev/null; done;'
+    #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func;
+    #       for i in {1..10000}; do
+    #          __bashrc_replace_str "${table}" "  " " " >/dev/null
+    #       done;'
     #
 
     [[ ${#} -eq 3 ]] || return 1
 
-    # try bash substring replacement because it's faster, make sure it supports replacing in-line
-    # tab character
+    # try bash substring replacement because it's faster, make sure it supports
+    # replacing in-line tab character
     declare testvar=' '
     # TODO: test this test on Bash 3.2
     if echo -n "${testvar/ /	}" &>/dev/null; then
-        # about 10% faster if the substitution is done for a variable and then echoed
-        # instead as versus directly echoed (i.e. two statements is faster than one statement)
+        # about 10% faster if the substitution is done for a variable and then
+        # echoed instead as versus directly echoed (i.e. two statements is
+        # faster than one statement)
         testvar=${1//${2}/${3}}
         echo -n "${testvar}"
         return
@@ -634,9 +659,9 @@ function env_sorted () {
     if ! bash_installed env sort tr; then
         return 1
     fi
-    # The programs env and sort may not supported the passed options. Shell option `pipefail` will
-    # cause immediate exit if any program fail in the pipeline fails. This function will return
-    # that failure code.
+    # The programs env and sort may not supported the passed options. Shell
+    # option `pipefail` will cause immediate exit if any program fail in the
+    # pipeline fails. This function will return that failure code.
     (
         set -e
         set -o pipefail
@@ -651,7 +676,8 @@ function env_sorted () {
 __bashrc_env_0_original=$(env_sorted)
 
 function var_is_array () {
-    # each arg is the name of a variable, return 0 if all args are type array, else return 1
+    # each arg is the name of a variable, return 0 if all args are type array,
+    # else return 1
     [[ ${#} -gt 0 ]] || return 1
 
     declare arg=
@@ -665,7 +691,8 @@ function var_is_array () {
 }
 
 function var_is_int () {
-    # each arg is the name of a variable, return 0 if all args are type integer, else return 1
+    # each arg is the name of a variable, return 0 if all args are type integer,
+    # else return 1
     [[ ${#} -gt 0 ]] || return 1
 
     declare arg=
@@ -681,7 +708,8 @@ function var_is_int () {
 function bash_print_special_shell_vars () {
     # print all the bash special and dynamic variables
     # taken from:
-    #     https://wiki.bash-hackers.org/syntax/shellvars (https://archive.ph/u0EGp)
+    #     https://wiki.bash-hackers.org/syntax/shellvars
+    #     (https://archive.ph/u0EGp)
     #
     declare vars=(
         '*'
@@ -881,7 +909,7 @@ function bash_print_colors_using_msgcat () {
 # -------------
 
 # NOTE: Colors should be 8-bit as it's the most portable
-#       see https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
+#       https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
 function __bashrc_prompt_color_eval () {
     [[ ${#} -eq 0 ]] || return 1
@@ -899,7 +927,8 @@ function __bashrc_prompt_color_eval () {
             __bashrc_color=true
             ;;
         *)
-            case "${COLORTERM-}" in  # if $TERM=xterm then $COLORTERM should be set
+            case "${COLORTERM-}" in
+                # XXX: if $TERM=xterm* then $COLORTERM should be set
                 *color*)
                     __bashrc_color=true
                     ;;
@@ -928,7 +957,8 @@ function __bashrc_prompt_color_eval () {
         fi
     fi
 
-    # if $bash_color_force is defined, then set $__bashrc_prompt_color according to $bash_color_force truth
+    # if $bash_color_force is defined, then set $__bashrc_prompt_color according
+    # to $bash_color_force truth
     # Force color off
     #      bash_color_force=false . ./.bashrc
     # Force color on
@@ -974,10 +1004,11 @@ __bashrc_prompt_timer_epoch_set
 # idea from http://archive.fo/SYU2A
 # It is important that __bashrc_prompt_timer_stop is the last command in the
 # $PROMPT_COMMAND.  If there are other commands after it then those
-# will be executed and their execution might cause __bashrc_prompt_timer_start to be
-# called again. The setting and unset of __bashrc_prompt_timer_cur is to workaround
-# internecine subshells that occur per PROMPT_COMMAND.  Subshells should not be
-# spawned in __bashrc_prompt_timer_start or __bashrc_prompt_timer_stop.
+# will be executed and their execution might cause __bashrc_prompt_timer_start
+# to be called again. The setting and unset of __bashrc_prompt_timer_cur is to
+# workaround internecine subshells that occur per PROMPT_COMMAND.  Subshells
+# should not be spawned in __bashrc_prompt_timer_start or
+# __bashrc_prompt_timer_stop.
 function __bashrc_prompt_timer_start () {
     if ${__bashrc_prompt_timer_epoch}; then
         __bashrc_prompt_timer_cur=${__bashrc_prompt_timer_cur:-${EPOCHREALTIME}}
@@ -987,7 +1018,8 @@ function __bashrc_prompt_timer_start () {
 }
 
 __bashrc_prompt_timer_start
-# on startup, override value of #__bashrc_prompt_timer_cur to __bash_start_beg_time, only done once during startup
+# on startup, override value of #__bashrc_prompt_timer_cur to
+# __bash_start_beg_time, only done once during startup
 if [[ ! "${__bash_start_beg_time+x}" ]]; then
     __bashrc_prompt_timer_cur=${__bash_start_beg_time}
 fi
@@ -996,7 +1028,8 @@ function __bashrc_prompt_timer_stop () {
     # get time difference since last call, reset prompt timer
     # use $__bashrc_prompt_timer_show for display, not this function
     #
-    # $EPOCHREALTIME is microsecond-precision current Epoch time available in bash 5
+    # $EPOCHREALTIME is microsecond-precision current Epoch time available in
+    # bash 5
 
     if ${__bashrc_prompt_timer_epoch}; then
         # truncate $EPOCHREALTIME to milliseconds
@@ -1048,7 +1081,8 @@ function __bashrc_prompt_last_exit_code_update () {
         if ${__bashrc_prompt_color}; then
             __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
         else
-            __bashrc_prompt_last_exit_code_banner="‼ return code ${last_exit}"  # prepend
+            # prepend
+            __bashrc_prompt_last_exit_code_banner="‼ return code ${last_exit}"
         fi
     fi
 }
@@ -1064,8 +1098,9 @@ __bashrc_prompt_bullet_default='‣'  # (global)
 if am_i_root; then
     __bashrc_prompt_bullet_default='▶'
 fi
-# user can override $bash_prompt_bullet in .bashrc.local.pre or .bashrc.local.post
-# however, make sure $bash_prompt_bullet at least exists
+# user can override $bash_prompt_bullet in .bashrc.local.pre or
+# .bashrc.local.post
+# However, make sure $bash_prompt_bullet at least exists
 if ! [[ "${bash_prompt_bullet+x}" ]]; then
     bash_prompt_bullet=${__bashrc_prompt_bullet_default}
 fi
@@ -1075,16 +1110,17 @@ fi
 # -------------------
 
 # TODO: record prior title, and then replace it when this login shell exits.
-#       currently, login to remote bash overwrites the title, but then never replaces it when it
-#       completes.
+#       currently, login to remote bash overwrites the title, but then never
+#       replaces it when it completes.
 #
-# TODO: consider adjusting title when ssh-ing to other places, e.g. "ssh foo@bar ..." then swap back
-#       in. I have no idea how to do that.
+# TODO: consider adjusting title when ssh-ing to other places,
+#       e.g. "ssh foo@bar ..." then swap back in. I have no idea how to do that.
 #
 
 # save the current title? https://unix.stackexchange.com/a/28520/21203
-__bashrc_title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global BUG: does not work in most environments
-__bashrc_title_set_TTY=$(tty 2>/dev/null || true)  # global, set this once
+# BUG: does not work in most environments
+__bashrc_title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global
+__bashrc_title_set_TTY=$(tty 2>/dev/null || true)  # global, set once
 __bashrc_title_set_kernel=${__bashrc_title_set_kernel-kernel $(uname -r)}  # global
 __bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem}}  # global
 #__bashrc_title_set_hostname=$(hostname)
@@ -1098,8 +1134,10 @@ function __bashrc_title_set () {
     if [[ "${SSH_CONNECTION+x}" ]]; then
         ssh_connection=" (via ${SSH_CONNECTION})"
     fi
-    declare user_=${USER-$(command -p whoami)}  # MinGW bash may not set $USER
-    declare host_=${HOSTNAME-$(command -p hostname)}  # some bash may not set $HOSTNAME
+    # MinGW bash may not set $USER
+    declare user_=${USER-$(command -p whoami)}
+    # some bash may not set $HOSTNAME
+    declare host_=${HOSTNAME-$(command -p hostname)}
     echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__bashrc_title_set_TTY} hosted by ${__bashrc_title_set_OS} running ${__bashrc_title_set_kernel}${ssh_connection}\007"
 }
 
@@ -1121,6 +1159,10 @@ __bashrc_title_set  # call once, no need to call again
 # that are unnecessary.  Most state is within global variables. Programs
 # have related `__install_program` global variables already set to `true`
 # or `false`.
+
+# -------------
+# prompt colors
+# -------------
 
 __bashrc_prompt_color_user_fg_default='32'  # green
 if [[ ! "${__bashrc_prompt_color_user_fg+x}" ]]; then
@@ -1212,8 +1254,32 @@ if ! [[ "${bash_prompt_table_variables_array+x}" ]]; then
     unset bash_prompt_table_variables_array[0]
 fi
 
+function __bashrc_window_column_count () {
+    # safely get the columns wide, fallback to reasonable default if attempts
+    # fail
+    declare -i cols
+    cols=${COLUMNS:-0}
+    if [[ ${cols} -le 0 ]]; then
+        cols=$(command -p tput cols 2>/dev/null || true)
+    fi
+    if [[ ${cols} -le 0 ]]; then
+        cols=80  # previous attempts failed, fallback to 80
+    fi
+    echo -n ${cols}
+}
+
+function __bashrc_prompt_table_max () {
+    # return maximum integer
+    if [[ ${1} -gt ${2} ]]; then
+        echo -n "${1}"
+    else
+        echo -n "${2}"
+    fi
+}
+
 function bash_prompt_table_variable_add () {
-    # add variable(s) to $bash_prompt_table_variables_array, do not add if already present
+    # add variable(s) to $bash_prompt_table_variables_array, do not add if
+    # already present
     # TODO: check that $arg is valid variable name
     #           bash_prompt_table_variable_add bad-var-name
     #       results in constant error on every prompt "invalid variable name"
@@ -1251,7 +1317,8 @@ function bash_prompt_table_variable_add () {
 }
 
 function __bash_prompt_table_shift_from () {
-    # shift all variables in $bash_prompt_table_variables_array starting at index $1
+    # shift all variables in $bash_prompt_table_variables_array starting at
+    # index $1
     # echoes inserted index value
     #
     # helper to bash_prompt_table_variable_insert_at_index()
@@ -1271,7 +1338,8 @@ function __bash_prompt_table_shift_from () {
     #    A[8]='Baz'
     #    A[9]='Pop'
     #
-    # if $1 is larger than last index, simply increment last index and set to empty
+    # if $1 is larger than last index, simply increment last index and set to
+    # empty
     # $ __bash_prompt_table_shift_from 999
     #
     #    A[1]='Foo'
@@ -1356,7 +1424,8 @@ function __bash_prompt_table_variable_index () {
 
 function bash_prompt_table_variable_insert_at_index () {
     # insert variable $1 to $bash_prompt_table_variables_array at index $2
-    # if $2 is past end of array, append to end of $bash_prompt_table_variables_array
+    # if $2 is past end of array, append to end of
+    # $bash_prompt_table_variables_array
     [[ ${#} -ge 1 ]] || return 1
     [[ ${#} -le 2 ]] || return 1
 
@@ -1371,11 +1440,14 @@ function bash_prompt_table_variable_insert_at_index () {
     fi
 
     declare -i insert_at=
-    # need changes from function __bash_prompt_table_shift_from() to persist. Obviously runing in subshell
-    # means changes to the global array will not persist so...
-    # HACK: run the function twice, first run to test and get index value, second run so changes persist
-    # XXX: is there a cleaner way to do this that does not require running the same function twice?
-    #      perhaps the function should be redesigned? or brought into this function?
+    # need changes from function __bash_prompt_table_shift_from() to persist.
+    # Obviously runing in subshell means changes to the global array will not
+    # persist so...
+    # HACK: run the function twice, first run to test and get index value,
+    #       second run so changes persist
+    # XXX: is there a cleaner way to do this that does not require running the
+    #      same function twice? perhaps the function should be redesigned? or
+    #      brought into this function?
     if insert_at=$(__bash_prompt_table_shift_from ${at}); then
         __bash_prompt_table_shift_from ${at} &>/dev/null
         bash_prompt_table_variables_array[${insert_at}]=${var}
@@ -1466,22 +1538,6 @@ function bash_prompt_table_variable_print_values () {
     ) 2>/dev/null | command -p column -t -s $'\t'
 }
 
-# ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
-function ordinal () {
-    # pass a single-character string, prints the numeric ordinal value
-    [[ ${#} -eq 1 ]] || return 1
-
-    (LC_CTYPE=C command -p printf '%d' "'${1:0:1}")
-}
-
-function character () {
-    # pass a number, prints the character
-    [[ ${#} -eq 1 ]] || return 1
-
-    [ "${1}" -lt 256 ] || return 1
-    command -p printf "\\$(printf '%03o' "${1}")"
-}
-
 function __bashrc_prompt_table_expr_length () {
     # XXX: workaround for getting string length from `${#!var}`. Normally would
     #      use `${#!var}` or `expr length "${!var}"`.
@@ -1492,8 +1548,9 @@ function __bashrc_prompt_table_expr_length () {
     echo -n "${#1}"
 }
 
-# XXX: the following `__bashrc_prompt_table_blank_n_` are various implementations of
-#      such. Only one is used but others remain for sake of comparison.
+# XXX: the following `__bashrc_prompt_table_blank_n_` are various
+#      implementations of such. Only one is used but others remain for sake of
+#      comparison.
 
 function __bashrc_prompt_table_blank_n_printf1 () {
     # XXX: this is for internal debugging
@@ -1550,8 +1607,8 @@ function __bashrc_prompt_table_blank_n_head_zero () {
     command -p head -c ${1} /dev/zero | command -p tr '\0' ' '
 }
 
-# XXX: hacky method to quickly print blanks without relying on installed programs
-#      or expensive loops
+# XXX: hacky method to quickly print blanks without relying on installed
+#      programs or expensive loops
 __bashrc_prompt_table_blank_n_buffer='                                                                                                                                                                        '
 
 function __bashrc_prompt_table_blank_n_longstr () {
@@ -1646,10 +1703,11 @@ function __bashrc_prompt_table () {
     #
     # Adds some safety for terminal column width so a narrow terminal does not
     # have a dump of shared table data.
-    # This function and functions it calls make efforts to be efficient as it is expected this
-    # function is called for every prompting.
+    # This function and functions it calls make efforts to be efficient as it is
+    # expected this function is called for every prompting.
     #
-    # XXX: this function gets slow on low-horsepower hosts. Probably needs some optimization work.
+    # XXX: this function gets slow on low-horsepower hosts. Probably needs some
+    #      optimization work.
 
     if ! ${__bashrc_prompt_table_enable}; then
         return 0
@@ -1678,7 +1736,8 @@ function __bashrc_prompt_table () {
         truncate=false
     fi
 
-    # XXX: it is faster to do this with `tr` and `column` but more portable this way.
+    # XXX: it is faster to do this with `tr` and `column` but more portable this
+    #      way.
     for varn in "${bash_prompt_table_variables_array[@]}"; do
         # if the rows are already too long for the window column width then do
         # not continue appending to them
@@ -1718,7 +1777,8 @@ function __bashrc_prompt_table () {
     fi
 
     # make attempt to print table-like output based on available programs
-    # TODO: consider adding color to table? this would need to be done after substring length
+    # TODO: consider adding color to table? this would need to be done after
+    #       substring length
     if ${truncate}; then
         echo  # start with a newline
         echo "${row1::${cols}}"
@@ -1782,7 +1842,8 @@ if declare -F __git_ps1 &>/dev/null; then
 fi
 
 function __bashrc_prompt_git_info_do () {
-    # should this attempt to run `__git_ps1` helper and make it part of the prompt?
+    # should this attempt to run `__git_ps1` helper and make it part of the
+    # prompt?
     # - do the necessary programs exist?
     # - does the necessary helper function `__git_ps1` exist?
     # - are there any "registered" mountpoints?
@@ -1815,7 +1876,8 @@ function __bash_path_mount_point () {
     command -p stat '--format=%m' --dereference "${1}" 2>/dev/null
 }
 
-# allow forcing git prompt for mount paths that might be ignored (i.e. some remote paths)
+# allow forcing git prompt for mount paths that might be ignored (i.e. some
+# remote paths)
 # XXX: backward-compatible global array declaration
 __bashrc_prompt_git_info_mountpoint_array[0]=
 unset __bashrc_prompt_git_info_mountpoint_array[0]
@@ -1823,8 +1885,9 @@ unset __bashrc_prompt_git_info_mountpoint_array[0]
 function bash_prompt_git_info_mountpoint_array_add () {
     # add path to list of paths that should force git prompt
     #
-    # this function will reduce the path to it's mount point, then add that mount point path
-    # to the private global $__bashrc_prompt_git_info_mountpoint_array
+    # this function will reduce the path to it's mount point, then add that
+    # mount point path to the private global
+    # $__bashrc_prompt_git_info_mountpoint_array
     [[ ${#} -gt 0 ]] || return 1
 
     declare -i ret=0
@@ -1883,7 +1946,8 @@ function bash_prompt_git_info_mountpoint_array_print () {
 }
 
 function __bashrc_prompt_git_info_mountpoint_array_contains () {
-    # is mount point path for path $1 within $__bashrc_prompt_git_info_mountpoint_array ?
+    # is mount point path for path $1 within
+    # $__bashrc_prompt_git_info_mountpoint_array ?
     # if contains return 0
     # else return 1
     [[ ${#} -eq 1 ]] || return 1
@@ -1965,14 +2029,16 @@ function __bashrc_prompt_git_info () {
             fi
            __git_ps1 2>/dev/null)" || true
     #out+="$(git rev-parse --symbolic-full-name HEAD) $()"
-    # a few example outputs of `__git_ps1` where current branch is "master", one example per line:
+    # a few example outputs of `__git_ps1` where current branch is "master", one
+    # example per line:
     #     (master $=)
     #     (master *$=)
     #     (master *$>)
 
     # change to red if repository non-clean; check for literal substring '*='
     if ${__bashrc_prompt_color}; then
-        # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck parsing
+        # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck
+        #      parsing
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]] || [[ "${out}" =~ '*$=' ]] || [[ "${out}" =~ '*$>' ]]; then
             # local changes
             out='\e[31m'"${out}"'\e[0m'  # red
@@ -1985,14 +2051,14 @@ function __bashrc_prompt_git_info () {
         fi
             # else local and remote are in same state, local is not disturbed
     fi
-    # use echo to interpret color sequences here, PS1 will not attempt to interpret this functions
-    # output
+    # use echo to interpret color sequences here, PS1 will not attempt to
+    # interpret this functions output
     echo -en "\ngit:${out}"
 }
 
-#
+# --------------------------
 # assemble the prompt pieces
-#
+# --------------------------
 
 __bashrc_prompt_strftime_format_default='%F %T'  # global
 if ! [[ "${bash_prompt_strftime_format+x}" ]]; then
@@ -2218,7 +2284,8 @@ function __bashrc_alias_check () {
 }
 
 function __bashrc_alias_safely_check () {
-    # create alias if it does not obscure a program in the $PATH and running the alias succeeds
+    # create alias if it does not obscure a program in the $PATH and running the
+    # alias succeeds
     [[ ${#} -eq 2 ]] || return 1
 
     if command type "${1}" &>/dev/null; then
@@ -2249,14 +2316,16 @@ function __bashrc_alias_greps_color () {
         return 0
     fi
     # various grep interfaces found on Ubuntu 18
-    # since each grep will be run, for stability, confine search to /usr/bin and /bin
+    # since each grep will be run, for stability, confine search to /usr/bin and
+    # /bin
     for grep_path in \
         /usr/bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep} \
         /bin/{bzgrep,dgrep,grep,egrep,fgrep,xzgrep,zegrep,zfgrep,zgrep,zipgrep}
     do
         declare grep_base=
         grep_base=${grep_path##*/}  # get basename
-        # run simplest match with the grep program to make sure it understands option '--color=auto'
+        # run simplest match with the grep program to make sure it understands
+        # option '--color=auto'
         if bash_installed "${grep_path}" \
             && [[ "$(which "${grep_base}" 2>/dev/null)" = "${grep_path}" ]] \
             && (echo '' | command -p "${grep_path}" --color=auto '' &>/dev/null); then
@@ -2382,12 +2451,12 @@ function print_dev_IPv4_Win () {
     # $ netsh.exe interface ipv4 show addresses name="Local Area Connection"
     #
     #   Configuration for interface "Local Area Connection"
-    #    DHCP enabled:                         Yes
-    #    IP Address:                           192.168.1.2
-    #    Subnet Prefix:                        192.168.1.0/24 (mask 255.255.255.0)
-    #    Default Gateway:                      0.0.0.0
-    #    Gateway Metric:                       1
-    #    InterfaceMetric:                      20
+    #    DHCP enabled:                      Yes
+    #    IP Address:                        192.168.1.2
+    #    Subnet Prefix:                     192.168.1.0/24 (mask 255.255.255.0)
+    #    Default Gateway:                   0.0.0.0
+    #    Gateway Metric:                    1
+    #    InterfaceMetric:                   20
     #
     [[ ${#} -eq 1 ]] || return 1
 
@@ -2543,8 +2612,9 @@ function bash_prompt_table_variable_add_net_IPv4 () {
     fi
     # create a global variable from the generated variable name and value
     declare devname_varname=${devname}
-    # trying to great a variable name from the device name, but clean up the device name so
-    # it is allowed as a variable name, e.g. `USB (LAN)` -> `USB__LAN_`
+    # trying to great a variable name from the device name, but clean up the
+    # device name so it is allowed as a variable name
+    # e.g. `USB (LAN)` -> `USB__LAN_`
     devname_varname=${devname_varname//'-'/_}
     devname_varname=${devname_varname//' '/_}
     devname_varname=${devname_varname//'('/_}
@@ -2592,7 +2662,8 @@ function bash_prompt_table_variable_add_IPv4_Name () {
 }
 
 function bash_prompt_table_variable_add_Internet_IPv4_Name () {
-    # wrapper for adding Internet-related variables to $bash_prompt_table_variables_array
+    # wrapper for adding Internet-related variables to
+    # $bash_prompt_table_variables_array
     [[ ${#} -eq 0 ]] || return 1
 
     if ! bash_prompt_table_variable_add_Internet; then
@@ -2629,7 +2700,8 @@ function __bashrc_download_from_to () {
     #       4. let user know what happened
     #       perhaps quieting output of each downloader
     #       also, how to set file datetime to that in HTTP reply?
-    #       also, is it possible to do a HEAD first, check if anything needs to be downloaded?
+    #       also, is it possible to do a HEAD first, check if anything needs to
+    #       be downloaded?
 }
 
 function __bashrc_downloader_used () {
@@ -2695,8 +2767,9 @@ function __bash_update_dotscreenrc () {
 }
 
 function bash_update_dots () {
-    # install other . (dot) files in a one-liner, for fast setup or update of a new linux user shell
-    # environment may pass wget/curl parameters to like --no-check-certificate or --insecure
+    # install other . (dot) files in a one-liner, for fast setup or update of a
+    # new linux user shell environment may pass wget/curl parameters to like
+    # --no-check-certificate or --insecure
     __bash_update_dotbash "${@}"
     __bash_update_dotvimrc "${@}"
     __bash_update_dotscreenrc "${@}"
@@ -2708,7 +2781,8 @@ function bash_update_dots () {
 # source other bashrc files
 # =========================
 
-# Do not source ./.bash_profile as that will source this ./.bashrc (circular dependency)
+# Do not source ./.bash_profile as that will source this ./.bashrc (circular
+# dependency)
 
 # .bashrc.local for host-specific customizations
 bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local"
@@ -2717,7 +2791,8 @@ bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.builtins.post"
 bash_source_file "${__bashrc_path_dir_bashrc}/.bashrc.local.post"
 
 if ! shopt -oq posix; then
-    # XXX: other "official" completion files often have variable expansion errors
+    # XXX: other "official" completion files often have variable expansion
+    #      errors
     set +u
     bash_source_file /usr/share/bash-completion/bash_completion
     bash_source_file /etc/bash_completion
@@ -2728,12 +2803,13 @@ fi
 # print information this .bashrc has done for the user
 # ====================================================
 
-function bash_about () {
-    # echo information about this shell instance for the user with pretty formatting and indentation
+function __bash_about () {
+    # echo information about this shell instance for the user with pretty
+    # formatting and indentation
 
     # TODO: show newly introduced environment variables
-    #       But how to diff input from stdin? Creating temporary files to feed to diff is too risky for
-    #       a startup script.
+    #       But how to diff input from stdin? Creating temporary files to feed
+    #       to diff is too risky for a startup script.
     [[ ${#} -le 1 ]] || return 1
 
     declare b=''
@@ -2745,8 +2821,8 @@ function bash_about () {
 
     function __bash_about_time_start() {
         # __bash_start_beg_time should be set by calling .bash_profile
-        # XXX: a smoother way to do this would be overriding the prompt_timer values
-        #      once during startup
+        # XXX: a smoother way to do this would be overriding the prompt_timer
+        #      values once during startup
         if [[ ! "${__bash_start_beg_time+x}" ]]; then
             return 1
         fi
@@ -2909,6 +2985,16 @@ ${b}Special Features of this .bashrc:${boff}
 "
 }
 
-bash_about --minimal >&2
+function bash_about () {
+    # wrapper to call `__bash_about` with pager `less` (presuming `less` is
+    # installed)
+    if installed less; then
+        __bash_about "${@}" | command -p less -SR
+    else
+        __bash_about "${@}"
+    fi
+}
+
+__bash_about --minimal >&2
 
 set +u

@@ -1,32 +1,19 @@
 # .bash_profile
 #
-# built-in customizations for bash
-# changes to this file will be overwritten by `dotfiles/install.sh`
-# local changes should be put into neighboring `.bash_profile.local`
+# built-in customizations for bash.
+# Changes to this file will be overwritten by `dotfiles/install.sh`.
+# Local changes should be put into neighboring `.bash_profile.local`.
 #
-# lastest version at
-#   https://github.com/jtmoon79/dotfiles/blob/master/.bash_profile
-#
-# Features:
-#   - tested in a variety of environments; Debian, openSUSE,
-#     FreeBSD using various bash versions
-#   - attempts to play well with screen or tmux
-#   - handles graphical and non-graphical environments
-#
-# Anti-Features:
-#   - not POSIX compliant!
-#
-# This file works best with companion `dotfiles/.bashrc`,
-# `dotfiles/.bashrc.builtins.post`, `dotfiles/.bashrc.local.post`.
-# Run `dotfiles/install.sh` to install those companion files.
-# https://github.com/jtmoon79/dotfiles/blob/master/install.sh
+# Read even more words in companion file `.bashrc`.
 #
 # XXX: this calls multiplexers backwards
-#      this file is processed by bash instance and which in-turn starts a multiplexer instance
-#      this should occur in the opposite way; start a multiplexer instance and then start a bash
-#      instance. But is that even *reasonably* possible?
+#      this file is processed by bash instance and which in-turn starts a
+#      multiplexer instance
+#      this should occur in the opposite way; start a multiplexer instance and
+#      then start a bash instance. But is that even *reasonably* possible?
 #
-# BUG: after shell fully starts, __bash_sourced_files_array has entry for .bashrc twice
+# BUG: after shell fully starts, __bash_sourced_files_array has entry for
+#      .bashrc twice
 #
 
 set -u
@@ -70,11 +57,12 @@ function bash_installed () {
 }
 
 function readlink_portable () {
-    # make best attempt to use the available `readlink` (or `realpath`) but do not
-    # fail if $1 is not found.
+    # make best attempt to use the available `readlink` (or `realpath`) but do
+    # not fail if $1 is not found.
     #
-    # `readlink` options among different `readlink` implementations (GNU coreutils and BSD) vary.
-    # So make sure `readlink` exists and understands the options passed before using it.
+    # `readlink` options among different `readlink` implementations (GNU
+    # coreutils and BSD) vary. So make sure `readlink` exists and understands
+    # the options passed before using it.
     [[ ${#} -gt 0 ]] || return 1
 
     declare out=
@@ -99,8 +87,8 @@ function readlink_portable () {
 }
 
 function __bash_profile_path_dir_print () {
-    # do not assume this is run from path $HOME. This allows loading companion .bash_profile and
-    # .bashrc from different paths.
+    # do not assume this is run from path $HOME. This allows loading companion
+    # .bash_profile and .bashrc from different paths.
     [[ ${#} -eq 0 ]] || return 1
 
     declare path=${BASH_SOURCE:-}/..
@@ -144,18 +132,21 @@ __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=$(readlink_portabl
 # useful for setting $force_multiplexer
 __bash_profile_source_file "${__bash_profile_path_dir}/.bash_profile.local"
 
-# try different terminal multiplexers tmux and screen but only if not already within a multiplexer
-# BUG: race condition: multiple shells starting at once will attach to the same detached
-#      session (e.g. in Terminator)
+# try different terminal multiplexers tmux and screen but only if not already
+# within a multiplexer
+# BUG: race condition: multiple shells starting at once will attach to the same
+#      detached session (e.g. in Terminator)
 if [[ "$-" =~ 'i' ]] \
     && [[ -z "${TMUX+x}" ]] \
     && [[ -z "${STY+x}" ]] \
-    && ( [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] )  # `force_multiplexer` is defined and not empty
+    `# force_multiplexer is defined and not empty` \
+    && ( [[ "${force_multiplexer+x}" ]] && [[ "${force_multiplexer-}" != '' ]] )
 then
     # first try tmux
     # taken from https://wiki.archlinux.org/index.php/Tmux#Start_tmux_on_every_shell_login
     if [[ "${force_multiplexer-}" = 'tmux' ]] && bash_installed tmux; then
-        # try to attach-session to detached tmux session, otherwise create new-session
+        # try to attach-session to detached tmux session, otherwise create
+        # new-session
         __bash_profile_tmux_detached=
         if bash_installed grep cut; then
             # get the tmux ID of a deattached session
@@ -176,7 +167,8 @@ then
             #
             __bash_profile_tmux_detached=$(tmux ls | command -p grep -v -m1 -Fe 'attached' | command -p grep -v -Fe 'no server running' | command -p cut -d: -f1) 2>/dev/null
         fi
-        # `tmux` which will clear the console, so `sleep` to let user see what is about to happen
+        # `tmux` which will clear the console, so `sleep` to let user see what
+        # is about to happen
         if [[ -z "${__bash_profile_tmux_detached}" ]] ; then
              # a detached session not present so create a new session
             #__bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
@@ -193,8 +185,9 @@ then
     elif [[ "${force_multiplexer-}" = 'screen' ]] && bash_installed screen; then
         # try to attach to Detached session, otherwise start a new session
         __bash_profile_screen_detached=
-        # XXX: if screen does start a new instance, then `__bash_profile_source_file .bashrc` else do
-        #      not how to determine ahead of time?
+        # XXX: if screen does start a new instance, then
+        #      `__bash_profile_source_file .bashrc` else do not how to determine
+        #      ahead of time?
         if bash_installed grep tr cut; then
             # based on `screen -list` output like:
             #
@@ -214,7 +207,8 @@ then
             #
             __bash_profile_screen_detached=$(screen -list | command -p grep -m1 -Fe '(Detached)' | command -p tr -s '[:blank:]' | command -p cut -f2)
         fi
-        # `screen` which will clear the console, so `sleep` to let user see what is about to happen
+        # `screen` which will clear the console, so `sleep` to let user see what
+        # is about to happen
         if [[ -z "${__bash_profile_screen_detached}" ]]; then
             # no detached screen, start new screen
             __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
@@ -234,9 +228,10 @@ fi
 # inform the local X server to allow this shell instance to launch GUI programs
 # see https://bugs.launchpad.net/ubuntu/+source/gedit/+bug/1449748/comments/10
 if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && bash_installed xhost &>/dev/null; then
-    # XXX: this is lax security, how to make the X server allowance more restricted?
-    #      see https://wiki.archlinux.org/index.php/Xhost#Usage
-    # TODO: can the current xhost settings be checked before calling this? (to avoid duplicate calls)
+    # XXX: this is lax security, how to make the X server allowance more
+    #      restricted? see https://wiki.archlinux.org/index.php/Xhost#Usage
+    # TODO: can the current xhost settings be checked before calling this? (to
+    #       avoid duplicate calls)
     # TODO: should this be a switch that is set in the .bash_profile.local ?
     xhost +local:
 fi

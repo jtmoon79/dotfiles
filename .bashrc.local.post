@@ -22,12 +22,14 @@
 #
 #   bash_prompt_git_info_mountpoint_array_add
 #   # git info in prompt will check for repositories under this mount
-#   # in WSL2 Linux, there may be git repositories on the local Windows "D:\" drive
+#   # in WSL2 Linux, there may be git repositories on the local Windows "D:\"
+#   # drive
 #
 #      $ bash_prompt_git_info_mountpoint_array_add /mnt/d
 #
 #   bash_prompt_table_variable_add_net_IPv4
-#   # adds a network interface, Linux or Windows,  and it's IPv4 Address to the prompt table
+#   # adds a network interface, Linux or Windows,  and it's IPv4 Address to the
+#   # prompt table
 #
 #      $ bash_prompt_table_variable_add_net_IPv4 "Virtual Box"
 #
@@ -72,6 +74,11 @@
 #   # a string, replaces prompt marker string
 #
 #      $ bash_prompt_bullet='•'
+#
+#   # or in case your terminal is having trouble copy+pasting non-ASCII
+#   # characters:
+#
+#      $ bash_prompt_bullet=$(echo -e "\U2022")
 #
 #   bash_color_force
 #   # true/false, forces color for prompt and a few other places
