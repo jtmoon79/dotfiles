@@ -66,6 +66,7 @@
 #   https://www.tldp.org/LDP/abs/html/string-manipulation.html
 #   https://wiki.bash-hackers.org/commands/builtin/printf (http://archive.ph/wip/jDPjC)
 #   https://www.shell-tips.com/bash/math-arithmetic-calculation/ (https://archive.vn/dOUw0)
+#   https://fvue.nl/wiki/Bash:_Error_handling (https://archive.ph/rSl6r)
 #
 # bash key combinations:
 #   https://www.howtogeek.com/howto/ubuntu/keyboard-shortcuts-for-bash-command-shell-for-ubuntu-debian-suse-redhat-linux-etc/
@@ -92,9 +93,6 @@
 #      if this .bashrc is read for an additional time. Declaring an already
 #      existing `readonly` variable is an error. Some tedium is necessary to do
 #      so without an error. This file refrains from use of `readonly`.
-#
-# TODO: add jobs to prompt when jobs are present. Should behave like git prompt;
-#       not visible when no jobs.
 #
 # TODO: allow more selection of colors for various parts of the prompt
 #       e.g $color_prompt_user $color_prompt_table $color_prompt_hostname
@@ -286,7 +284,7 @@ function bash_source_file () {
     # source a file with some preliminary checks, print a debug message
     [[ ${#} -eq 1 ]] || return 1
     # shellcheck disable=SC2155
-    declare sourcef=$(readlink_portable "${1}")
+    declare -r sourcef=$(readlink_portable "${1}")
     if [[ ! -f "${sourcef}" ]]; then
        # missing file, no error
        return
@@ -295,7 +293,17 @@ function bash_source_file () {
         # file exists but is not readable, error
         return 1
     fi
-    echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+    echo "${PS4-}source '${sourcef}' from '${BASH_SOURCE:-}'" >&2
+    # check if $sourcef has already been sourced, but only warn user if it has been
+    declare -i __i=0
+    declare -ir __len=${#__bash_sourced_files_array[@]}
+    while [[ ${__i} -lt ${__len} ]]; do
+        if [[ "${sourcef}" = "${__bash_sourced_files_array[${__i}]}" ]]; then
+            echo "${PS4-}WARNING: have previously sourced '${sourcef}'" >&2
+            break
+        fi
+        __i=$((${__i} + 1))
+    done
     __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
     # shellcheck disable=SC1090
     source "${sourcef}"
@@ -303,7 +311,7 @@ function bash_source_file () {
 
 function bashrc_source_file () {
     # backward-compatible wrapper
-    bashrc_source_file "${@}"
+    bash_source_file "${@}"
 }
 
 # .bashrc.local for host-specific customizations to run before the remainder of
@@ -1205,41 +1213,68 @@ if [[ ! "${__bashrc_prompt_color_cwd+x}" ]]; then
     __bashrc_prompt_color_cwd=${__bashrc_prompt_color_cwd_default}
 fi
 
-__bashrc_prompt_color_table_fg_default='30'  # black
+__bashrc_prompt_color_table_fg_default='37'  # light gray
 if [[ ! "${__bashrc_prompt_color_table_fg+x}" ]]; then
     __bashrc_prompt_color_table_fg=${__bashrc_prompt_color_table_fg_default}
 fi
-__bashrc_prompt_color_table_bg_default='34'  # blue
+__bashrc_prompt_color_table_bg_default='90'  # dark gray
 if [[ ! "${__bashrc_prompt_color_table_bg+x}" ]]; then
     __bashrc_prompt_color_table_bg=${__bashrc_prompt_color_table_bg_default}
 fi
 
+# ------------
+# prompt jerbs
+# ------------
 
-# -----------------------
-# prompt terminal details
-# -----------------------
+__bashrc_prompt_jobs_info_is_enable=true
 
-function __bashrc_prompt_table_max () {
-    # return maximum integer
-    if [[ ${1} -gt ${2} ]]; then
-        echo -n "${1}"
-    else
-        echo -n "${2}"
+function __bashrc_prompt_jobs_info () {
+    # print a string about current jobs, to be used the prompt
+    [[ ${#} -eq 0 ]] || return 1
+
+    if ! ${__bashrc_prompt_jobs_info_is_enable}; then
+        return 0
     fi
+
+    declare -i count_jobs_total=0
+    declare -i count_jobs_running=0
+    declare -i count_jobs_stopped=0
+    declare out=
+
+    # some very old versions of bash may not understand `jobs -p`
+    # if not return with error
+    if ! out=$(jobs -p 2>/dev/null); then
+        return 1
+    fi
+
+    count_jobs_total=$(echo -n "${out}" | line_count)
+
+    if ! out=$(jobs -pr 2>/dev/null); then
+        echo -n "jobs ${count_jobs_total}"
+        return
+    fi
+
+    # if no jobs, then print that and be done
+    if [[ ${count_jobs_total} -eq 0 ]]; then
+        echo -n "no jobs"
+        return
+    fi
+
+    count_jobs_running=$(echo -n "${out}" | line_count)
+
+    if ! out=$(jobs -ps 2>/dev/null); then
+        echo -n "jobs ${count_jobs_total}"
+        return
+    fi
+
+    count_jobs_stopped=$(echo -n "${out}" | line_count)
+
+    echo -n "jobs ${count_jobs_total} total, ${count_jobs_running} running, ${count_jobs_stopped} stopped"
 }
 
-function __bashrc_window_column_count () {
-    # safely get the columns wide, fallback to reasonable default if attempts fail
-    declare -i cols
-    cols=${COLUMNS:-0}
-    if [[ ${cols} -le 0 ]]; then
-        cols=$(command -p tput cols 2>/dev/null || true)
-    fi
-    if [[ ${cols} -le 0 ]]; then
-        cols=80  # previous attempts failed, fallback to 80
-    fi
-    echo -n ${cols}
-}
+# ------------
+# prompt table
+# ------------
 
 __bashrc_prompt_table_tty=$(command -p tty 2>/dev/null || true)  # global, set once
 
@@ -2089,6 +2124,9 @@ function __bashrc_prompt_set () {
         __bashrc_prompt_first=false
     fi
 
+    #
+    # This is where the prompt is assembled! It's ugly!
+    #
     if ${__bashrc_prompt_color}; then
         declare color_user=${__bashrc_prompt_color_user_fg}
         if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
@@ -2098,13 +2136,26 @@ function __bashrc_prompt_set () {
         #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array becomes unset there
         #      will be an empty line.
+        # XXX: functions returning color text must use nomenclature `\033[41m\]`?... I think?
+        #      the typical nomenclature `\e[41m` or `\e[41m;` may sometimes fail to render, I haven't narrowed down why.
+        # XXX: substring "\e[0;49;39;m" is "reset all attributes; default background color; default foreground color"
         PS1='
-\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}\[\033[2m\] ('"${last_command_mesg}"' \[\033[22m\]${__bashrc_prompt_timer_show-0}\[\033[2m\]; \[\033[22m\]$(__bashrc_prompt_last_exit_code_show)\[\033[2m\])\[\033[22m\]\[\e[0m\]\[\e[0;'"${__bashrc_prompt_color_table_fg}"';'"${__bashrc_prompt_color_table_bg}"'m\]$(__bashrc_prompt_table)\[\e[32m\]${__bashrc_prompt_git_info_show}\[\e[0;0m\]${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
-\[\033[01;'"${color_user}"'m\]\u\[\033[039m\]@\[\033[01;'"${__bashrc_prompt_color_hostname}"'m\]\h\[\033[00m\]:\[\033[4;'"${__bashrc_prompt_color_cwd}"'m\]\w\[\033[24m
-\e['"${__bashrc_prompt_color_prompt_bullet}m${bash_prompt_bullet}"'\[\033[00m\] '
+\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}'\
+'\e[0;49;39;m\e[2m ('"${last_command_mesg}"' \e[22m${__bashrc_prompt_timer_show-0}\e[2m \e[22m$(__bashrc_prompt_last_exit_code_show)\e[0;49;39;m\e[2m)\e[0;49;39;m'\
+' $(__bashrc_prompt_jobs_info)'\
+'\e['"${__bashrc_prompt_color_table_fg}"'m\e['"${__bashrc_prompt_color_table_bg}"'m$(__bashrc_prompt_table)'\
+'\e[32m${__bashrc_prompt_git_info_show}\e[0;49;39;m'\
+'${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\e['"${color_user}"'m\u\e[039m@\e[01;'"${__bashrc_prompt_color_hostname}"'m\h\e[0;49;39;m:\e[4;'"${__bashrc_prompt_color_cwd}"'m\w\e[24m
+\e['"${__bashrc_prompt_color_prompt_bullet}m${bash_prompt_bullet}"'\e[0;49;39;m '
     else
         PS1='
-\D{'"${bash_prompt_strftime_format}"'} ('"${last_command_mesg}"' ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))$(__bashrc_prompt_table)${__bashrc_prompt_git_info_show}${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
+\D{'"${bash_prompt_strftime_format}"'}'\
+' ('"${last_command_mesg}"' ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))'\
+' $(__bashrc_prompt_jobs_info)'\
+'$(__bashrc_prompt_table)'\
+'${__bashrc_prompt_git_info_show}'\
+'${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
 \u@\h:\w
 '"${bash_prompt_bullet}"' '
     fi
