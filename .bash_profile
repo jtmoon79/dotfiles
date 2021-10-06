@@ -25,6 +25,8 @@ if [[ -z "${__bash_start_beg_time-}" ]]; then
     fi
 fi
 
+__bash_profile_import_start=true
+
 # If not running interactively, do not print.
 __bash_profile_verbose=false
 case "$-" in

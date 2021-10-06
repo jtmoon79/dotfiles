@@ -136,10 +136,40 @@ case "$-" in
         ;;
 esac
 
-# function readlink_portable *should* be defined in companion .bash_profile. But in case was not defined,
-# create a stub function
+function __bashrc_path_dir_bashrc_print () {
+    # print the directory path for this bash file
+    # Do not assume this is run from path $HOME. This allows sourcing companion
+    # .bash_profile and .bashrc from different paths.
+    [[ ${#} -eq 0 ]] || return 1
+    declare path=${BASH_SOURCE:-}/..
+    if which dirname &>/dev/null; then
+        path=$(command -p dirname -- "${BASH_SOURCE:-}")
+    fi
+    if ! [[ -d "${path}" ]]; then
+        path=~  # in case something is wrong, fallback to ~
+    fi
+    echo -n "${path}"
+}
+
+#__bashrc_path_dir_bashrc=
+__bashrc_path_dir_bashrc=$(__bashrc_path_dir_bashrc_print)
+if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
+    __bashrc_path_dir_bashrc=~
+fi
+
+# $__bash_profile_import_start is defined in companion .bash_profile
+# XXX: OpenSUSE Linux will import .bashrc first and then .bash_profile
+#      Forcibly import .bash_profile first and then .bashrc
+if ! [[ "${__bash_profile_import_start+x}" ]]; then
+    echo "${PS4}WARNING: .bashrc imported before .bash_profile; source .bash_profile anyway" >&2
+    source "${__bashrc_path_dir_bashrc}/.bash_profile"
+    return
+fi
+
+# function readlink_portable *should* be defined in companion .bash_profile. But
+# in case was not defined, create a stub function
 if ! type -t readlink_portable &>/dev/null; then
-    echo "ERROR: readlink_portable is not defined; was .bash_profile imported?" >&2
+    echo "WARNING: readlink_portable is not defined; was .bash_profile imported?" >&2
     function readlink_portable () {
         echo -n "${@}"
     }
@@ -246,27 +276,6 @@ if ! [[ "${__bash_processed_files_array+x}" ]] ; then
     # XXX: backward-compatible array declaration
     __bash_processed_files_array[0]=''  # global array
     unset __bash_processed_files_array[0]
-fi
-
-function __bashrc_path_dir_bashrc_print () {
-    # print the directory path for this bash file
-    # do not assume this is run from path $HOME. This allows sourcing companion
-    # .bash_profile and .bashrc from different paths.
-    [[ ${#} -eq 0 ]] || return 1
-    declare path=${BASH_SOURCE:-}/..
-    if bash_installed dirname; then
-        path=$(command -p dirname -- "${BASH_SOURCE:-}")
-    fi
-    if ! [[ -d "${path}" ]]; then
-        path=~  # in case something is wrong, fallback to ~
-    fi
-    echo -n "${path}"
-}
-
-#__bashrc_path_dir_bashrc=
-__bashrc_path_dir_bashrc=$(__bashrc_path_dir_bashrc_print)
-if ! [[ -d "${__bashrc_path_dir_bashrc}" ]]; then
-    __bashrc_path_dir_bashrc=~
 fi
 
 # .bash_profile should have created $__bash_sourced_files_array only create if
