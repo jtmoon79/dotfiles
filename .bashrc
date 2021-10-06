@@ -161,7 +161,7 @@ fi
 # XXX: OpenSUSE Linux will import .bashrc first and then .bash_profile
 #      Forcibly import .bash_profile first and then .bashrc
 if ! [[ "${__bash_profile_import_start+x}" ]]; then
-    echo "${PS4}WARNING: .bashrc imported before .bash_profile; source .bash_profile anyway" >&2
+    echo "WARNING: .bashrc imported before .bash_profile; source .bash_profile anyway" >&2
     source "${__bashrc_path_dir_bashrc}/.bash_profile"
     return
 fi
@@ -308,7 +308,7 @@ function bash_source_file () {
     declare -ir __len=${#__bash_sourced_files_array[@]}
     while [[ ${__i} -lt ${__len} ]]; do
         if [[ "${sourcef}" = "${__bash_sourced_files_array[${__i}]}" ]]; then
-            echo "${PS4-}WARNING: have previously sourced '${sourcef}'" >&2
+            echo "WARNING: have previously sourced '${sourcef}'" >&2
             break
         fi
         __i=$((${__i} + 1))
