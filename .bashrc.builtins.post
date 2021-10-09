@@ -193,7 +193,8 @@ if ${__bashrc_color_apps} && [[ -x /usr/bin/dircolors ]]; then
     else
         eval "$(/usr/bin/dircolors -b)"
     fi
-
+fi
+if ${__bashrc_color_apps}; then
     __bashrc_alias_check ls 'command -p ls --color=auto'
     if bash_installed dir; then
         __bashrc_alias_check dir 'command -p dir --color=auto'
@@ -239,10 +240,15 @@ __bashrc_alias_greps_color
 # TODO: all alias creation should be moved into an example .bash_aliases
 #       that is part of this repository. They can use functions defined here.
 
-__bashrc_alias_safely_check l 'command -p ls -lAa'
-__bashrc_alias_safely_check ll 'command -p ls -lAa'
-__bashrc_alias_safely_check la 'command -p ls -Aa'
-__bashrc_alias_safely_check ltr 'command -p ls -Altr'
+__bashrc_alias_ll_color=' '
+if ${__bashrc_color_apps}; then
+    __bashrc_alias_ll_color='--color=auto '
+fi
+__bashrc_alias_safely_check l "command -p ls ${__bashrc_alias_ll_color}-lAa"
+__bashrc_alias_safely_check ll "command -p ls ${__bashrc_alias_ll_color}-lAa"
+__bashrc_alias_safely_check la "command -p ls ${__bashrc_alias_ll_color}-Aa"
+__bashrc_alias_safely_check ltr "command -p ls ${__bashrc_alias_ll_color}-Altr"
+unset __bashrc_alias_ll_color
 __bashrc_alias_safely whence 'command -p type -a'  # where, of a sort
 __bashrc_alias_safely_check psa 'command -p ps -ef --forest'
 __bashrc_alias_safely_check envs env_sorted
