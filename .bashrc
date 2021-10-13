@@ -432,7 +432,7 @@ function bash_OS () {
     # TODO: not tested adequately on non-Linux
     [[ ${#} -eq 0 ]] || return 1
 
-    declare uname_=$(uname -s) 2>/dev/null
+    declare -r uname_=$(uname -s) 2>/dev/null
     declare os='unknown'
     declare os_flavor=''
     if [[ -e /proc/version ]]; then
@@ -512,8 +512,8 @@ function bash_OS () {
             #
             #    CentOS release 6.7 (Final)
             #
-            if bash_installed tr; then
-                cat /etc/centos-release | tr -d '\n'
+            if bash_installed tr head; then
+                cat /etc/centos-release | head -n1 | tr -d '\n'
             else
                 cat /etc/centos-release
             fi
@@ -728,7 +728,7 @@ function bash_print_special_shell_vars () {
     #     https://wiki.bash-hackers.org/syntax/shellvars
     #     (https://archive.ph/u0EGp)
     #
-    declare vars=(
+    declare -ar vars=(
         '*'
         '@'
         '?'
@@ -1001,7 +1001,7 @@ __bashrc_prompt_color_eval
 
 # set variable identifying the current chroot (used in the prompt below)
 if [[ -z "${__bashrc_debian_chroot-}" ]] && [[ -r /etc/debian_chroot ]]; then
-    __bashrc_debian_chroot=$(cat /etc/debian_chroot)
+    __bashrc_debian_chroot=$(</etc/debian_chroot)
 fi
 
 # ------------
@@ -1050,25 +1050,25 @@ function __bashrc_prompt_timer_stop () {
 
     if ${__bashrc_prompt_timer_epoch}; then
         # truncate $EPOCHREALTIME to milliseconds
-        declare -i toffset=$(((${EPOCHREALTIME//.} - ${__bashrc_prompt_timer_cur//.}) / 1000))
+        declare -ir toffset=$(((${EPOCHREALTIME//.} - ${__bashrc_prompt_timer_cur//.}) / 1000))
         # truncate to seconds
-        declare -i toffset_sec=$((${toffset} / 1000))
+        declare -ir toffset_sec=$((${toffset} / 1000))
         declare units='ms'
     else
-        declare -i toffset=$((${SECONDS:-0} - __bashrc_prompt_timer_cur))
-        declare -i toffset_sec=${toffset}
+        declare -ir toffset=$((${SECONDS:-0} - __bashrc_prompt_timer_cur))
+        declare -ir toffset_sec=${toffset}
         declare units='s'
     fi
 
     if [[ ${toffset_sec} -ge 60 ]] || ${__bashrc_prompt_timer_epoch}; then
         # show Hour:Minute:Second breakdown
-        declare -i h=$((toffset_sec / 3600))
-        declare -i m=$((toffset_sec % 3600 / 60))
+        declare -ir h=$((toffset_sec / 3600))
+        declare -ir m=$((toffset_sec % 3600 / 60))
         declare m_=
         if [[ ${m} -lt 10 ]]; then
             declare m_='0'
         fi
-        declare -i s=$((toffset_sec % 60))
+        declare -ir s=$((toffset_sec % 60))
         declare s_=
         if [[ ${s} -lt 10 ]]; then
             declare s_='0'
@@ -1152,9 +1152,9 @@ function __bashrc_title_set () {
         ssh_connection=" (via ${SSH_CONNECTION})"
     fi
     # MinGW bash may not set $USER
-    declare user_=${USER-$(command -p whoami)}
+    declare -r user_=${USER-$(command -p whoami)}
     # some bash may not set $HOSTNAME
-    declare host_=${HOSTNAME-$(command -p hostname)}
+    declare -r host_=${HOSTNAME-$(command -p hostname)}
     echo -en "\033]0;${user_}@${host_} using ${SHELL-SHELL not set} on TTY ${__bashrc_title_set_TTY} hosted by ${__bashrc_title_set_OS} running ${__bashrc_title_set_kernel}${ssh_connection}\007"
 }
 
@@ -1414,8 +1414,8 @@ function __bash_prompt_table_shift_from () {
         return 1
     fi
 
-    declare -ri at=${1}
-    declare -ri len=${#bash_prompt_table_variables_array[@]}
+    declare -ir at=${1}
+    declare -ir len=${#bash_prompt_table_variables_array[@]}
     # special case of zero size array
     if [[ ${len} -eq 0 ]]; then
         return
@@ -1474,8 +1474,8 @@ function bash_prompt_table_variable_insert_at_index () {
     [[ ${#} -le 2 ]] || return 1
 
     declare -r var=${1}
-    declare -ri at=${2-0}
-    declare -ri len=${#bash_prompt_table_variables_array[@]}
+    declare -ir at=${2-0}
+    declare -ir len=${#bash_prompt_table_variables_array[@]}
 
     # special case of zero size array
     if [[ ${len} -eq 0 ]]; then
@@ -2403,7 +2403,7 @@ function print_dev_IPv4_Linux () {
     # given passed NIC, print the first found IPv4 address by scraping from
     # outputs of either `ip` or `ifconfig`
     # TODO: this function should use only bash built-in features, rely less on
-    #       `grep` etc.
+    #       `grep`, `tr`, `cut`
     [[ ${#} -eq 1 ]] || return 1
 
     if ! bash_installed ip && ! bash_installed ifconfig; then
@@ -2414,7 +2414,7 @@ function print_dev_IPv4_Linux () {
     fi
 
     #
-    # example Ubuntu 20.04 ifconfig
+    # example Ubuntu 20.04 `ifconfig`
     #
     # $ ifconfig eth0
     # eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
@@ -2426,7 +2426,7 @@ function print_dev_IPv4_Linux () {
     #     TX packets 137051  bytes 10105497 (10.1 MB)
     #     TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
     #
-    # example FreeBSD 11 ifconfig
+    # example FreeBSD 11 `ifconfig`
     #
     # $ ifconfig em0
     # em0: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
@@ -2436,7 +2436,7 @@ function print_dev_IPv4_Linux () {
     #         media: Ethernet autoselect (1000baseTX <full-duplex>)
     #         status: active
     #
-    # example alpine 3.12 ifconfig
+    # example alpine 3.12 `ifconfig`
     #
     # $ ifconfig eth0
     # eth0      Link encap:Ethernet  HWaddr 00:12:34:56:78:90
@@ -2448,7 +2448,7 @@ function print_dev_IPv4_Linux () {
     #           collisions:0 txqueuelen:1000
     #           RX bytes:22454975297 (20.9 GiB)  TX bytes:22240105824 (20.7 GiB)
     #
-    # example Ubuntu 18 ip
+    # example Ubuntu 18 `ip`
     #
     # $ ip addr show dev eth0
     # 5: eth0: <BROADCAST,MULTICAST,UP> mtu 1504 group default qlen 1
@@ -2509,7 +2509,7 @@ function print_dev_IPv4_Win () {
     #
     # example netsh.exe output:
     #
-    # $ netsh.exe interface ipv4 show addresses name="Local Area Connection"
+    # PS > netsh.exe interface ipv4 show addresses name="Local Area Connection"
     #
     #   Configuration for interface "Local Area Connection"
     #    DHCP enabled:                      Yes
@@ -2521,8 +2521,10 @@ function print_dev_IPv4_Win () {
     #
     [[ ${#} -eq 1 ]] || return 1
 
+    # WSL path
     declare netsh='/mnt/c/Windows/System32/netsh.exe'
     if ! [[ -e "${netsh}" ]]; then
+        # cygwin path
         netsh='/cygdrive/c/WINDOWS/system32/netsh.exe'
         if ! [[ -e "${netsh}" ]]; then
             return 1
@@ -2550,7 +2552,7 @@ function bash_print_host_IPv4() {
     # with the help of `host` or `dig`
     [[ ${#} -eq 1 ]] || return 1
 
-    declare host_=${1}
+    declare -r host_=${1}
     declare out=
     if bash_installed host grep; then
         # Ubuntu 18 and older version of `host` does not have -U option
@@ -2640,7 +2642,7 @@ function print_IPv4_DNS_PTR () {
         return 1
     fi
 
-    declare ipv4=${1}
+    declare -r ipv4=${1}
     declare out=
     # make the DNS request with short timeouts, one try
     if ! out=$(dig -4 +short +tries=1 +timeout=2 -x "${ipv4}" 2>/dev/null); then
@@ -2913,8 +2915,8 @@ Using bash ${BASH_VERSION}, process ID $$
 "
 
     # echo information functions available
-    declare funcs=$(__bashrc_replace_str "$(declare -F | command -p grep -Ee 'declare .. bash*')" 'declare -f ' '	')
-    declare -i funcs_c=$(echo -n "${funcs}" | line_count)
+    declare -r funcs=$(__bashrc_replace_str "$(declare -F | command -p grep -Ee 'declare .. bash*')" 'declare -f ' '	')
+    declare -ir funcs_c=$(echo -n "${funcs}" | line_count)
     echo -e "\
 ${b}public functions (×${funcs_c}) in this shell (declare -F):${boff}
 
@@ -2922,10 +2924,10 @@ ${funcs}
 "
 
     # echo aliases
-    declare aliases=$(__bashrc_replace_str "$(__bashrc_replace_str "$(alias)" 'alias ' '')" '
+    declare -r aliases=$(__bashrc_replace_str "$(__bashrc_replace_str "$(alias)" 'alias ' '')" '
 ' '
 	')
-    declare -i aliases_c=$(echo -n "${aliases}" | line_count)
+    declare -ir aliases_c=$(echo -n "${aliases}" | line_count)
     echo -e "\
 ${b}aliases (×${aliases_c}) in this shell (alias):${boff}
 
@@ -2999,9 +3001,9 @@ ${b}screen Settings:${boff}
     fi
 
     # echo $PATHs
-    declare paths=$(__bashrc_tab_str "${PATH}" 1 ':')
+    declare -r paths=$(__bashrc_tab_str "${PATH}" 1 ':')
     # shellcheck disable=SC2155
-    declare -i paths_c=$(echo -n "${paths}" | line_count)
+    declare -ir paths_c=$(echo -n "${paths}" | line_count)
     echo -e "\
 ${b}Paths (×${paths_c}):${boff}
 

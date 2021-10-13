@@ -110,8 +110,7 @@ function __bash_profile_source_file () {
     # source file $1, note it was sourced
     [[ ${#} -eq 1 ]] || return 1
 
-    declare sourcef=
-    sourcef=$(readlink_portable "${1}")
+    declare -r sourcef=$(readlink_portable "${1}")
 
     if ! [[ -f "${sourcef}" ]]; then
         return 1  # file does not exist; do not warn

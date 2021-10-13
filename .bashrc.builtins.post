@@ -350,7 +350,7 @@ bash_prompt_table_variable_add \
 
 # Python
 bash_prompt_table_variable_add \
-'PYTHON_PIPENV' \
+  'PYTHON_PIPENV' \
   'PYTHON_PIP_VERSION' \
   'PYTHON' \
   'VIRTUAL_ENV' \
