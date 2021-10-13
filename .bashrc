@@ -1271,6 +1271,7 @@ function __bashrc_prompt_jobs_info () {
     fi
 
     declare -i count_jobs_total=0
+    declare -i count_jobs_done=0
     declare -i count_jobs_running=0
     declare -i count_jobs_stopped=0
     declare out=
@@ -1302,8 +1303,7 @@ function __bashrc_prompt_jobs_info () {
     fi
 
     count_jobs_stopped=$(echo -n "${out}" | line_count)
-
-    declare -i count_jobs_done=$((${count_jobs_total} - (${count_jobs_running} + ${count_jobs_stopped})))
+    count_jobs_done=$((${count_jobs_total} - (${count_jobs_running} + ${count_jobs_stopped})))
 
     if [[ ${count_jobs_done} -eq 0 && ${count_jobs_running} -gt 0 && ${count_jobs_stopped} -eq 0 ]]; then
         # there are only jobs running
