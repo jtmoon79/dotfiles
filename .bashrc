@@ -1279,26 +1279,26 @@ function __bashrc_prompt_jobs_info () {
     count_jobs_total=$(echo -n "${out}" | line_count)
 
     if ! out=$(jobs -pr 2>/dev/null); then
-        echo -n "jobs ${count_jobs_total}"
+        echo -n "jobs ×${count_jobs_total}"
         return
     fi
 
     # if no jobs, then print that and be done
     if [[ ${count_jobs_total} -eq 0 ]]; then
-        echo -n "no jobs"
+        echo -n "jobs ∅"
         return
     fi
 
     count_jobs_running=$(echo -n "${out}" | line_count)
 
     if ! out=$(jobs -ps 2>/dev/null); then
-        echo -n "jobs ${count_jobs_total}"
+        echo -n "jobs ×${count_jobs_total}"
         return
     fi
 
     count_jobs_stopped=$(echo -n "${out}" | line_count)
 
-    echo -n "jobs ${count_jobs_total} total, ${count_jobs_running} running, ${count_jobs_stopped} stopped"
+    echo -n "jobs ×${count_jobs_total} total, ×${count_jobs_running} running, ×${count_jobs_stopped} stopped"
 }
 
 # ------------
