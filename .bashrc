@@ -645,10 +645,10 @@ function line_count () {
     declare line=
     declare -i count=0
     while read -rs line; do
-        count+=1
+        count=$((count + 1))
     done
     if [[ "${line}" != '' ]]; then
-        count+=1
+        count=$((count + 1))
     fi
     command echo -n "${count}"
 }
@@ -1976,7 +1976,7 @@ function bash_prompt_git_info_mountpoint_array_add () {
                 already_added=true
                 break
             fi
-            i+=1
+            i=$((i + 1))
         done
         if ${already_added}; then
             continue
@@ -2003,7 +2003,7 @@ function bash_prompt_git_info_mountpoint_array_print () {
     declare -i i=0
     while [[ ${i} -lt ${len_array} ]]; do
         echo "${__bashrc_prompt_git_info_mountpoint_array[${i}]}"
-        i+=1
+        i=$((i + 1))
     done
     echo
     echo "__bashrc_prompt_git_info_enable is ${__bashrc_prompt_git_info_enable}"
@@ -2028,7 +2028,7 @@ function __bashrc_prompt_git_info_mountpoint_array_contains () {
         if [[ "${__bashrc_prompt_git_info_mountpoint_array[${i}]}" = "${arg_mp}" ]]; then
             return 0  # does contain
         fi
-        i+=1
+        i=$((i + 1))
     done
     return 1  # do not contain
 }
