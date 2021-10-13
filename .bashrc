@@ -2814,19 +2814,27 @@ function __bashrc_downloader_used_example_argument () {
 }
 
 function __bash_update_dotbash_profile () {
+    chmod -v +w './.bash_profile'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_profile' './.bash_profile' "${@}"
+    chmod -v ugo-w './.bash_profile'
 }
 
 function __bash_update_dotbashrc () {
+    chmod -v +w './.bashrc'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc' './.bashrc' "${@}"
+    chmod -v ugo-w './.bashrc'
 }
 
 function __bash_update_dotbashrc_builtins () {
+    chmod -v +w './.bashrc.builtins.post'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.builtins.post' './.bashrc.builtins.post' "${@}"
+    chmod -v ugo-w './.bashrc.builtins.post'
 }
 
 function __bash_update_dotbash_logout () {
+    chmod -v +w './.bash_logout'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bash_logout' './.bash_logout' "${@}"
+    chmod -v ugo-w './.bash_logout'
 }
 
 function __bash_update_dotbash () {
@@ -2841,14 +2849,18 @@ function __bash_update_dotvimrc () {
     if ! bash_installed vim; then
         return
     fi
+    chmod -v +w './.vimrc'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.vimrc' './.vimrc' "${@}"
+    chmod -v ugo-w './.vimrc'
 }
 
 function __bash_update_dotscreenrc () {
     if ! bash_installed screen; then
         return
     fi
+    chmod -v +w './.screenrc'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.screenrc' './.screenrc' "${@}"
+    chmod -v ugo-w './.screenrc'
 }
 
 function bash_update_dots () {
