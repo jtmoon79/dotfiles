@@ -1298,7 +1298,30 @@ function __bashrc_prompt_jobs_info () {
 
     count_jobs_stopped=$(echo -n "${out}" | line_count)
 
-    echo -n "jobs ×${count_jobs_total} total, ×${count_jobs_running} running, ×${count_jobs_stopped} stopped"
+    declare -i count_jobs_done=$((${count_jobs_total} - (${count_jobs_running} + ${count_jobs_stopped})))
+
+    if [[ ${count_jobs_done} -eq 0 && ${count_jobs_running} -gt 0 && ${count_jobs_stopped} -eq 0 ]]; then
+        # there are only jobs running
+        echo -n "jobs ×${count_jobs_running} running"
+    elif [[ ${count_jobs_done} -eq 0 && ${count_jobs_running} -eq 0 && ${count_jobs_stopped} -gt 0 ]]; then
+        # there are only jobs stopped
+        echo -n "jobs ×${count_jobs_stopped} stopped"
+    elif [[ ${count_jobs_done} -gt 0 && ${count_jobs_running} -eq 0 && ${count_jobs_stopped} -eq 0 ]]; then
+        # there are only jobs done
+        echo -n "jobs ×${count_jobs_done} done"
+    elif [[ ${count_jobs_done} -eq 0 && ${count_jobs_running} -gt 0 && ${count_jobs_stopped} -gt 0 ]]; then
+        # there are jobs running and stopped
+        echo -n "jobs ×${count_jobs_running} running, ×${count_jobs_stopped} stopped"
+    elif [[ ${count_jobs_done} -gt 0 && ${count_jobs_running} -gt 0 && ${count_jobs_stopped} -eq 0 ]]; then
+        # there are jobs done and running
+        echo -n "jobs ×${count_jobs_done} done, ×${count_jobs_running} running"
+    elif [[ ${count_jobs_done} -gt 0 && ${count_jobs_running} -eq 0 && ${count_jobs_stopped} -gt 0 ]]; then
+        # there are jobs done and stopped
+        echo -n "jobs ×${count_jobs_done} done, ×${count_jobs_stopped} stopped"
+    else
+        # there are jobs done, running, and stopped
+        echo -n "jobs ×${count_jobs_done} done, ×${count_jobs_running} running, ×${count_jobs_stopped} stopped"
+    fi
 }
 
 # ------------
