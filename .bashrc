@@ -2173,7 +2173,7 @@ function __bashrc_prompt_set () {
         #      according to https://misc.flogisoft.com/bash/tip_colors_and_formatting
         PS1='
 \e[0;49;39;m\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}'\
-'\e[0;49;39;m\e[2m ('"${last_command_mesg}"' \e[22m${__bashrc_prompt_timer_show-0};\e[2m \e[22m$(__bashrc_prompt_last_exit_code_show)\e[0;49;39;m\e[2m)\e[0;49;39;m'\
+'\e[0;49;39;m\e[2m ('"${last_command_mesg}"' \e[22m${__bashrc_prompt_timer_show-0}\e[2m; \e[22m$(__bashrc_prompt_last_exit_code_show)\e[0;49;39;m\e[2m)\e[0;49;39;m'\
 ' $(__bashrc_prompt_jobs_info)'\
 '\e['"${__bashrc_prompt_color_table_fg}"'m\e['"${__bashrc_prompt_color_table_bg}"'m$(__bashrc_prompt_table)'\
 '\e[32m${__bashrc_prompt_git_info_show}\e[0;49;39;m'\
