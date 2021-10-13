@@ -2165,6 +2165,8 @@ function __bashrc_prompt_set () {
         #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
         #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array becomes unset there
         #      will be an empty line.
+        # BUG: underlining a string before the line-ending causes a stickiness of the line to continue after the
+        #      underlined part. This is noticeable when resizing the console window.
         # XXX: functions returning color text must use nomenclature `\033[41m\]`?... I think?
         #      the typical nomenclature `\e[41m` or `\e[41m;` may sometimes fail to render, I haven't narrowed down why.
         # XXX: substring "\e[0;49;39;m" is "reset all attributes; default background color; default foreground color"
