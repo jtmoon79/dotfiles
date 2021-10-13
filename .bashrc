@@ -931,6 +931,26 @@ function bash_print_colors_using_msgcat () {
 function __bashrc_prompt_color_eval () {
     [[ ${#} -eq 0 ]] || return 1
 
+    # if $bash_color_force is defined, then set $__bashrc_prompt_color according
+    # to $bash_color_force truth
+    # Force color off
+    #      bash_color_force=false . ./.bashrc
+    # Force color on
+    #      bash_color_force=true . ./.bashrc
+    # shellcheck disable=SC2154
+    if [[ -n "${bash_color_force+x}" ]]; then
+        if ${bash_color_force} &>/dev/null; then
+            __bashrc_color=true
+            __bashrc_prompt_color=true
+            __bashrc_color_apps=true
+        else
+            __bashrc_color=false
+            __bashrc_prompt_color=false
+            __bashrc_color_apps=false
+        fi
+        return
+    fi
+
     # set a fancy prompt
     declare __bashrc_color=false
     case "${TERM}" in
@@ -973,27 +993,23 @@ function __bashrc_prompt_color_eval () {
             __bashrc_color_apps=false
         fi
     fi
-
-    # if $bash_color_force is defined, then set $__bashrc_prompt_color according
-    # to $bash_color_force truth
-    # Force color off
-    #      bash_color_force=false . ./.bashrc
-    # Force color on
-    #      bash_color_force=true . ./.bashrc
-    # shellcheck disable=SC2154
-    if [[ -n "${bash_color_force+x}" ]]; then
-        if ${bash_color_force} &>/dev/null; then
-            __bashrc_prompt_color=true
-            __bashrc_color_apps=true
-        else
-            __bashrc_prompt_color=false
-            __bashrc_color_apps=false
-        fi
-    fi
-
 }
 
 __bashrc_prompt_color_eval
+
+function bash_color_force_enable () {
+    # user helper
+    [[ ${#} -eq 0 ]] || return 1
+    bash_color_force=true
+    __bashrc_prompt_color_eval
+}
+
+function bash_color_force_disable () {
+    # user helper
+    [[ ${#} -eq 0 ]] || return 1
+    bash_color_force=false
+    __bashrc_prompt_color_eval
+}
 
 # -------------
 # prompt chroot
@@ -1093,7 +1109,11 @@ function __bashrc_prompt_last_exit_code_update () {
     declare -ir last_exit=$?  # first save this value
     __bashrc_prompt_last_exit_code_banner=
     if [[ ${last_exit} -eq 0 ]]; then
-        __bashrc_prompt_last_exit_code_banner="\001\033[02mreturn code \033[22m${last_exit}\033[00m\002"  # dim + normal
+        if ${__bashrc_prompt_color}; then
+            __bashrc_prompt_last_exit_code_banner="\001\033[02mreturn code \033[22m${last_exit}\033[00m\002"  # dim + normal
+        else
+            __bashrc_prompt_last_exit_code_banner="return code ${last_exit}"
+        fi
     else  # non-zero exit code
         if ${__bashrc_prompt_color}; then
             __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
