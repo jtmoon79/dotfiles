@@ -2171,9 +2171,14 @@ function bash_print_prompt_count () {
     echo -n "${__bashrc_prompt_count}"
 }
 
+declare -i __bashrc_prompt_set_count=0
+
 function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
     # takes no arguments
+
+    # XXX: debug helper for how much this function has been called
+    __bashrc_prompt_set_count=$((__bashrc_prompt_set_count + 1))
 
     declare last_command_mesg='last command'
     if [[ ${__bashrc_prompt_count} -eq 0 ]]; then
