@@ -2116,6 +2116,7 @@ function __bashrc_prompt_git_info () {
             fi
            __git_ps1 2>/dev/null)" || true
     #out+="$(git rev-parse --symbolic-full-name HEAD) $()"
+
     # a few example outputs of `__git_ps1` where current branch is "master", one
     # example per line:
     #     (master $=)
@@ -2126,20 +2127,24 @@ function __bashrc_prompt_git_info () {
     if ${__bashrc_prompt_color}; then
         # XXX: adding `# shellcheck disable=SC2076` causes error for shellcheck
         #      parsing
+        # XXX: text affect escape sequences should use ANSI version
+        #      `\033[34m` where `34` is Foreground Blue
         if [[ "${out}" =~ '*=' ]] || [[ "${out}" =~ '*+' ]] || [[ "${out}" =~ '*$=' ]] || [[ "${out}" =~ '*$>' ]]; then
             # local changes
-            out='\e[31m'"${out}"'\e[0m'  # red
+            out='\033[31m'"${out}"'\033[0m'  # red
         elif [[ "${out}" =~ '<)' ]]; then
             # behind remote branch, no local changes
-            out='\e[93m'"${out}"'\e[0m'  # light yellow
+            out='\033[93m'"${out}"'\033[0m'  # light yellow
         elif [[  "${out}" =~ 'GIT_DIR!' ]]; then
             # in a `.git` git repository data directory
-            out='\e[1m\e[95m'"${out}"'\e[0m'  #  bold light magenta
+            out='\033[1m\033[95m'"${out}"'\033[0m'  #  bold light magenta
         fi
             # else local and remote are in same state, local is not disturbed
     fi
     # use echo to interpret color sequences here, PS1 will not attempt to
     # interpret this functions output
+    # must also echo newline '\n' because caller does not know if this function
+    # call will be empty or will yield a line of text
     echo -en "\ngit:${out}"
 }
 
@@ -2181,28 +2186,36 @@ function __bashrc_prompt_set () {
     #
     if ${__bashrc_prompt_color}; then
         declare color_user=${__bashrc_prompt_color_user_fg}
-        if [[ 'root' = "$(whoami 2>/dev/null)" ]]; then
+        if am_i_root; then
             color_user=${__bashrc_prompt_color_user_root}
         fi
-        # BUG: not putting the $(__bashrc_prompt_table) on it's own line causes oddity when resizing a window to be smaller;
+        # BUG: not putting the $(__bashrc_prompt_table) on it's own line causes oddity when resizing
+        #      a window to be smaller;
         #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
-        #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array becomes unset there
-        #      will be an empty line.
+        #      However, if $(__bashrc_prompt_table) is given it's own line then when $bash_prompt_table_variables_array
+        #      becomes unset there will be an empty line.
         # BUG: underlining a string before the line-ending causes a stickiness of the line to continue after the
         #      underlined part. This is noticeable when resizing the console window.
-        # XXX: functions returning color text must use nomenclature `\033[41m\]`?... I think?
-        #      the typical nomenclature `\e[41m` or `\e[41m;` may sometimes fail to render, I haven't narrowed down why.
-        # XXX: substring "\e[0;49;39;m" is "reset all attributes; default background color; default foreground color"
+        # XXX: color and affect sequences in bash prompt must should use ANSI escape code with added escaped
+        #      brackets `\[\033[33m\]` would be red
+        #      see https://unix.stackexchange.com/a/124409/21203
+        # XXX: code "0;49;39;" is "reset all attributes; default background color; default foreground color"
         #      according to https://misc.flogisoft.com/bash/tip_colors_and_formatting
-        PS1='
-\e[0;49;39;m\e['"${__bashrc_prompt_color_dateline}"'m\D{'"${bash_prompt_strftime_format}"'}'\
-'\e[0;49;39;m\e[2m ('"${last_command_mesg}"' \e[22m${__bashrc_prompt_timer_show-0}\e[2m; \e[22m$(__bashrc_prompt_last_exit_code_show)\e[0;49;39;m\e[2m)\e[0;49;39;m'\
-' $(__bashrc_prompt_jobs_info)'\
-'\e['"${__bashrc_prompt_color_table_fg}"'m\e['"${__bashrc_prompt_color_table_bg}"'m$(__bashrc_prompt_table)'\
-'\e[32m${__bashrc_prompt_git_info_show}\e[0;49;39;m'\
-'${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
-\e['"${color_user}"'m\u\e[039m@\e[01;'"${__bashrc_prompt_color_hostname}"'m\h\e[0;49;39;m:\e[4;'"${__bashrc_prompt_color_cwd}"'m\w\e[0;49;39;m
-\e['"${__bashrc_prompt_color_prompt_bullet}m${bash_prompt_bullet}"'\e[0;49;39;m '
+        # XXX: keep in mind, some variables and function calls printed literally, not just once
+        #      i.e. to make sure the latest `$__bashrc_prompt_timer_show` is printed for each refresh of PS1
+        #      the literal string `${__bashrc_prompt_timer_show}` is in the PS1, and is resolved for each prompt refresh
+        declare -r a='\[\033['  # begin text affect
+        declare -r b='m\]'      # end text affect
+        declare -r r='\[\033[0;49;39;m\]'  # reset all text affects
+        PS1="
+${a}${__bashrc_prompt_color_dateline}${b}\\D{${bash_prompt_strftime_format}}\
+${r}${a}2${b} (${last_command_mesg} ${a}22${b}"'${__bashrc_prompt_timer_show-0}'"${a}22${b}; ${a}22${b}"'$(__bashrc_prompt_last_exit_code_show)'"${a}2${b})${r}\
+ "'$(__bashrc_prompt_jobs_info)'"\
+${a}${__bashrc_prompt_color_table_fg}${b}${a}"'${__bashrc_prompt_color_table_bg}'"${b}"'$(__bashrc_prompt_table)'"\
+${r}${a}32${b}"'${__bashrc_prompt_git_info_show}'"${r}\
+"'${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}'"
+${a}${color_user}${b}\\u${a}39${b}@${a}01;${__bashrc_prompt_color_hostname}${b}\\h${r}:${a}${__bashrc_prompt_color_cwd}${b}\\w${r}
+${a}${__bashrc_prompt_color_prompt_bullet}${b}"'${bash_prompt_bullet}'" ${r}"
     else
         PS1='
 \D{'"${bash_prompt_strftime_format}"'}'\
