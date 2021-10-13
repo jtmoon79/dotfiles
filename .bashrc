@@ -925,10 +925,15 @@ function bash_print_colors_using_msgcat () {
 # prompt color?
 # -------------
 
+__bashrc_prompt_color_eval_count=0  # global
+
 # NOTE: Colors should be 8-bit as it's the most portable
 #       https://misc.flogisoft.com/bash/tip_colors_and_formatting#terminals_compatibility
 
 function __bashrc_prompt_color_eval () {
+    # XXX: debug helper to see how often this is called
+    __bashrc_prompt_color_eval_count=$((__bashrc_prompt_color_eval_count + 1))
+
     [[ ${#} -eq 0 ]] || return 1
 
     # if $bash_color_force is defined, then set $__bashrc_prompt_color according
@@ -2171,7 +2176,7 @@ function bash_print_prompt_count () {
     echo -n "${__bashrc_prompt_count}"
 }
 
-declare -i __bashrc_prompt_set_count=0
+__bashrc_prompt_set_count=0  # global
 
 function __bashrc_prompt_set () {
     # set $PS1 with a bunch of good info
