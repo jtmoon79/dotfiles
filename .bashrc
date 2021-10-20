@@ -1287,6 +1287,9 @@ function __bashrc_prompt_jobs_info () {
     if ! ${__bashrc_prompt_jobs_info_is_enable}; then
         return 0
     fi
+    if ! bash_installed tr; then
+        return 0
+    fi
 
     declare -i count_jobs_total=0
     declare -i count_jobs_done=0
@@ -1296,13 +1299,15 @@ function __bashrc_prompt_jobs_info () {
 
     # some very old versions of bash may not understand `jobs -p`
     # if not return with error
-    if ! out=$(jobs -p 2>/dev/null); then
+    if ! out=$(jobs -p 2>/dev/null | command -p tr -s ' \n'); then
+        # `jobs` does not support passed options, return
         return 1
     fi
 
     count_jobs_total=$(echo -n "${out}" | line_count)
 
-    if ! out=$(jobs -pr 2>/dev/null); then
+    if ! out=$(jobs -pr 2>/dev/null | command -p tr -s ' \n'); then
+        # `jobs` does not support passed options, print total and return
         echo -n "jobs ×${count_jobs_total}"
         return
     fi
@@ -1315,7 +1320,8 @@ function __bashrc_prompt_jobs_info () {
 
     count_jobs_running=$(echo -n "${out}" | line_count)
 
-    if ! out=$(jobs -ps 2>/dev/null); then
+    if ! out=$(jobs -ps 2>/dev/null | command -p tr -s ' \n'); then
+        # `jobs` does not support passed options, print total and return
         echo -n "jobs ×${count_jobs_total}"
         return
     fi
