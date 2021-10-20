@@ -2629,14 +2629,21 @@ function print_dev_IPv4_Win () {
     #
     [[ ${#} -eq 1 ]] || return 1
 
-    # WSL path
-    declare netsh='/mnt/c/Windows/System32/netsh.exe'
-    if ! [[ -e "${netsh}" ]]; then
-        # cygwin path
-        netsh='/cygdrive/c/WINDOWS/system32/netsh.exe'
-        if ! [[ -e "${netsh}" ]]; then
-            return 1
+    declare netsh=
+    for netsh in \
+        ` # WSL path` \
+        '/mnt/c/Windows/System32/netsh.exe' \
+        ` # Cygwin path` \
+        '/cygdrive/c/WINDOWS/system32/netsh.exe' \
+        ` # MinGW path` \
+        '/c/Windows/System32/netsh.exe' \
+    ; do
+        if [[ -e "${netsh}" ]]; then
+            break
         fi
+    done
+    if ! [[ -e "${netsh}" ]]; then
+        return 1
     fi
     if ! bash_installed grep tr cut; then
         return 1
