@@ -206,8 +206,8 @@ shopt -s shift_verbose
 #       `PATH` setting
 
 # XXX: this function overwrites that in .bash_profile
-__bash_installed_which_warning=false
-__bash_installed_which=
+__bash_installed_which_warning=false  # global
+__bash_installed_which=  # global
 function bash_installed () {
     # are all passed args found in the $PATH?
 
@@ -266,11 +266,11 @@ done
 unset __bashrc_prog_sanity_check
 
 # set some "cached" lookups for often needed programs
-__bash_installed_tr=false
+__bash_installed_tr=false  # global
 if bash_installed tr; then
     __bash_installed_tr=true
 fi
-__bash_installed_id=false
+__bash_installed_id=false  # global
 if bash_installed id; then
     __bash_installed_id=true
 fi
@@ -1295,7 +1295,7 @@ __bashrc_prompt_jobs_info_is_enable=true
 
 function __bashrc_prompt_jobs_info () {
     # print a string about current jobs, to be used the prompt
-    [[ ${#} -eq 0 ]] || return 1
+    # XXX: skip arg count check
 
     if ! ${__bashrc_prompt_jobs_info_is_enable}; then
         return 0
@@ -1386,7 +1386,7 @@ fi
 function __bashrc_window_column_count () {
     # safely get the columns wide, fallback to reasonable default if attempts
     # fail
-    declare -i cols
+    declare -i cols=0
     cols=${COLUMNS:-0}
     if [[ ${cols} -le 0 ]]; then
         cols=$(command -p tput cols 2>/dev/null || true)
@@ -1593,7 +1593,7 @@ function bash_prompt_table_variable_insert_after_var () {
     declare -r after_var=${2}
     # TODO: create a helper function to get last index of last element of
     #       $bash_prompt_table_variables_array
-    declare -ri index_fallback=${3-999999999}
+    declare -ri index_fallback=${3-9999}
     declare -ri len=${#bash_prompt_table_variables_array[@]}
 
     # special case of zero size array
@@ -2006,7 +2006,7 @@ function __bash_path_mount_point () {
 # allow forcing git prompt for mount paths that might be ignored (i.e. some
 # remote paths)
 # XXX: backward-compatible global array declaration
-__bashrc_prompt_git_info_mountpoint_array[0]=
+__bashrc_prompt_git_info_mountpoint_array[0]=  # global array
 unset __bashrc_prompt_git_info_mountpoint_array[0]
 
 function bash_prompt_git_info_mountpoint_array_add () {
@@ -2286,6 +2286,7 @@ ${a}${__bashrc_prompt_color_prompt_bullet}${b}"'${bash_prompt_bullet}'" ${r}"
 #       function __bashrc_prompt_live_update_register_var () {
 #           # $1 is var name to watch for changes
 #           # $2 is name of function to call in case of changes
+#       }
 
 # __bashrc_prompt_live_updates variables that must be globals
 __bashrc_prompt_color_force_last=        # global
