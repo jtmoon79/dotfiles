@@ -865,6 +865,30 @@ function bash_print_colors () {
 
     [[ ${#} -eq 0 ]] || return 1
 
+    # borrowed from https://misc.flogisoft.com/bash/tip_colors_and_formatting
+    echo -e "Normal \\\e[1m\e[1mBold\e[0m"
+    echo -e "Normal \\\e[2m\e[2mDim\e[0m"
+    echo -e "Normal \\\e[3m\e[3mItalic\e[0m"
+    echo -e "Normal \\\e[4m\e[4mUnderlined\e[0m"
+    echo -e "Normal \\\e[5m\e[5mBlink\e[0m"
+    echo -e "Normal \\\e[6m\e[6mSix?\e[0m"
+    echo -e "Normal \\\e[7m\e[7minverted\e[0m"
+    echo -e "Normal \\\e[8m\e[8mHidden\e[0m"
+    echo -e "Normal \\\e[9m\e[9mStrikethrough\e[0m"
+    echo -e "Normal \\\e[10m\e[10mTen\e[0m"
+    echo -e "Normal \\\e[11m\e[11mEleven\e[0m"
+    echo -e "Normal \\\e[12m\e[12mTwelve\e[0m"
+    echo -e "Normal \\\e[1m\e[1mBold \\\e[21m\e[21mNormal\e[0m"
+    echo -e "Normal \\\e[2m\e[2mDim \\\e[22m\e[22mNormal\e[0m"
+    echo -e "Normal \\\e[3m\e[3mItalic \\\e[23m\e[23mNormal\e[0m"
+    echo -e "Normal \\\e[4m\e[4mUnderlined \\\e[24m\e[24mNormal\e[0m"
+    echo -e "Normal \\\e[5m\e[5mBlink \\\e[25m\e[25mNormal\e[0m"
+    echo -e "Normal \\\e[6m\e[6mSix?? \\\e[26m\e[26mNormal\e[0m"
+    echo -e "Normal \\\e[7m\e[7minverted \\\e[27m\e[27mNormal\e[0m"
+    echo -e "Normal \\\e[8m\e[8mHidden \\\e[28m\e[28mNormal\e[0m"
+    echo -e "Normal \\\e[9m\e[9mStrikethrough \\\e[29m\e[29mNormal\e[0m"
+    echo
+
     # ripped from https://askubuntu.com/a/279014/368900
     declare -i x=
     declare -i i=
