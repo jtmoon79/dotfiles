@@ -119,8 +119,6 @@
 #
 # TODO: add link to source repo in intro https://github.com/jtmoon79/dotfiles
 #
-# TODO: move more settings changes into .bashrc.local
-#
 
 # If not running interactively, do not do anything
 case "$-" in
