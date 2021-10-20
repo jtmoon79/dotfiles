@@ -2774,6 +2774,7 @@ function bash_prompt_table_variable_add_net_IPv4 () {
     #    $ bash_prompt_table_variable_add_net_IPv4 'eth1' 5
     #
     [[ ${#} -ge 1 ]] || return 1
+    echo "${PS4}bash_prompt_table_variable_add_net_IPv4 ${1}" >&2
 
     declare -r devname=${1}
     shift
@@ -2801,6 +2802,7 @@ function bash_prompt_table_variable_add_Internet () {
     # add the Internet-facing IPv4 to $bash_prompt_table_variables_array
     #
     [[ ${#} -eq 0 ]] || return 1
+    echo "${PS4}bash_prompt_table_variable_add_Internet" >&2
 
     declare ipv4=
     if ! ipv4=$(bash_print_internet_IPv4 2>/dev/null); then
@@ -2817,6 +2819,7 @@ function bash_prompt_table_variable_add_IPv4_Name () {
     # $2 is variable name to add to the $bash_prompt_table_variables_array
     #
     [[ ${#} -eq 2 ]] || return 1
+    echo "${PS4}bash_prompt_table_variable_add_IPv4_Name '${1}' '${2}'" >&2
 
     declare -r ipv4=${1}
     declare -r name=${2}
