@@ -3172,6 +3172,7 @@ ${b}Special Features of this .bashrc:${boff}
 function bash_about () {
     # wrapper to call `__bash_about` with pager `less` (presuming `less` is
     # installed)
+    # TODO: use preferred $PAGER, fallback to `less`
     if installed less; then
         __bash_about "${@}" | command -p less -SR
     else
