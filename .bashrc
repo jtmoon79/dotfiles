@@ -2424,7 +2424,12 @@ fi
 
 # order is important; additional commands must be *between*
 # functions __bashrc_prompt_last_exit_code_update and __bashrc_prompt_timer_stop
-PROMPT_COMMAND='__bashrc_prompt_last_exit_code_update; __bashrc_prompt_live_updates; __bashrc_prompt_extras; __bashrc_prompt_count_update; __bashrc_prompt_timer_stop'
+PROMPT_COMMAND=\
+'__bashrc_prompt_last_exit_code_update;'\
+'__bashrc_prompt_live_updates;'\
+'__bashrc_prompt_extras;'\
+'__bashrc_prompt_count_update;'\
+'__bashrc_prompt_timer_stop;'\
 
 # =======
 # aliases
