@@ -239,7 +239,7 @@ function bash_installed () {
         return 1
     elif [[ "${__bash_installed_which}" = '' ]]; then
         # should only be set once
-        __bash_installed_which=$(which which 2>/dev/null)
+        __bash_installed_which=$(command -p which which 2>/dev/null)
     fi
 
     if [[ ${#} -eq 0 ]]; then
