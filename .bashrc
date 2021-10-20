@@ -24,8 +24,11 @@
 # These bash dot files are mainly derived for Debian-derived Linux.
 # They attempts to work with other Linux and Unix in varying environments.
 # As such, these dot files avoid reliance on external tools like `grep`, `sed`,
-# etc. because those tools vary too much (i.e. GNU vs. BSD vs. busybox tools).
-# Or are not available (minimal Alpine Linux, other custom Linux).
+# etc. because those tools vary too much (i.e. GNU vs. BSD vs. busybox tools),
+# or are not available (minimal Alpine Linux, other custom Linux).
+# To see exceptions to this tool independence, search for `bash_installed`.
+# Also, because this attempts to support minimal and unknown environments there
+# are many checks and tests of typical Unix tools.
 #
 # Features:
 #   - prompt prints: timer, return code, datetime,
