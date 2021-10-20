@@ -253,7 +253,7 @@ __bashrc_alias_safely whence 'command -p type -a'  # where, of a sort
 __bashrc_alias_safely_check psa 'command -p ps -ef --forest'
 __bashrc_alias_safely_check envs env_sorted
 
-if ${__bashrc_installed_git}; then
+if ${__bash_installed_git}; then
     __bashrc_alias_safely gitb 'git branch -avv'
     __bashrc_alias_safely gitf 'git fetch -av'
     __bashrc_alias_safely gits 'git status -vv'

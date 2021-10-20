@@ -265,6 +265,16 @@ for __bashrc_prog_sanity_check in dirname cat tr cut; do
 done
 unset __bashrc_prog_sanity_check
 
+# set some "cached" lookups for often needed programs
+__bash_installed_tr=false
+if bash_installed tr; then
+    __bash_installed_tr=true
+fi
+__bash_installed_id=false
+if bash_installed id; then
+    __bash_installed_id=true
+fi
+
 # ---------------------------------------
 # functions for sourcing other bash files
 # ---------------------------------------
@@ -655,8 +665,8 @@ function am_i_root {
 
     [[ "${#}" -eq 0 ]] || return 1
 
-    if ! bash_installed id; then
-        return 1
+    if ! ${__bash_installed_id}; then
+        return 2
     fi
 
     if [[ "$(command -p id -u 2>/dev/null)" = "0" ]]; then
@@ -1290,7 +1300,7 @@ function __bashrc_prompt_jobs_info () {
     if ! ${__bashrc_prompt_jobs_info_is_enable}; then
         return 0
     fi
-    if ! bash_installed tr; then
+    if ! ${__bash_installed_tr}; then
         return 0
     fi
 
@@ -1933,21 +1943,21 @@ function bash_prompt_table_print () {
 
 __bashrc_prompt_git_info_enable=${__bashrc_prompt_git_info_enable-true}  # global
 
-__bashrc_installed_git=false  # global
+__bash_installed_git=false  # global
 if bash_installed git; then
-    __bashrc_installed_git=true
+    __bash_installed_git=true
 fi
 
-__bashrc_installed_stat=false  # global
+__bash_installed_stat=false  # global
 if bash_installed stat; then
-    __bashrc_installed_stat=true
+    __bash_installed_stat=true
 fi
 
 # check `stat` works as expected as it can vary among Unixes
 # consolidate checks to one variable
 __bashrc_prompt_git_info_git_stat=false  # global
-if ${__bashrc_installed_git} \
-   && ${__bashrc_installed_stat} \
+if ${__bash_installed_git} \
+   && ${__bash_installed_stat} \
    && [[ "$(stat '--format=%m' --dereference '/' 2>/dev/null)" = '/' ]]; then
     __bashrc_prompt_git_info_git_stat=true
 fi
@@ -1987,7 +1997,7 @@ function __bash_path_mount_point () {
     # for the path $1, print the mount point
     [[ ${#} -eq 1 ]] || return 1
 
-    if ! ${__bashrc_installed_stat}; then
+    if ! ${__bash_installed_stat}; then
         return 1
     fi
     command -p stat '--format=%m' --dereference "${1}" 2>/dev/null
