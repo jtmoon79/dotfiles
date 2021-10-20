@@ -2612,7 +2612,7 @@ function print_dev_IPv4_Linux () {
 
 function print_dev_IPv4_Win () {
     # print the interface IP Address for some Windows-accessible interface
-    # using netsh.exe. Only applicable to WSL2 Linux or cygwin.
+    # using netsh.exe. Only applicable to WSL2 Linux or cygwin or MinGW.
     # tested using netsh.exe on Windows 10 Pro
     #
     # example netsh.exe output:
