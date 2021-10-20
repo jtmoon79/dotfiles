@@ -16,9 +16,6 @@
 # This file defines useful fuctions, makes very few changes. See neighboring
 # files `.bashrc.builtins.post` and `.bashrc.local.post` which make shell
 # changes.
-#
-# This .bashrc file is a mish-mash of ideas that are worthwhile, some original
-# ideas, others copied.
 # This file is expected to be sourced by it's companion `.bash_profile`.
 # This file mostly creates new functions and private variables. These can be
 # used to customize the shell in neighboring files `.bashrc.builtins.post`,
@@ -27,8 +24,8 @@
 # These bash dot files are mainly derived for Debian-derived Linux.
 # They attempts to work with other Linux and Unix in varying environments.
 # As such, these dot files avoid reliance on external tools like `grep`, `sed`,
-# etc. because those tools vary too much (BSD versions, busybox versions)
-# or are not available (minimal Alpine Linux, other custom minimal Linux).
+# etc. because those tools vary too much (i.e. GNU vs. BSD vs. busybox tools).
+# Or are not available (minimal Alpine Linux, other custom Linux).
 #
 # Features:
 #   - prompt prints: timer, return code, datetime,
@@ -120,8 +117,6 @@
 #
 # TODO: move more settings changes into .bashrc.local
 #
-# BUG: aliases are not getting set 2021/09/04
-#
 
 # If not running interactively, do not do anything
 case "$-" in
@@ -203,7 +198,7 @@ shopt -s shift_verbose
 # ----------------------------------------
 
 # TODO: use `command -p which` to check paths. How to confine paths to only
-# check those in `command -p`?
+#       check those in `command -p`?
 # TODO: follow-on to prior, add new function for using `which` with current
 #       `PATH` setting
 
@@ -562,6 +557,7 @@ function bash_OS () {
 __bashrc_OperatingSystem=$(bash_OS)
 
 function __bashrc_replace_str () {
+    # Portable string replacement not reliant on `sed`, `awk`
     # Given string $1, replace substring $2 with string $3 then echo the result.
     #
     # This function is the most portable method for doing such. Programs like
@@ -569,9 +565,8 @@ function __bashrc_replace_str () {
     # substring replacement (e.g. `${foo//abc/123}`) suffices but bash 3.2
     # does not recognize '\t' as tab character.
     #
-    # portable string replacement not reliant on `sed`, `awk`
-    #
     # tested variations on implemention of this with function using command:
+    #
     #     $ bash -i -c 'trap times EXIT; table="A  BB  CCC  DDDD"; source .func;
     #       for i in {1..10000}; do
     #          __bashrc_replace_str "${table}" "  " " " >/dev/null
@@ -583,7 +578,6 @@ function __bashrc_replace_str () {
     # try bash substring replacement because it's faster, make sure it supports
     # replacing in-line tab character
     declare testvar=' '
-    # TODO: test this test on Bash 3.2
     if echo -n "${testvar/ /	}" &>/dev/null; then
         # about 10% faster if the substitution is done for a variable and then
         # echoed instead as versus directly echoed (i.e. two statements is
@@ -890,7 +884,7 @@ function bash_print_colors () {
     fi
 
     # print 256 colors
-    # ripped from https://misc.flogisoft.com/bash/tip_colors_and_formatting
+    # stolen from https://misc.flogisoft.com/bash/tip_colors_and_formatting
     declare -i fgbg=
     declare -i color=
     for fgbg in 38 48 ; do # Foreground / Background
@@ -1372,10 +1366,8 @@ function __bashrc_prompt_table_max () {
 function bash_prompt_table_variable_add () {
     # add variable(s) to $bash_prompt_table_variables_array, do not add if
     # already present
-    # TODO: check that $arg is valid variable name
-    #           bash_prompt_table_variable_add bad-var-name
-    #       results in constant error on every prompt "invalid variable name"
     [[ ${#} -gt 0 ]] || return 1
+
     declare -i i=0
     declare -i ret=0
     declare found=
@@ -1869,7 +1861,7 @@ function __bashrc_prompt_table () {
     fi
 
     # make attempt to print table-like output based on available programs
-    # TODO: consider adding color to table? this would need to be done after
+    # TODO: consider adding color within table? this would need to be done after
     #       substring length
     if ${truncate}; then
         echo  # start with a newline
@@ -2918,7 +2910,7 @@ function bash_update_dots () {
     __bash_update_dotscreenrc "${@}"
 }
 
-# TODO: add call to remote `install.sh` script, or just perform that here
+# TODO: add call to remote `install.sh` script, or perform `install.sh` here
 
 # =========================
 # source other bashrc files
