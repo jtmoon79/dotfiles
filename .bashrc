@@ -2800,6 +2800,7 @@ function bash_prompt_table_variable_add_net_IPv4 () {
     devname_varname=${devname_varname//')'/_}
     devname_varname=${devname_varname//'['/_}
     devname_varname=${devname_varname//']'/_}
+    devname_varname=${devname_varname//'.'/_}
     declare -g IPv4_${devname_varname}=${ipv4}
     bash_prompt_table_variable_insert_at_index "IPv4_${devname_varname}" "${@}"
 }
