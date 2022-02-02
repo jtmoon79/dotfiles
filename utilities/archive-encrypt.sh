@@ -48,10 +48,6 @@ if [[ ! -e "${TARGET}" ]]; then
     echo "ERROR: TARGET '${TARGET}' does not exist" >&2
     exit 1
 fi
-#if [[ ! -d "${TARGET}" ]]; then
-#    echo "ERROR: TARGET is not a directory '${TARGET}'" >&2
-#    exit 1
-#fi
 readonly TARGET
 
 BACKUP_DIR=${2:-${BACKUP_DIR}}
@@ -79,7 +75,6 @@ if [[ -d "${TARGET}" ]] || [[ -L "${TARGET}" ]]; then
 elif [[ -f "${TARGET}" ]]; then
     declare -a tar_args=(
         "--directory=$(dirname -- "${TARGET}")"
-        `#"--add-file=${TARGET}"`
         "$(basename -- "${TARGET}")"
     )
 else
@@ -112,7 +107,7 @@ tar \
   --file="${archive_tar}" \
   "${tar_args[@]}"
 
-# list contents of the .tar
+# list contents of the .tar to verify it is valid, only print errors
 tar \
   -t \
   -f "${archive_tar}" >/dev/null
