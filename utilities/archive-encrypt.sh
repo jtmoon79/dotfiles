@@ -15,7 +15,7 @@ set -o pipefail
 BACKUP_DIR=${BACKUP_DIR-${HOME}/backups}
 
 function backup_name_tar() {
-    echo -n "${BACKUP_DIR}/$(hostname)__${1}__$(date +%Y%m%d).tar"
+    echo -n "${BACKUP_DIR}/${1}__$(date +%Y%m%d).tar"
 }
 
 if [[ ${#} != 1 && ${#} != 2 ]] || [[ "${1:-}" == '--help' ]]; then
@@ -23,7 +23,7 @@ if [[ ${#} != 1 && ${#} != 2 ]] || [[ "${1:-}" == '--help' ]]; then
     echo "usage:
     ${0} TARGET [BACKUP_DIR]
 
-Tar and 7zip a TARGET directory path.
+Tar and 7zip a TARGET directory path or file.
 Tar to preserve filesystem permissions and layout. 7zip then compresses and
 encrypts.
 Requires entering a password on stdin for the 7zip encryption.
@@ -48,14 +48,21 @@ if [[ ! -e "${TARGET}" ]]; then
     echo "ERROR: TARGET '${TARGET}' does not exist" >&2
     exit 1
 fi
-if [[ ! -d "${TARGET}" ]]; then
-    echo "ERROR: TARGET is not a directory '${TARGET}'" >&2
-    exit 1
-fi
+#if [[ ! -d "${TARGET}" ]]; then
+#    echo "ERROR: TARGET is not a directory '${TARGET}'" >&2
+#    exit 1
+#fi
 readonly TARGET
 
 BACKUP_DIR=${2:-${BACKUP_DIR}}
 readonly BACKUP_DIR
+
+for prog in tar 7z; do
+    if ! which "${prog}" &>/dev/null; then
+        echo "ERROR: cannot find ${prog} in PATH" >&2
+        exit 1
+    fi
+done
 
 name=$(basename -- "$(readlink -f -- "${TARGET}")")
 archive_tar=$(backup_name_tar "${name}")
@@ -64,9 +71,28 @@ archive_tar7z="${archive_tar}.7z"
 read -p "Enter the 7z archive password: " -s password
 echo
 
+if [[ -d "${TARGET}" ]] || [[ -L "${TARGET}" ]]; then
+    declare -a tar_args=(
+        "--directory=${TARGET}"
+        '.'
+    )
+elif [[ -f "${TARGET}" ]]; then
+    declare -a tar_args=(
+        "--directory=$(dirname -- "${TARGET}")"
+        `#"--add-file=${TARGET}"`
+        "$(basename -- "${TARGET}")"
+    )
+else
+    echo "ERROR: bad path type '${TARGET}'" >&2
+    exit 1
+fi
+
 (
 # success or failure, remove the temporary .tar file
 function exit_() {
+    if which shred &>/dev/null; then
+        shred -z -- "${archive_tar}"
+    fi
     rm -vf -- "${archive_tar}"
 }
 trap exit_ EXIT
@@ -79,12 +105,12 @@ tar \
   --create \
   --preserve-permissions \
   --sort=name \
+  --acls --xattrs \
   --one-file-system \
   --ignore-failed-read \
   --format=pax \
   --file="${archive_tar}" \
-  --directory="${TARGET}" \
-  .
+  "${tar_args[@]}"
 
 # list contents of the .tar
 tar \
@@ -120,9 +146,10 @@ echo "${PS4-}7z l -p****" -slt "${archive_tar7z}" >&2
   "${archive_tar7z}"
 )
 
-echo "Success! Restore this archive with
+echo "Success!" >&2
+echo "Restore archive '$(basename -- "${archive_tar7z}")' with command:
 
     7z e '${archive_tar7z}' -so | tar -xvf - -C /some/path
 
 The blank prompt will be expecting the password.
-" >&2
+" | tee "${archive_tar7z}.info" >&2
