@@ -1447,6 +1447,22 @@ function __bash_prompt_table_shift_from () {
     # index $1
     # echoes inserted index value
     #
+    # Keep in mind, bash array index values do not have to coincide with offsets
+    # BUT the index values are interated in sequential order.
+    # i.e.
+    #    $ declare -a array=()
+    #    $ array[0]='a'
+    #    $ array[999]='c'
+    #    $ array[33]='b'
+    #    $ echo ${!array[*]}  # print keys
+    #    0 33 999
+    #    $ echo ${array[*]}  # print values
+    #    a b c
+    #    $ echo ${array[33]}  # print index '33'
+    #    b
+    #    $ echo ${array[1]}  # print index '1'
+    #    (nothing prints)
+    #
     # helper to bash_prompt_table_variable_insert_at_index()
     #
     # for example, given arbitrary array
