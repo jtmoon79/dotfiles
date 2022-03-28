@@ -662,7 +662,7 @@ function line_count () {
 function am_i_root {
     # is the current user root?
 
-    [[ "${#}" -eq 0 ]] || return 1
+    [[ "${#}" -eq 0 ]] || return 2
 
     if ! ${__bash_installed_id}; then
         return 2
