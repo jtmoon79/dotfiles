@@ -1507,10 +1507,6 @@ function __bash_prompt_table_shift_from () {
     if ! bash_installed tac; then
         return 1
     fi
-    # busybox `tac` does not support `-s`
-    if ! { echo '' | command -p tac -s ' '; } &>/dev/null; then
-        return 1
-    fi
 
     declare -ir at=${1}
     declare -ir len=${#bash_prompt_table_variables_array[@]}
@@ -1518,9 +1514,16 @@ function __bash_prompt_table_shift_from () {
     if [[ ${len} -eq 0 ]]; then
         return
     fi
+    # walk through array backwards from end
+    # move array values down one entry toward end of array
+    # until getting to $at then overwrite entry[$at] return value of $at
     declare -i i=
     declare -i j=-1
-    for i in $(echo -n "${!bash_prompt_table_variables_array[*]}" ' ' | command -p tac -s ' '); do
+    for i in $(
+        for _arg in ${!bash_prompt_table_variables_array[*]}; do
+            echo "${_arg}"
+        done | command -p tac
+    ); do
         if [[ ${j} -eq -1 ]]; then  # set $j on first iteration
             j=$((${i} + 1))
         fi
