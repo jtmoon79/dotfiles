@@ -20,7 +20,9 @@
 # ===============
 
 # do not save lines starting with space in the history
-export HISTCONTROL=ignorespace
+# See https://www.aplawrence.com/Linux/bash_history.html
+#     https://www.bashsupport.com/bash/variables/bash/histcontrol/
+export HISTCONTROL=ignoreboth
 # for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 export HISTSIZE=9000
 export HISTFILESIZE=400000
