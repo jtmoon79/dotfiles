@@ -2412,6 +2412,8 @@ function __bashrc_prompt_live_updates () {
         fi
         __bashrc_prompt_git_info_cache_path=${PWD}
         __bashrc_prompt_git_info_cache_mountpoint_array_len=${#__bashrc_prompt_git_info_mountpoint_array[@]}
+    else
+        __bashrc_prompt_git_info_show=
     fi
 #    echo -e "${PS4-}after
 #    __bashrc_prompt_git_info_cache_path '${__bashrc_prompt_git_info_cache_path}'
