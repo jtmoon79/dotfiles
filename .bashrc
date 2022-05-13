@@ -229,8 +229,11 @@ function bash_installed () {
 
     # check that 'which' exists, cache the `which` exists (via bash command
     # caching) before any more paths are added to $PATH.
+    # on Git4Windows (specialized MinGW environment), which functions but is not
+    # in the $PATH so check for notepad.exe.
     # this presumes that default $PATH will be the safest and most standard
-    if [[ "${__bash_installed_which}" = '' ]] && ! command -p which which &> /dev/null; then
+    if [[ "${__bash_installed_which}" = '' ]] \
+       && ! (command -p which 'which' || command -p which 'notepad.exe') &> /dev/null; then
         # print warning once
         __bash_installed_which_warning=true
         echo "WARNING: 'which' was not found in current \$PATH. This will limit features from this '${0}'" >&2
@@ -240,6 +243,11 @@ function bash_installed () {
     elif [[ "${__bash_installed_which}" = '' ]]; then
         # should only be set once
         __bash_installed_which=$(command -p which which 2>/dev/null)
+        # on Git4Windows (specialized MinGW environment), which functions yet is not
+        # in the $PATH. So force this to work.
+        if [[ "${__bash_installed_which}" = '' ]] && command -p which 'notepad.exe' &>/dev/null; then
+            __bash_installed_which=which
+        fi
     fi
 
     if [[ ${#} -eq 0 ]]; then
