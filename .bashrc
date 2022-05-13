@@ -354,7 +354,7 @@ __bashrc_PATH_original=${PATH}
 #       change bash_path_add to __bash_path_add and allow $2 for position to
 #       insert
 
-# add PATHs sooner so calls to `__bash_installed` will search *all* paths the
+# add PATHs sooner so calls to `bash_installed` will search *all* paths the
 # user has specified
 
 function bash_path_add () {
