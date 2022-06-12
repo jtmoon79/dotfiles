@@ -11,8 +11,8 @@ set -e
 set -u
 set -o pipefail
 
-if [[ -f "${USER}/.ssh/ssh-auth-sock" ]]; then
-    source "${USER}/.ssh/ssh-auth-sock"
+if [[ -f "${HOME-}/.ssh/ssh-auth-sock" ]]; then
+    source "${HOME-}/.ssh/ssh-auth-sock"
 elif [[ -f "$(dirname -- "${0}")/ssh-auth-sock" ]]; then
     source "$(dirname -- "${0}")/ssh-auth-sock"
 else
