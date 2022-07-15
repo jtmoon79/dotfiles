@@ -54,6 +54,14 @@ readonly TARGET
 BACKUP_DIR=${2:-${BACKUP_DIR}}
 readonly BACKUP_DIR
 
+if [[ ! -e "${BACKUP_DIR}" ]]; then
+    echo "Path does not exist '${BACKUP_DIR}'" >&2
+    exit 1
+elif [[ ! -d "${BACKUP_DIR}" ]]; then
+    echo "Path is not a directory '${BACKUP_DIR}'" >&2
+    exit 1
+fi
+
 for prog in tar 7z; do
     if ! which "${prog}" &>/dev/null; then
         echo "ERROR: cannot find ${prog} in PATH" >&2
