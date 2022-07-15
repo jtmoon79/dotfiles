@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #
 # Quick imperfect script to tar a path and 7zip compress+encrypt the tar.
-# Useful for quick encrypted backups.
+# Useful for hasty backups.
 # Do keep in mind, any user on a *nix system can see the full command line of
 # other running commands (and 7z requires passing the password on the command
 # line).
+# An empty password will skip encryption.
 #
 # Designed against 7-zip 16.02 and GNU tar 1.29
 
@@ -15,7 +16,7 @@ set -o pipefail
 BACKUP_DIR=${BACKUP_DIR-${HOME}/backups}
 
 function backup_name_tar() {
-    echo -n "${BACKUP_DIR}/${1}__$(date +%Y%m%d).tar"
+    echo -n "${BACKUP_DIR}/${1}__$(date +%Y%m%dT%H%M%S)__$(hostname).tar"
 }
 
 if [[ ${#} != 1 && ${#} != 2 ]] || [[ "${1:-}" == '--help' ]]; then
@@ -25,8 +26,8 @@ if [[ ${#} != 1 && ${#} != 2 ]] || [[ "${1:-}" == '--help' ]]; then
 
 Tar and 7zip a TARGET directory path or file.
 Tar to preserve filesystem permissions and layout. 7zip then compresses and
-encrypts.
-Requires entering a password on stdin for the 7zip encryption.
+optionally encrypts.
+An empty password will skip encryption.
 
 Backup to an archive file based on the host and path passed,
 e.g. '${name}'
@@ -38,7 +39,7 @@ Later, the archive will decrypt with command:
 
     7z e '${name}' -so | tar -xvf - -C /some/path
 
-The 7z command will wait for the password on stdin.
+7z will wait for the password on stdin.
 " >&2
     exit 1
 fi
@@ -82,13 +83,23 @@ else
     exit 1
 fi
 
+password_opt=true
+if [[ ! "${password}" ]]; then
+    password_opt=false
+fi
+readonly password_opt
+
+function indent() {
+    sed -Ee 's/^/    /g'
+}
+
 (
 # success or failure, remove the temporary .tar file
 function exit_() {
     if which shred &>/dev/null; then
         shred -z -- "${archive_tar}"
     fi
-    rm -vf -- "${archive_tar}"
+    rm -f -- "${archive_tar}"
 }
 trap exit_ EXIT
 
@@ -111,7 +122,7 @@ tar \
 tar \
   -t \
   -f "${archive_tar}" >/dev/null
-)
+) | indent
 
 declare -a s7z_args=(
   '-t7z'
@@ -125,26 +136,38 @@ declare -a s7z_args=(
   "${archive_tar}"
 )
 
+declare -a password_arg=( "-p${password}" )
+password_arg_show=' -p****'
+if ! ${password_opt}; then
+    declare -a password_arg=()
+    password_arg_show=''
+    echo -e "\nempty password; skip encryption\n" >&2
+fi
+
 # compress+encrypt the archive
 # XXX:password on a command-line is not good but that is how 7z was designed
-echo "${PS4-}7z a -p****" "${s7z_args[@]}" >&2
+echo "${PS4-}7z a${password_arg_show}" "${s7z_args[@]}" >&2
 7z a \
-  -p"${password}" \
-  "${s7z_args[@]}"
+  "${password_arg[@]}" \
+  "${s7z_args[@]}" 2>&1 | indent
 
 # list archive details, also a sanity check
 # XXX:password on a command-line is not good but that is how 7z was designed
-echo "${PS4-}7z l -p****" -slt "${archive_tar7z}" >&2
+echo -e "\n${PS4-}7z l${password_arg_show}" -slt "${archive_tar7z}" >&2
 7z l \
-  -p"${password}" \
+  "${password_arg[@]}" \
   -slt \
-  "${archive_tar7z}"
+  "${archive_tar7z}" 2>&1 | indent
 )
 
 echo "Success!" >&2
+(
 echo "Restore archive '$(basename -- "${archive_tar7z}")' with command:
 
     7z e '${archive_tar7z}' -so | tar -xvf - -C /some/path
-
-The blank prompt will be expecting the password.
-" | tee "${archive_tar7z}.info" >&2
+"
+if ${password_opt}; then
+    echo "The blank prompt will be expecting the password.
+"
+fi
+) | tee "${archive_tar7z}.info" >&2
