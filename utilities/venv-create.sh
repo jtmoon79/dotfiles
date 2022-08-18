@@ -26,7 +26,7 @@ else
         VERSION_ID='-'
     fi
     PYV=$(${PYTHON-python3} --version | cut -f2 -d ' ')
-    VENV_NAME="${PYV}.venv--${ID}-${VERSION_ID}"
+    VENV_NAME=".venv-${PYV}_${ID}-${VERSION_ID}"
 fi
 VENV_PATH=$(readlink -m -- "${VENV_NAME}" || true)
 mkdir -vp -- "${VENV_PATH}"
