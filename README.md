@@ -9,4 +9,4 @@ See [`install.sh`](./install.sh) header comment for fast installation instructio
 
 Also a place to store various small scripts for various tasks.
 
-This repository may be less useful if you are not @jtmoon79.
+This repository may be less useful if you are not [`@jtmoon79`](https://github.com/jtmoon79).
