@@ -261,6 +261,10 @@ if ${__bash_installed_git}; then
     __bashrc_alias_safely gits 'git status -vv'
 fi
 
+if bash_installed du; then
+    __bashrc_alias_safely dirtotal 'command -p du -xsBM'
+fi
+
 if bash_installed mount sort column cut; then
     __bashrc_alias_safely mnt 'command -p mount | command -p sort -k3 | command -p column -t | command -p cut -c -${COLUMNS}'
 fi
