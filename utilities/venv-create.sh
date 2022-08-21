@@ -31,6 +31,11 @@ fi
 VENV_PATH=$(readlink -m -- "${VENV_NAME}" || true)
 mkdir -vp -- "${VENV_PATH}"
 
+function exit_err () {
+    rm -vrf -- "${VENV_PATH}"
+}
+trap exit_err EXIT
+
 (
     set -x
     ${PYTHON-python3} -B -m venv --copies --prompt "${VENV_PATH}" "${VENV_PATH}"
@@ -46,3 +51,5 @@ source "${VENV_PATH}/bin/activate"
 )
 echo
 echo "New virtualenv at '${VENV_PATH}'"
+
+trap '' EXIT
