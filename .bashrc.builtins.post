@@ -30,6 +30,47 @@ export HISTTIMEFORMAT="%Y%m%dT%H%M%S "
 # append to the history file, don't overwrite it
 # https://mywiki.wooledge.org/BashFAQ/088
 shopt -s histappend
+
+# LAST WORKING HERE 2021/10/08
+#      INCOMPLETE
+function bash_compact_history () {
+    # archive the history for longer but more efficient lookback
+    # Taken from https://mywiki.wooledge.org/BashFAQ/088#Archiving_History_Files
+    [[ ${#} -eq 0 ]] || return 1
+    if ! [[ -r ~/.bash_history ]]; then
+        return 1
+    fi
+    declare -r historyf=~/.bash_history
+    declare -r historyfarchive=~/.bash_history.archive
+    declare -r historyftmp=~/.bash_history.tmp$$
+    declare -ir max_lines=10000
+    declare -ir linecount=$(line_count < "${historyf}")
+    if [[ ${linecount} -lt ${max_lines} ]]; then
+        return
+    fi
+    echo "bash is compacting the history…  (this is unrelated to whatever command was last run)" >&2
+    if ! touch "${historyfarchive}"; then
+        echo "ERROR: could not touch " >&2
+        return 1
+    fi
+    declare -ir prune_lines=$((linecount - max_lines))
+    command -p head -n ${prune_lines} "${historyf}" >> "${historyfarchive}" && \
+        command -p sed -e "1,${prune_lines}d" "${historyf}" > "${historyftmp}" && \
+        command -p mv -- "${historyftmp}" "${historyf}"
+    rm "${historyftmp}"
+}
+
+declare -i __bashrc_prompt_extras_builtin_counter=0
+function __bashrc_prompt_extras_builtin () {
+    # periodic call to archive the history
+    [[ ${#} -eq 0 ]] || return 1
+    __bashrc_prompt_extras_builtin_counter=$((__bashrc_prompt_extras_builtin_counter + 1))
+    if [[ $((${__bashrc_prompt_extras_builtin_counter} % 10)) -ne 0 ]]; then
+        return
+    fi
+    bash_compact_history
+}
+
 # save all lines of multi-line command
 shopt -s cmdhist
 

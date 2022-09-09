@@ -88,6 +88,15 @@ function readlink_portable () {
     echo -n "${@}"
 }
 
+# protect against initialization files that may source in a loop
+__bash_profile_initialized_flag="$(readlink_portable "${BASH_SOURCE:-}" 2>/dev/null) (${SHLVL})"
+if [[ "${__bash_profile_initialized+x}" ]] \
+  && [[ "${__bash_profile_initialized:-}" = "${__bash_profile_initialized_flag}" ]]; then
+    echo "Skip duplicate initialization of '${__bash_profile_initialized}'" >&2
+    return
+fi
+export __bash_profile_initialized=${__bash_profile_initialized_flag}
+
 function __bash_profile_path_dir_print () {
     # do not assume this is run from path $HOME. This allows loading companion
     # .bash_profile and .bashrc from different paths.

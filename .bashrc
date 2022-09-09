@@ -2280,7 +2280,7 @@ function __bashrc_prompt_set () {
         declare -r r='\[\033[0;49;39;m\]'  # reset all text affects
         PS1="
 ${a}${__bashrc_prompt_color_dateline}${b}\\D{${bash_prompt_strftime_format}}\
-${r}${a}2${b} (${last_command_mesg} ${a}22${b}"'${__bashrc_prompt_timer_show-0}'"${a}22${b}; ${a}22${b}"'$(__bashrc_prompt_last_exit_code_show)'"${a}2${b})${r}\
+${r}${a}2${b} (${last_command_mesg} ${a}22${b}${a}1${b}"'${__bashrc_prompt_timer_show-0}'"${r}; ${a}1${b}"'$(__bashrc_prompt_last_exit_code_show)'"${a}21${b})${r}\
  "'$(__bashrc_prompt_jobs_info)'"\
 ${a}${__bashrc_prompt_color_table_fg}${b}${a}"'${__bashrc_prompt_color_table_bg}'"${b}"'$(__bashrc_prompt_table)'"\
 ${r}${a}32${b}"'${__bashrc_prompt_git_info_show}'"${r}\
@@ -2439,14 +2439,26 @@ function __bashrc_prompt_live_updates () {
     fi
 }
 
+# LAST WORKING HERE 2021/10/08
+#      INCOMPLETE
 # do not overwrite prior definition of __bashrc_prompt_extras
 if ! command type -t __bashrc_prompt_extras &>/dev/null; then
     function __bashrc_prompt_extras () {
-        # stub function. Override this function in `.bashrc.local.post`.
+        # Define one of the following functions in `.bashrc.local.post`.
         # This function runs on every prompt refresh before the table is printed.
         # Useful for terminals that do not automatically update the window $COLUMNS
         # value and require manual update (on FreeBSD, call `resizewin`).
-        true
+        __bashrc_prompt_extras_builtin
+        # TODO: this `type -t` search can take up to a few seconds, which is too long for each
+        #       prompt. How to do this faster?
+        if command type -t __bashrc_prompt_extras2 &>/dev/null; then
+            __bashrc_prompt_extras2
+        fi
+    }
+fi
+if ! command type -t __bashrc_prompt_extras_builtin &>/dev/null; then
+    function __bashrc_prompt_extras_builtin () {
+        :
     }
 fi
 
