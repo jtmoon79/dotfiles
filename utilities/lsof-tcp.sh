@@ -4,4 +4,4 @@
 
 set -eux
 
-exec lsof -PVn -iTCP -iUDP "${@}"
+exec lsof -PVn -iTCP -iUDP "${@}" | sort -n -k9
