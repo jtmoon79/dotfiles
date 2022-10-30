@@ -5,13 +5,20 @@
 set -euo pipefail
 
 if [[ ${#} -lt 1 ]] || [[ "${1:-}" == '--help' ]]; then
+    bname=$(basename -- "${0}")
     echo "usage:
-    ${0} SOURCE [TARGET]
+    ${bname} SOURCE [TARGET [NAME]]
 
-dd the SOURCE file to 7zip compression and encryption, to directory TARGET.
+dd the SOURCE file to 7zip compression and encryption to directory TARGET
+using file name NAME.
 
-Most useful for ad-hoc image backups of Raspberry Pis.
-Could be used to backup+encrypt any other file.
+The optional variables may be overridden, i.e.
+
+    SOURCE=/dev/sdb TARGET=/mnt/backups NAME=mybackup.img ${bname}
+
+Most useful for quick ad-hoc image backups of small Linux character devices
+(e.g. whole disks).
+Could be used to backup+encrypt any other single path.
 " >&2
     exit 1
 fi
@@ -23,11 +30,12 @@ for prog in dd 7z pv sha256sum; do
     fi
 done
 
-# default backup device
+# backup this source/device
 SOURCE_PATH=${SOURCE-${1}}
-# default backup path
+# backup to this target file
 BACKUP_PATH=${TARGET-${2}}
-BACKUP_NAME_IMG="$(hostname)-$(date '+%Y%m%dT%H%M%S')-[${SOURCE_PATH//\//_}].img"
+NAME_OS=$(source /etc/os-release || exit 0; echo -n "${ID-}_${VERSION_ID-}_${VERSION_CODENAME-}-")
+BACKUP_NAME_IMG=${NAME-${3-"$(hostname)-${NAME_OS}$(date '+%Y%m%dT%H%M%S')-[${SOURCE_PATH//\//_}].img"}}
 BACKUP_NAME_IMG_7Z=${BACKUP_NAME_IMG}.7z
 BACKUP_NAME_IMG_7Z_SUM=${BACKUP_NAME_IMG_7Z}.sha256
 BACKUP_PATH_IMG=${BACKUP_PATH}/${BACKUP_NAME_IMG}
@@ -53,8 +61,10 @@ dd --version | head -n1
 echo
 
 # archive and encrypt
-# XXX: password is on the command-line and in the terminal!
-#      not ideal, but this is how 7z demands it
+#
+# XXX: Allow the password to be echoed in the terminal by `read`.
+#      The user can double-check it.
+#      A little unsafe, but better than entering the wrong password.
 (
     read -p "enter 7z password:" password
 
@@ -110,9 +120,13 @@ Archive+encrypt command was:
 
     dd if='${SOURCE_PATH}' | 7z a -stl -si '${BACKUP_NAME_IMG_7Z}'
 
-Decrypt command is:
+Decrypt to a file:
 
     7z x -so -p*** '${BACKUP_NAME_IMG_7Z}' > '${BACKUP_NAME_IMG}'
+
+Decrypt to directly to the device/source (restore):
+
+    7z x -so -p*** '${BACKUP_NAME_IMG_7Z}' | dd of='${SOURCE_PATH}'
 
 SHA256 Checksum command is:
 
@@ -120,7 +134,7 @@ SHA256 Checksum command is:
 
 Archive data:
 
-$(7z l -slt "${BACKUP_PATH_IMG_7Z}")
+$(7z l -slt "${BACKUP_PATH_IMG_7Z}" 2>&1 | sed 's/^/    /g')
 "
 ) &> "${BACKUP_PATH_IMG_7Z_INFO}"
 echo
