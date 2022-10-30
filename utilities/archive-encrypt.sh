@@ -2,9 +2,6 @@
 #
 # Quick imperfect script to tar a path and 7zip compress+encrypt the tar.
 # Useful for hasty backups.
-# Do keep in mind, any user on a *nix system can see the full command line of
-# other running commands (and 7z requires passing the password on the command
-# line).
 # An empty password will skip encryption.
 #
 # Designed against 7-zip 16.02 and GNU tar 1.29
@@ -153,14 +150,15 @@ if ! ${password_opt}; then
 fi
 
 # compress+encrypt the archive
-# XXX:password on a command-line is not good but that is how 7z was designed
+#
+# XXX: password on the command-line, 7z blots over it in /proc/$$/cmdline
+#
 echo "${PS4-}7z a${password_arg_show}" "${s7z_args[@]}" >&2
 7z a \
   "${password_arg[@]}" \
   "${s7z_args[@]}" 2>&1 | indent
 
 # list archive details, also a sanity check
-# XXX:password on a command-line is not good but that is how 7z was designed
 echo -e "\n${PS4-}7z l${password_arg_show}" -slt "${archive_tar7z}" >&2
 7z l \
   "${password_arg[@]}" \
