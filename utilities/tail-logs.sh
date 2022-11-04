@@ -9,8 +9,10 @@ set -eu
 
 # print all logs for passed paths, default to `/var/log/`
 function find_logs() {
-    find "${@-/var/log/}" \
-        \( -type f -o -type l \) \
+    find \
+        -L \
+        "${@-/var/log/}" \
+        -type f \
         \( -name '*log' -or -name 'log*' -or -name '*err' -or -name '*.error' -or -name 'messages' -or -name 'dmesg' \) \
         -not \( -name '*.xz' -or -name '*.gz' \) \
         -print \
