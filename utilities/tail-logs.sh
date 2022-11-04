@@ -37,7 +37,7 @@ for log in "${logs[@]}"; do
     # so the arguments addtions looks like
     #    --label 'some.log: ' /var/log/some.log
     arg_logs[${#arg_logs[@]}]='--label'
-    arg_logs[${#arg_logs[@]}]="$(basename -- "${log}"): "
+    arg_logs[${#arg_logs[@]}]="$(basename -- "${log}")｜	"
     arg_logs[${#arg_logs[@]}]=${log}
 done
 
@@ -45,5 +45,4 @@ set -x
 exec -- \
     multitail \
     --mergeall \
-    --basename \
     "${arg_logs[@]}"
