@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
 #
-# crude script to visually monitor a network connection over a long
-# period of time using ICMP ping
+# simply script to visually monitor a network connection over a long
+# period of time using ICMP ping.
 #
-# XXX: for GNU date, %s is seconds, %N is subsecond nanoseconds
+# NOTE: for GNU date, %s is Unix Epoch seconds, %N is subsecond nanoseconds
 #
-# looks like
-# 21:19:18                   ꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏXꞏXꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏX
-# 21:20:00 ꞏꞏꞏꞏꞏꞏꞏꞏꞏXꞏꞏꞏXꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏXꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏ
-# 21:21:00 ꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏꞏ
+# output looks like:
+# 21:28:00 ·························································***
+# 21:29:00 ***·························································
+# 21:30:00 ····························································
+# 21:31:00 ····························································
+#
 
 set -eu
 
 if [[ ${#} -lt 1 ]]; then
     echo "usage:
-    ${0} HOSTNAME" >&2
+    ${0} HOSTNAME [ARGS ...]
+
+All arguments are passed to ping." >&2
     exit 1
 fi
 
 # suppress echoing user input
-# credit https://stackoverflow.com/a/4316765/471376
+# from https://stackoverflow.com/a/4316765/471376
 stty_orig=$(stty -g)
 trap "stty ${stty_orig}" EXIT
 stty -echo
@@ -49,18 +53,29 @@ if [[ ${seconds_in_min} -gt 0 ]]; then
     printf -- ' %.0s' $(seq 1 ${seconds_in_min})
 fi
 
+# declutter namespace
+unset now_s seconds_in_min
+
 #
 # printing remaining dots for the first line
 # then proceed with all other lines
 #
+# one clock minute is one line of good/bad marks at approximately one per second
+# XXX: not precise! but it's good enough
+#
+
+# XXX: would be fun to use exotic unicode. But using Windows Terminal 15 and
+#      Ubuntu 22, non-ASCII chars can become vertically unaligned.
+declare -r good='·' # '·' 'ꞏ'
+declare -r bad='*' # '¤' '*' 'X'
 
 while true; do
     declare -i start_sn=$(date '+%s%N')
     # designed for BSD `iputils` ping
     if command -p ping -c1 -n -q -s248 -w1 "${@}" &> /dev/null; then
-        echo -n 'ꞏ'
+        echo -n "${good}"
     else
-        echo -n 'X'
+        echo -n "${bad}"
     fi
     declare -i minute_b=$(time_now_round_minute)
     # print HMS at the minute rollover
