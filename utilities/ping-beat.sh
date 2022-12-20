@@ -40,6 +40,9 @@ Requires ping from package iputils, and GNU date.
 
 Setting environment variable 'PING_BEAT_COLOR' to any value will colorize the
 output.
+
+Setting environment variable 'PING_BEAT_LOG' to a file path will append the
+non-colorized output to that file.
 " >&2
     exit 1
 fi
@@ -105,12 +108,26 @@ declare -i minute_a=$(((${now_s} / 60) * 60))
 declare -i seconds_in_min=$((${now_s} % 60))
 unset now_s
 
+# prepare optional PING_BEAT_LOG
+if [[ ! -z "${PING_BEAT_LOG-}" ]]; then
+    if ! touch "${PING_BEAT_LOG}"}; then
+        echo "ERROR failed to touch '${PING_BEAT_LOG}'" >&2
+        exit 1
+    fi
+    if [[ -s "${PING_BEAT_LOG}" ]]; then
+        echo >> "${PING_BEAT_LOG}"
+    fi
+    echo "${PS4}ping ${@}" >> "${PING_BEAT_LOG}"
+else
+    PING_BEAT_LOG=/dev/null
+fi
+readonly PING_BEAT_LOG
+
 # print current HMS
-print_HMS
-echo -n ' '
+echo -n "$(print_HMS) " | tee -a "${PING_BEAT_LOG}"
 # fillup used seconds with spaces
 if [[ ${seconds_in_min} -gt 0 ]]; then
-    printf -- ' %.0s' $(seq 1 ${seconds_in_min})
+    printf -- ' %.0s' $(seq 1 ${seconds_in_min}) | tee -a "${PING_BEAT_LOG}"
 fi
 unset seconds_in_min
 
@@ -129,6 +146,8 @@ declare -r bad='*'  # '¤' '*' 'X'
 declare -r color_good='\e[32m' # red
 declare -r color_bad='\e[31m'  # green
 declare -r color_norm='\e[0m'  # normalize
+# set optional colorization
+# using a bool is a little easier to grok instead of string check
 do_color=false
 if [[ ! -z "${PING_BEAT_COLOR-}" ]]; then
     do_color=true
@@ -139,16 +158,17 @@ user_input=
 while true; do
     # save the exact time before long-running `ping` command
     declare -i start_sn=$(date '+%s%N')
-    # do the `ping` command
+    # do the `ping` command, print results
     if ping_cmd "${@}" &> /dev/null; then
         if ${do_color}; then
             echo -en "${color_good}"
         fi
         if [[ ! -z "${user_input}" ]]; then
-            echo -n "${user_input:0:1}"
+            out="${user_input:0:1}"
         else
-            echo -n "${good}"
+            out="${good}"
         fi
+        echo -n "${out}" | tee -a "${PING_BEAT_LOG}"
         if ${do_color}; then
             echo -en "${color_norm}"
         fi
@@ -157,10 +177,11 @@ while true; do
             echo -en "${color_bad}"
         fi
         if [[ ! -z "${user_input}" ]]; then
-            echo -n "${user_input:0:1}"
+            out="${user_input:0:1}"
         else
-            echo -n "${bad}"
+            out="${bad}"
         fi
+        echo -n "${out}" | tee -a "${PING_BEAT_LOG}"
         if ${do_color}; then
             echo -en "${color_norm}"
         fi
@@ -169,7 +190,7 @@ while true; do
     declare -i minute_b=$(time_now_round_minute)
     if [[ ${minute_a} -ne ${minute_b} ]]; then
         minute_a=${minute_b}
-        echo -en "\n$(print_HMS) "
+        echo -en "\n$(print_HMS) " | tee -a "${PING_BEAT_LOG}"
     fi
     # sleep the remaining amount of subsecond nanoseconds
     declare -i next_second=$(((${start_sn} / 1000000000) * 1000000000 + 1000000000))
