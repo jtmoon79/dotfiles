@@ -2761,7 +2761,7 @@ function bash_print_internet_IPv4() {
         --header "Host: ${ihost}" \
         --max-time 2 \
         --connect-timeout 2 \
-        "http://${ipv4}" \
+        "http://${ipv4}/ip" \
             2>/dev/null \
     ); then
         return 1
@@ -2769,7 +2769,11 @@ function bash_print_internet_IPv4() {
     if [[ "${out}" = '' ]]; then
         return 1
     fi
-    echo -n "${out}"
+    if bash_installed head; then
+        echo -n "${out}" | command -p head -n1
+    else
+        echo -n "${out}"
+    fi
 }
 
 function print_dev_IPv4 () {
