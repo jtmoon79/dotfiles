@@ -72,7 +72,7 @@ declare -r bad='*' # '¤' '*' 'X'
 while true; do
     declare -i start_sn=$(date '+%s%N')
     # designed for BSD `iputils` ping
-    if command -p ping -c1 -n -q -s248 -w1 "${@}" &> /dev/null; then
+    if command -p ping -c1 -n -q -w1 "${@}" &> /dev/null; then
         echo -n "${good}"
     else
         echo -n "${bad}"
