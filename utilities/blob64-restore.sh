@@ -4,33 +4,53 @@
 
 set -euo pipefail
 
-if [[ ${#} -ne 1 ]]; then
+if [[ ${#} -lt 1  ]]; then
+    bname=$(basename -- "${0}")
     echo "usage:
 
-    ${0} file
+    ${bname} data [passphrase]
 
-Passphrase is read from STDIN and can be interactive.
-Decrypted data is written to STDOUT.
+    A passphrase is read from the optional passphrase file or STDIN.
 
-example:
+    Decrypted data is written to STDOUT.
+
+examples:
 
 interactive decryption:
 
-    ${0} /tmp/my-encrypted-data.gpg.base64
+    ${bname} /tmp/my-encrypted-data.gpg.base64
 
 non-interactive decryption:
 
-    echo -n 'passw0rd' | ${0} /tmp/my-encrypted-data.gpg.base64" >&2
+    echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-data.gpg.base64
+
+    ${bname} /tmp/my-encrypted-data.gpg.base64 /tmp/passphrase.tmp" >&2
     exit 1
 fi
 input=${1}
 
+# check validatity of optional passphrase argument before writing to the TMPFILE
+if [[ ${#} -gt 1 ]]; then
+    if [[ ! -e "${2}" ]]; then
+        echo "ERROR Passphrase file does not exist '${2}'" >&2
+        exit 1
+    elif [[ ! -r "${2}" ]]; then
+        echo "ERROR Passphrase file is not readable '${2}'" >&2
+        exit 1
+    fi
+fi
+
 TMPFILE=$(mktemp -q)
 trap "rm -f -- ${TMPFILE}" EXIT
 
-# XXX: `read` returns 1 even if something was read
-read -p "Enter the passphrase " -s PASSPHRASE || true
 
-(set -x; base64 -d "${input}") > "${TMPFILE}"
-{ echo -n "${PASSPHRASE}"; unset PASSPHRASE; } \
-| (set -x; gpg -v -o - --batch --passphrase-fd 0 --decrypt "${TMPFILE}")
+base64 -d "${input}" > "${TMPFILE}"
+
+if [[ ${#} -gt 1 ]]; then
+    gpg -o - --batch --passphrase-file "${2}" --decrypt "${TMPFILE}"
+else
+    # XXX: `read` returns 1 even if something was read
+    read -p "Enter the passphrase " -s PASSPHRASE || true
+    { echo -n "${PASSPHRASE}"; unset PASSPHRASE; } \
+    | gpg -o - --batch --passphrase-fd 0 --decrypt "${TMPFILE}"
+fi

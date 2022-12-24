@@ -8,16 +8,22 @@
 
 set -euo pipefail
 
-if [[ ${#} -ne 1 ]]; then
+if [[ ${#} -lt 1 ]]; then
+    bname=$(basename -- "${0}")
     echo "usage:
 
-    gpg_passphrase | ${0} script
+    ${bname} script [passphrase]
 
-Passphrase is read from STDIN
+    The script is a bash shell compatible file to run, that has been encrypted
+    using blob64-store.sh.
 
-example:
+    A passphrase is read from the optional passphrase file or STDIN.
 
-    echo -n 'passw0rd' | ${0} /tmp/my-encrypted-script.gpg.base64" >&2
+examples:
+
+    echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-script.gpg.base64
+
+    ${bname} /tmp/my-encrypted-script.gpg.base64 /tmp/my-passphrase" >&2
     exit 1
 fi
 
@@ -25,12 +31,15 @@ input=${1}
 restore_script=$(dirname -- "${0}")/blob64-restore.sh
 
 if [[ ! -f "${restore_script}" ]]; then
-    echo "ERROR file not found '${restore_script}'" >&2
+    echo "ERROR partner script not found '${restore_script}'" >&2
     exit 1
 elif [[ ! -x "${restore_script}" ]]; then
-    echo "ERROR file not executable '${restore_script}'" >&2
+    echo "ERROR partner script not executable '${restore_script}'" >&2
     exit 1
 fi
 
-set -x
-exec "${restore_script}" "${input}" | bash --norc --noprofile
+if [[ ${#} -ge 2 ]]; then
+    "${restore_script}" "${input}" "${2}" | bash --norc --noprofile
+else
+    "${restore_script}" "${input}" | bash --norc --noprofile
+fi
