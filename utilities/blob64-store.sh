@@ -25,16 +25,16 @@ about:
 
 examples:
 
-    echo 'SECRET DATA!' | ${bname} /tmp/my-encrypted-secrets.gpg.base64
+    echo 'SECRET DATA!' | ${bname} /tmp/my-encrypted-secrets.blob64
 
-    echo 'echo hello && touch /tmp/test' | ${bname} /tmp/my-encrypted-script.gpg.base64
+    echo 'echo hello && touch /tmp/test' | ${bname} /tmp/my-encrypted-script.blob64
 
     echo 'passw0rd' > /tmp/password
-    echo 'echo hello && touch /tmp/test' | ${bname} /tmp/my-encrypted-script.gpg.base64 /tmp/password
+    echo 'echo hello && touch /tmp/test' | ${bname} /tmp/my-encrypted-script.blob64 /tmp/password
 
-Later, the file my-encrypted-script.gpg.base64 can be run in a bash shell using
+Later, the file my-encrypted-script.blob64 can be run in a bash shell using
 
-    echo -n 'passw0rd' | blob64-run.sh /tmp/my-encrypted-script.gpg.base64" >&2
+    echo -n 'passw0rd' | blob64-run.sh /tmp/my-encrypted-script.blob64" >&2
     exit 1
 fi
 

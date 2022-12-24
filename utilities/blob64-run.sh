@@ -21,9 +21,9 @@ if [[ ${#} -lt 1 ]]; then
 
 examples:
 
-    echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-script.gpg.base64
+    echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-script.blob64
 
-    ${bname} /tmp/my-encrypted-script.gpg.base64 /tmp/my-passphrase" >&2
+    ${bname} /tmp/my-encrypted-script.blob64 /tmp/my-passphrase" >&2
     exit 1
 fi
 

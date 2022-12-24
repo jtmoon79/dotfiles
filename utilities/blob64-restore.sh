@@ -18,13 +18,13 @@ examples:
 
 interactive decryption:
 
-    ${bname} /tmp/my-encrypted-data.gpg.base64
+    ${bname} /tmp/my-encrypted-data.blob64
 
 non-interactive decryption:
 
-    echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-data.gpg.base64
+    echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-data.blob64
 
-    ${bname} /tmp/my-encrypted-data.gpg.base64 /tmp/passphrase.tmp" >&2
+    ${bname} /tmp/my-encrypted-data.blob64 /tmp/passphrase.tmp" >&2
     exit 1
 fi
 input=${1}
