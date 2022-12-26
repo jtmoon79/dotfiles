@@ -3,7 +3,8 @@
 # helper to quickly create a new standalone Python virtualenv with updated modules
 #
 # $PYTHON can be overriden to use preferred python runtime
-# optional $1 to choose the path of the new virtualenv
+# optional $1 to choose the path of the new virtualenv, remaining arguments are
+# passed to python
 
 set -eu
 
@@ -14,6 +15,7 @@ set -eu
 
 if [[ "${1+x}" ]]; then
     VENV_NAME=${1}
+    shift
 else
     # user did not pass $1 so generate a name for the virtualenv
     if [[ -r /etc/os-release ]]; then
@@ -38,7 +40,7 @@ trap exit_err EXIT
 
 (
     set -x
-    ${PYTHON-python3} -B -m venv --copies --prompt "${VENV_PATH}" "${VENV_PATH}"
+    ${PYTHON-python3} -B -m venv --copies --prompt "${VENV_PATH}" "${VENV_PATH}" "${@}"
 )
 source "${VENV_PATH}/bin/activate"
 (
