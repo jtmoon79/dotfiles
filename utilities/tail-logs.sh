@@ -14,7 +14,7 @@ function find_logs() {
         "${@}" \
         -type f \
         \( -name '*log' -or -name 'log*' -or -name '*err' -or -name '*.error' -or -name 'messages' -or -name 'dmesg' \) \
-        -not \( -name '*.xz' -or -name '*.gz' -or -name '*.tar' -or -name '*.tgz' -or -name '*.zip' \) \
+        -not \( -name '*.xz' -or -name '*.gz' -or -name '*.tar' -or -name '*.tgz' -or -name '*.zip' -or -name '*.journal' \) \
         -print \
     | sort \
     | uniq
