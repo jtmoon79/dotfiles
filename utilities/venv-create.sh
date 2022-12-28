@@ -44,10 +44,10 @@ trap exit_err EXIT
 )
 source "${VENV_PATH}/bin/activate"
 (
-    PYEXEC_=$(which python)
+    PYTHON_=$(which python)
     set -x
     # update baseline of tools to latest
-    "${PYEXEC_}" -BOs -m pip install \
+    "${PYTHON_}" -BOs -m pip install \
         --no-cache-dir --disable-pip-version-check \
         --upgrade wheel pip setuptools
 )
