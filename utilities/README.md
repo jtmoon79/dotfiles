@@ -1,1 +1,1 @@
-Miscellaneous shell script utilities.
+A pile of miscellany scripts.
