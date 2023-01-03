@@ -348,7 +348,9 @@ while true; do
         fi
     fi
     #
-    # print datetime only at the minute rollovers
+    # print extra information only at the minute rollovers
+    # at end of row print ping info
+    # at beginning of new row print datetime
     #
     # current datetime in seconds&nanoseconds
     declare -i now_sn=$(datetime_now_sn)
@@ -373,8 +375,10 @@ while true; do
             minute_dot_at+=1
         done
         now_minute_a_s=${now_minute_b_s}
-        # print the start of a new row
-        echo -en "\n$(print_datetime 00) " | tee -a "${PING_BEAT_LOG}"
+        # print ping information at end of current row
+        echo " (${@})" | tee -a "${PING_BEAT_LOG}"
+        # print datetime information at start of a new row
+        echo -en "$(print_datetime 00) " | tee -a "${PING_BEAT_LOG}"
         minute_dot_at=0
         declare -i remain_s=60
     else
