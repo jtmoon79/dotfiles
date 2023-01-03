@@ -4,6 +4,7 @@
 # helpful for keeping an eye on all the logs of a system
 #
 # if `multitail` is available then use it else use `tail`
+# user can override TAIL and TAIL_ARGS
 
 set -eu
 
@@ -20,10 +21,23 @@ function find_logs() {
     | uniq
 }
 
+# allow user to override the chosen tail program using TAIL
+if [[ ! -z "${TAIL-}" ]]; then
+    set -x
+    exec -- \
+        "${TAIL}" \
+        ${TAIL_ARGS-} \
+            $(find_logs "${@-/var/log/}")
+fi
+
 if ! which multitail &> /dev/null; then
     set -x
     exec -- \
-        tail -f -- \
+        tail \
+        -f \
+        -n 0 \
+        ${TAIL_ARGS-} \
+        -- \
             $(find_logs "${@-/var/log/}")
 fi
 
@@ -74,5 +88,7 @@ done
 set -x
 exec -- \
     multitail \
+    -n 0 \
+    ${TAIL_ARGS-} \
     --mergeall \
     "${arg_logs[@]}"
