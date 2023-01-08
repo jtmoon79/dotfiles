@@ -131,7 +131,7 @@ function parse_rtt_avg() {
     else
         return 1
     fi
-    # $avg should be a string like "17.223"
+    # $avg should be a string like "17.223" and referring to milliseconds
     # drop the fractional
     avg=${avg%.*}
     if [[ -z "${avg}" ]]; then
@@ -254,7 +254,7 @@ unset seconds_into_min
 # ping result dots
 declare -r dot_good_ASCII='·' # ASCII Extended
 declare -r dot_good='·' # fallback
-declare -r dot_good08=' ' # 0/8
+declare -r dot_good08='▁' # 0/8
 declare -r dot_good18='▁' # 1/8
 declare -r dot_good28='▂' # 2/8
 declare -r dot_good38='▃' # 3/8
@@ -438,4 +438,3 @@ while true; do
     # a bunch of non-sense over a long duration
     #IFS= read -s -t0.0001 THROWAWAY &>/dev/null || true
 done
-                                
