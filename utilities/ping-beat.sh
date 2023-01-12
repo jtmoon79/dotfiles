@@ -219,9 +219,10 @@ fi
 readonly do_datetime_timeonly
 
 function print_datetime()  {
-    declare format="+%Y-%m-%dT%H:%M:${1-%S}"
+    # compact datetime format to fit in fewer columns, avoid wrap-around
+    declare format="+%Y%m%d%H%M${1-%S}"
     if ${do_datetime_timeonly}; then
-        format="+%H:%M:${1-%S}"
+        format="+%H%M${1-%S}"
     fi
     date "${format}" | tr -d '\n'
 }
