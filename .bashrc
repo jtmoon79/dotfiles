@@ -368,6 +368,17 @@ function bash_path_add () {
     if [[ ! -d "${path}" && ! -L "${path}" ]] || [[ ! -x "${path}" ]]; then
         return 1
     fi
+    # a relative directory should be resolved to full path using `realpath`.
+    # do not resolve symlinks in that path (`readlink` always resolves
+    # symlinks).
+    declare pathr=
+    if bash_installed realpath; then
+        if ! pathr=$(realpath --no-symlinks -- "${path}"); then
+            pathr=${path}
+        fi
+    else
+        pathr=${path}
+    fi
     # test if any attempts at primitive matching find a match (substring $path
     # within $PATH?)
     # uses primitive substring matching and avoid =~ operator as the path $1
@@ -376,15 +387,15 @@ function bash_path_add () {
     #      test front
     #      test back
     #      test middle
-    if ! {     [[ "${PATH}" = "${PATH##${path}:}" ]] \
-            && [[ "${PATH}" = "${PATH%%:${path}}" ]] \
-            && [[ "${PATH}" = "${PATH/:${path}:/}" ]] ;
+    if ! {     [[ "${PATH}" = "${PATH##${pathr}:}" ]] \
+            && [[ "${PATH}" = "${PATH%%:${pathr}}" ]] \
+            && [[ "${PATH}" = "${PATH/:${pathr}:/}" ]] ;
         }
     then
         return 1
     fi
-    echo "${PS4-}bash_path_add '${path}'" >&2
-    export PATH=${PATH}:${path}
+    echo "${PS4-}bash_path_add '${pathr}'" >&2
+    export PATH=${PATH}:${pathr}
 }
 
 function bash_paths_add () {
