@@ -40,6 +40,10 @@ fi
 
 output=${1}
 
+# use temporary file in case user cancels operation, the file is not modified
+TMPFILE1=$(mktemp -q)
+trap "rm -f -- ${TMPFILE1}" EXIT
+
 declare -a gpg_extra_args=()
 
 # set gpg arguments based on passphrase setting
@@ -57,4 +61,6 @@ if [[ ${#} -gt 1 ]]; then
 fi
 
 gpg "${gpg_extra_args[@]}" --yes --no-symkey-cache --symmetric - \
-    | base64 > "${output}"
+    | base64 > "${TMPFILE1}"
+
+mv -- "${TMPFILE1}" "${output}"
