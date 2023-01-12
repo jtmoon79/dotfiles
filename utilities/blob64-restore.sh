@@ -43,7 +43,6 @@ fi
 TMPFILE=$(mktemp -q)
 trap "rm -f -- ${TMPFILE}" EXIT
 
-
 base64 -d "${input}" > "${TMPFILE}"
 
 if [[ ${#} -gt 1 ]]; then
