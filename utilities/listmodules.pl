@@ -12,4 +12,3 @@ my @modules = $inst->modules();
  foreach $module (@modules){
       print $module . "\n";
 }
-
