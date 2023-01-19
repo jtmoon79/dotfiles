@@ -50,6 +50,9 @@ TMPFILE1=$(mktemp -q)
 TMPFILE2=$(mktemp -q)
 TMPFILE3=$(mktemp -q)
 function exit_ () {
+    if which shred &>/dev/null; then
+        shred -z -- "${TMPFILE1}" "${TMPFILE2}" "${TMPFILE3}"
+    fi
     rm -f -- "${TMPFILE1}" "${TMPFILE2}" "${TMPFILE3}"
     # throwaway remaining STDIN
     read -t0 -s _ || true
@@ -65,7 +68,8 @@ input=
 if [[ ${#} -le 1 ]]; then
     # TODO: this should allow for using the gpg interactive dialog
     #       when the user does not pass a passphrase file on STDIN nor a passphrase file argument
-    read -t0 input || true
+    read -t1 -s || true
+    input=${REPLY}
     if [[ -z "${input}" ]]; then
         echo "ERROR passphrase passed on STDIN is empty" >&2
         echo "      did you mean to pass a passphrase file as the second argument?" >&2

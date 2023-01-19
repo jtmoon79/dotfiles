@@ -5,6 +5,7 @@
 #
 # useful for running scripts that need to embed secrets
 #
+# TODO: handle exec headers, e.g. `#!/usr/bin/env blob64-run.sh`
 
 set -euo pipefail
 

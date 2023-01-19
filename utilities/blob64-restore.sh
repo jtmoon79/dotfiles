@@ -41,7 +41,13 @@ if [[ ${#} -gt 1 ]]; then
 fi
 
 TMPFILE=$(mktemp -q)
-trap "rm -f -- ${TMPFILE}" EXIT
+function exit_ () {
+    if which shred &>/dev/null; then
+        shred -z -- "${TMPFILE}"
+    fi
+    rm -f -- "${TMPFILE}"
+}
+trap exit_ EXIT
 
 base64 -d "${input}" > "${TMPFILE}"
 
