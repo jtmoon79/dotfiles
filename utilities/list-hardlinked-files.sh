@@ -11,16 +11,24 @@
 
 set -eux
 
-find "${@}" -xdev -type f -links +1 -printf '%i %p\n' \
-    | sort -n -k1,1 \
-    | awk '{
-        same = ($1==last)
-        if(!same) save = $0
-        else {
-            if(save!="") {
-                print save; save = ""
-            }
-            print
+(
+    # list files with multiple hardlinks
+    find "${@}" -xdev -xtype f -links +1 -printf '%i %p\n';
+    # list symlinks
+    find -L "${@}" -xdev -xtype l -printf '%i %p → ' -exec readlink {} \;
+) \
+    | sort -n -k1,1 -k2 \
+    | awk \
+'{
+    same = ($1==last)
+    if (!same) {
+        save = $0
+    } else {
+        if (save != "") {
+            print save
+            save = ""
         }
-        last = $1
-    }'
+        print
+    }
+    last = $1
+}'
