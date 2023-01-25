@@ -114,8 +114,6 @@ else
         set -x
         "${STORE}" "${TMPFILE2}" "${TMPFILE3}" < "${TMPFILE1}"
     )
-    # remove the password as soon as possible
-    rm -f -- "${TMPFILE3}"
 fi
 
 mv "${TMPFILE2}" "${BLOB}"
