@@ -357,13 +357,15 @@ __bashrc_PATH_original=${PATH}
 # add PATHs sooner so calls to `bash_installed` will search *all* paths the
 # user has specified
 
-function bash_path_add () {
-    # append path $1 to $PATH but only if it is:
+function bash_path_pend () {
+    # append or prepend path $1 to $PATH but only if it is:
     # - valid executable directory
     # - not already in $PATH
-    [[ ${#} -eq 1 ]] || return 1
+    # $2 if true will append, if false will prepend. Optional.
+    [[ ${#} -eq 1 || ${#} -eq 2 ]] || return 1
 
     declare -r path=${1}
+    declare -r append=${2:-true}
     # must be valid executable directory or symlink
     if [[ ! -d "${path}" && ! -L "${path}" ]] || [[ ! -x "${path}" ]]; then
         return 1
@@ -373,7 +375,7 @@ function bash_path_add () {
     # symlinks).
     declare pathr=
     if bash_installed realpath; then
-        if ! pathr=$(realpath --no-symlinks -- "${path}"); then
+        if ! pathr=$(realpath --no-symlinks "${path}" 2>/dev/null); then
             pathr=${path}
         fi
     else
@@ -394,12 +396,33 @@ function bash_path_add () {
     then
         return 1
     fi
-    echo "${PS4-}bash_path_add '${pathr}'" >&2
-    export PATH=${PATH}:${pathr}
+    if ${append}; then
+        echo "${PS4-}bash_path_append '${pathr}'" >&2
+        export PATH=${PATH}:${pathr}
+    else
+        echo "${PS4-}bash_path_prepend '${pathr}'" >&2
+        export PATH=${pathr}:${PATH}
+    fi
 }
 
+# wrapper for bash_path_pend to append
+function bash_path_append () {
+    bash_path_pend "${1}" true
+}
+
+# wrapper for bash_path_pend to prepend
+function bash_path_prepend () {
+    bash_path_pend "${1}" false
+}
+
+# backwards-compatible wrapper for bash_path_pend to append
+function bash_path_add () {
+    bash_path_pend "${1}" true
+}
+
+# backwards-compatible public-facing wrapper for bash_path_add, allows multiple
+# arguments
 function bash_paths_add () {
-    # public-facing wrapper for bash_path_add, allows multiple arguments
     [[ ${#} -gt 0 ]] || return 1
     declare path_=
     declare -i ret=0
