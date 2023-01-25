@@ -77,7 +77,7 @@ echo
 )
 
 (
-    BACKUP_PATH_IMG_7Z_SUM=$(realpath -- "${BACKUP_PATH_IMG_7Z_SUM}")
+    BACKUP_PATH_IMG_7Z_SUM=$(realpath "${BACKUP_PATH_IMG_7Z_SUM}")
     cd "${BACKUP_PATH}"
     set -x
     # in addition to 7z CRC, create a checksum file
