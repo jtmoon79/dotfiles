@@ -9,40 +9,69 @@ import os
 import sys
 
 
-print("environment:")
-print("  -E (ignore PYTHON* environment variables) ? %s" %
-      bool(sys.flags.ignore_environment))
-for env in (
-    "LC_ALL",
-    "LANG",
-    "LC_CTYPE",
-    "LANGUAGE",
-    "PYTHONIOENCODING",
-    "PYTHONLEGACYWINDOWSSTDIO"
-):
-    if env in os.environ:
-        print("  \"%s\"=\"%s\"" % (env, os.environ[env]))
+def main():
+
+    print("Python:")
+    print("  version:", sys.version.replace("\n", " "))
+    print("  platform:", sys.platform)
+    print("  executable:", sys.executable)
+    print("  prefix:", sys.prefix)
+    print()
+
+    print("environment:")
+    for env in (
+        "LC_ALL",
+        "LANG",
+        "LC_CTYPE",
+        "LANGUAGE",
+        "PYTHONUTF8",
+        "PYTHONIOENCODING",
+        "PYTHONLEGACYWINDOWSSTDIO",
+        "PYTHONCOERCECLOCALE",
+    ):
+        if env in os.environ:
+            print("  \"%s\"=\"%s\"" % (env, os.environ[env]))
+        else:
+            print("  \"%s\" not set" % env)
+    print("  -E (ignore PYTHON* environment variables) ?", bool(sys.flags.ignore_environment))
+
+    print()
+    print("sys module:")
+    print("  sys.getdefaultencoding() \"%s\"" % sys.getdefaultencoding())
+    print("  sys.stdin.encoding \"%s\"" % sys.stdin.encoding)
+    print("  sys.stdout.encoding \"%s\"" % sys.stdout.encoding)
+    print("  sys.stderr.encoding \"%s\"" % sys.stderr.encoding)
+    print("  sys.getfilesystemencoding() \"%s\"" % sys.getfilesystemencoding())
+
+    print()
+    print("locale module:")
+    if hasattr(locale, "nl_langinfo"):
+        print("  locale.nl_langinfo(locale.CODESET) \"%s\""
+            % locale.nl_langinfo(locale.CODESET))
     else:
-        print("  \"%s\" not set" % env)
+        print("  locale.nl_langinfo not available")
 
-print()
-print("sys module:")
-print("  sys.getdefaultencoding() \"%s\"" % sys.getdefaultencoding())
-print("  sys.stdin.encoding \"%s\"" % sys.stdin.encoding)
-print("  sys.stdout.encoding \"%s\"" % sys.stdout.encoding)
-print("  sys.stderr.encoding \"%s\"" % sys.stderr.encoding)
+    try:
+        print("  locale.getencoding() \"%s\"" % locale.getencoding())
+    except AttributeError:
+        print("  locale.getencoding() not available")
 
-print()
-print("locale module:")
-if hasattr(locale, "nl_langinfo"):
-    print("  locale.nl_langinfo(locale.CODESET) \"%s\""
-          % locale.nl_langinfo(locale.CODESET))
-else:
-    print("locale.nl_langinfo not available")
+    try:
+        print("  locale.getlocale()", (locale.getlocale(),))
+    except AttributeError:
+        print("  locale.getlocale() not available")
 
-print("  locale.getencoding() \"%s\"" % locale.getencoding())
-print("  locale.getlocale() %s" % (locale.getlocale(),))
-print("  locale.getpreferredencoding() \"%s\""
-      % locale.getpreferredencoding())
-print("  locale.getdefaultlocale()[1] \"%s\""
-      % locale.getdefaultlocale()[1])
+    try:
+        print("  locale.getpreferredencoding() \"%s\""
+            % locale.getpreferredencoding())
+    except AttributeError:
+        print("  locale.getpreferredencoding() not available")
+
+    try:
+        print("  locale.getdefaultlocale()[1] \"%s\""
+            % locale.getdefaultlocale()[1])
+    except AttributeError:
+        print("  locale.getdefaultlocale() not available")
+
+if __name__ == "__main__":
+    main()
