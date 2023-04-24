@@ -305,6 +305,9 @@ else
     bash_prompt_table_variable_add_net_IPv4 em0
     bash_prompt_table_variable_add_net_IPv4 eth1
     bash_prompt_table_variable_add_net_IPv4 eth2
+    bash_prompt_table_variable_add_net_IPv4 enp0s3
+    bash_prompt_table_variable_add_net_IPv4 Ethernet
+    bash_prompt_table_variable_add_net_IPv4 LAN
     bash_prompt_table_variable_add_net_IPv4 "Local Area Connection"
 fi
 bash_prompt_table_variable_add_Internet_IPv4_Name

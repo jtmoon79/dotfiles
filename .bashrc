@@ -770,6 +770,34 @@ function var_is_int () {
     return 0
 }
 
+function bash_print_var () {
+    # print the value of a variable
+    [[ ${#} -eq 1 ]] || return 1
+
+    declare -r var=${1}
+    if [[ ! "${!var+x}" ]]; then
+        echo "VARIABLE '${var}' NOT DEFINED" >&2
+        return
+    fi
+    if var_is_array "${var}"; then
+        declare -p "${var}"
+        #if [[ "${#var[@]}" -eq 0 ]]; then
+        #    echo "${var}=()"
+        #    continue
+        #fi
+        #declare index=
+        #for index in "${!var[@]}"; do
+        #    echo "${var[${index}]}='${!var[${index}]}'"
+        #done
+    elif var_is_int "${var}"; then
+        declare -p "${var}"
+        #echo "${var}=${!var}"
+    else
+        declare -p "${var}"
+        #echo "${var}='${!var}'"
+    fi
+}
+
 function bash_print_special_shell_vars () {
     # print all the bash special and dynamic variables
     # taken from:
@@ -890,27 +918,108 @@ function bash_print_special_shell_vars () {
     )
     declare var=
     for var in "${vars[@]}"; do
-        if [[ ! "${!var+x}" ]]; then
-            echo "VARIABLE '${var}' NOT DEFINED" >&2
-            continue
-        fi
-        if var_is_array "${var}"; then
-            declare -p "${var}"
-            #if [[ "${#var[@]}" -eq 0 ]]; then
-            #    echo "${var}=()"
-            #    continue
-            #fi
-            #declare index=
-            #for index in "${!var[@]}"; do
-            #    echo "${var[${index}]}='${!var[${index}]}'"
-            #done
-        elif var_is_int "${var}"; then
-            declare -p "${var}"
-            #echo "${var}=${!var}"
-        else
-            declare -p "${var}"
-            #echo "${var}='${!var}'"
-        fi
+        bash_print_var "${var}"
+    done
+}
+
+
+function bash_print_bash_vars () {
+    # print most variables defined in this series of bash initialization files
+
+    # list gathered with command:
+    #   grep -hoEe '[[:alpha:]_]+=' -- ./.bashrc ./.bash_profile ./.bashrc.builtins.post | sort | uniq | tr -d '='
+    declare -ar vars=(
+        __bash_installed_git
+        __bash_installed_id
+        __bash_installed_stat
+        __bash_installed_tr
+        __bash_installed_which
+        __bash_installed_which_warning
+        __bash_profile_import_start
+        __bash_profile_path_dir
+        __bash_profile_screen_detached
+        __bash_profile_tmux_detached
+        __bash_profile_verbose
+        __bashrc_alias_ll_color
+        __bashrc_color
+        __bashrc_color_apps
+        __bashrc_debian_chroot
+        __bashrc_initialized
+        __bashrc_initialized_flag
+        __bashrc_kernel_name_out_
+        __bashrc_kernel_out_
+        __bashrc_net_interface_
+        __bashrc_OperatingSystem
+        __bashrc_os_release_out_
+        __bashrc_path_dir_bashrc
+        __bashrc_PATH_original
+        __bashrc_prompt_bullet_default
+        __bashrc_prompt_bullet_last
+        __bashrc_prompt_color
+        __bashrc_prompt_color_cwd
+        __bashrc_prompt_color_cwd_default
+        __bashrc_prompt_color_dateline
+        __bashrc_prompt_color_dateline_default
+        __bashrc_prompt_color_dateline_last
+        __bashrc_prompt_color_eval_count
+        __bashrc_prompt_color_force_last
+        __bashrc_prompt_color_hostname
+        __bashrc_prompt_color_hostname_default
+        __bashrc_prompt_color_prompt_bullet
+        __bashrc_prompt_color_prompt_bullet_root
+        __bashrc_prompt_color_prompt_bullet_root_default
+        __bashrc_prompt_color_prompt_bullet_user
+        __bashrc_prompt_color_prompt_bullet_user_default
+        __bashrc_prompt_color_table_bg
+        __bashrc_prompt_color_table_bg_default
+        __bashrc_prompt_color_table_fg
+        __bashrc_prompt_color_table_fg_default
+        __bashrc_prompt_color_user_fg
+        __bashrc_prompt_color_user_fg_default
+        __bashrc_prompt_color_user_fg_last
+        __bashrc_prompt_color_user_root
+        __bashrc_prompt_color_user_root_default
+        __bashrc_prompt_color_user_root_last
+        __bashrc_prompt_count
+        __bashrc_prompt_first
+        __bashrc_prompt_git_info_cache_mountpoint_array_len
+        __bashrc_prompt_git_info_cache_path
+        __bashrc_prompt_git_info_cache_path_do
+        __bashrc_prompt_git_info_enable
+        __bashrc_prompt_git_info_git_stat
+        __bashrc_prompt_git_info_show
+        __bashrc_prompt_jobs_info_is_enable
+        __bashrc_prompt_last_exit_code_banner
+        __bashrc_prompt_set_count
+        __bashrc_prompt_strftime_format_default
+        __bashrc_prompt_strftime_format_last
+        __bashrc_prompt_table_blank_n_alias
+        __bashrc_prompt_table_blank_n_buffer
+        __bashrc_prompt_table_column_default
+        __bashrc_prompt_table_column_last
+        __bashrc_prompt_table_enable
+        __bashrc_prompt_table_tty
+        __bashrc_prompt_timer_cur
+        __bashrc_prompt_timer_epoch
+        __bashrc_prompt_timer_show
+        __bashrc_title_set_hostname
+        __bashrc_title_set_kernel
+        __bashrc_title_set_OS
+        __bashrc_title_set_prev
+        __bashrc_title_set_TTY
+        __bashrc_title_set_user
+        __bash_start_beg_time
+        __bash_start_end_time
+        bash_color_force
+        bash_prompt_bullet
+        bash_prompt_strftime_format
+        bash_prompt_table_column
+        BASH_VERSION_MAJOR
+        BASH_VERSION_MINOR
+    )
+    declare var=
+    for var in "${vars[@]}"; do
+        bash_print_var "${var}"
     done
 }
 
@@ -2570,6 +2679,35 @@ function __bashrc_alias_greps_color () {
 # network helpers
 # ===============
 
+function net_dev_exists () {
+    # if network device $1 exists then return 0 else return 1
+    [[ ${#} -eq 1 ]] || return 1
+    declare -r name=${1}
+
+    # WSL
+    declare -r netsh_WSL='/mnt/c/Windows/System32/netsh.exe'
+    # cyginw
+    declare -r netsh_cygwin='/cygdrive/c/WINDOWS/system32/netsh.exe'
+    # MinGW
+    declare -r netsh_mingw='/c/Windows/System32/netsh.exe'
+
+    # try *nix first
+    if bash_installed ip; then
+        command -p ip address show dev "${name}" &>/dev/null && return 0
+    elif bash_installed ifconfig; then
+        command -p ifconfig "${name}" &>/dev/null && return 0
+    fi
+    # try Windows if *nix fails
+    if [[ -f "${netsh_WSL}" ]]; then
+        "${netsh_WSL}" interface show interface name="${name}" &>/dev/null && return 0
+    elif [[ -f "${netsh_cygwin}" ]]; then
+        "${netsh_cygwin}" interface show interface name="${name}" &>/dev/null && return 0
+    elif [[ -f "${netsh_mingw}" ]]; then
+        "${netsh_mingw}" interface show interface name="${name}" &>/dev/null && return 0
+    fi
+    return 1
+}
+
 function print_dev_IPv4_Linux () {
     # given passed NIC, print the first found IPv4 address by scraping from
     # outputs of either `ip` or `ifconfig`
@@ -2692,14 +2830,18 @@ function print_dev_IPv4_Win () {
     #
     [[ ${#} -eq 1 ]] || return 1
 
+    # WSL
+    declare -r netsh_WSL='/mnt/c/Windows/System32/netsh.exe'
+    # cyginw
+    declare -r netsh_cygwin='/cygdrive/c/WINDOWS/system32/netsh.exe'
+    # MinGW
+    declare -r netsh_mingw='/c/Windows/System32/netsh.exe'
+
     declare netsh=
     for netsh in \
-        ` # WSL path` \
-        '/mnt/c/Windows/System32/netsh.exe' \
-        ` # Cygwin path` \
-        '/cygdrive/c/WINDOWS/system32/netsh.exe' \
-        ` # MinGW path` \
-        '/c/Windows/System32/netsh.exe' \
+        "${netsh_WSL}" \
+        "${netsh_cygwin}" \
+        "${netsh_mingw}" \
     ; do
         if [[ -e "${netsh}" ]]; then
             break
@@ -2848,6 +2990,11 @@ function bash_prompt_table_variable_add_net_IPv4 () {
     #    $ bash_prompt_table_variable_add_net_IPv4 'eth1' 5
     #
     [[ ${#} -ge 1 ]] || return 1
+
+    # before printing debug message check if the device exists, avoid confusing messages at login
+    if ! net_dev_exists "${1}"; then
+        return 1
+    fi
     echo "${PS4-}bash_prompt_table_variable_add_net_IPv4 ${1}" >&2
 
     declare -r devname=${1}
