@@ -53,5 +53,22 @@ source "${VENV_PATH}/bin/activate"
 )
 echo
 echo "New virtualenv at '${VENV_PATH}'"
+echo "To activate:"
+echo
+echo -e "    \e[1m"
+for activate in \
+    "${VENV_PATH}/bin/activate" \
+    "${VENV_PATH}/bin/activate.csh" \
+    "${VENV_PATH}/bin/activate.fish" \
+    "${VENV_PATH}/bin/activate.ps1" \
+    "${VENV_PATH}/Scripts/activate" \
+    "${VENV_PATH}/Scripts/activate.bat"
+do
+    if [[ -e "${activate}" ]]; then
+        echo "source ${activate}"
+        break
+    fi
+done
+echo -e "\e[0m"
 
 trap '' EXIT
