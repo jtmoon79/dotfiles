@@ -5,8 +5,20 @@
 #
 # list of useful variables defined in `dotfiles/.bashrc.builtins.post`, with examples:
 #
-#   bash_prompt_net
-#   # override NICs added to prompt table, can shorten startup time
+#   # NICs added to the prompt table, displaying the IPv4 address of each
+#   # setting bash_prompt_net_devs="" implies no IP address lookups
+#   # non-existent NICs are ignored
 #
-#      $ bash_prompt_net="eth0 LAN"
+#      $ bash_prompt_net_devs="eth0 LAN"
 #
+#   # enable or disable Internet IPv4 lookup for diplsay in prompt table
+#   # this affects function `bash_prompt_table_variable_add_Internet` which
+#   # is called once during bash startup
+#
+#      $ bash_prompt_do_Internet_lookup=true
+#      $ bash_prompt_do_Internet_lookup=false
+#
+
+# the end-user should adjust this list to their host
+bash_prompt_net_devs="eth0 eth1 eth2 em0 enp0s3 Ethernet LAN wm0"
+bash_prompt_do_Internet_lookup=true
