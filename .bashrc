@@ -547,14 +547,20 @@ function bash_path_print () {
 # ordinal and character copied from https://unix.stackexchange.com/a/92448/21203
 function ordinal () {
     # pass a single-character string, prints the numeric ordinal value
-    [[ ${#} -eq 1 ]] || return 1
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function ordinal requires passing one argument" >&2
+        return 1
+    fi
 
     (LC_CTYPE=C command -p printf '%d' "'${1:0:1}")
 }
 
 function character () {
     # pass a number, prints the character
-    [[ ${#} -eq 1 ]] || return 1
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function character requires passing one argument" >&2
+        return 1
+    fi
 
     [ "${1}" -lt 256 ] || return 1
     command -p printf "\\$(printf '%03o' "${1}")"
@@ -790,7 +796,10 @@ function line_count () {
     #
     # portable line count, not reliant on `wc -l`
     #
-    [[ ${#} -eq 0 ]] || return 1
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function line_count takes no arguments; data is read from stdin" >&2
+        return 1
+    fi
     declare line=
     declare -i count=0
     while read -rs line; do
@@ -804,8 +813,10 @@ function line_count () {
 
 function am_i_root {
     # is the current user root?
-
-    [[ "${#}" -eq 0 ]] || return 2
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function am_i_root takes no arguments" >&2
+        return 2
+    fi
 
     if ! ${__bash_installed_id}; then
         return 2
@@ -820,7 +831,11 @@ function am_i_root {
 function env_sorted () {
     # Print environment sorted
     # Accounts for newlines within environment values (common in $LS_COLORS)
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function env_sorted takes no arguments" >&2
+        return 1
+    fi
 
     if ! bash_installed env sort tr; then
         return 1
@@ -844,7 +859,11 @@ __bashrc_env_0_original=$(env_sorted)
 function var_is_array () {
     # each arg is the name of a variable, return 0 if all args are type array,
     # else return 1
-    [[ ${#} -gt 0 ]] || return 1
+    if [[ ${#} -eq 0 ]]; then
+        echo "ERROR function var_is_array must be passed a variable name" >&2
+        return 1
+    fi
+
 
     declare arg=
     for arg in "${@}"; do
@@ -859,7 +878,10 @@ function var_is_array () {
 function var_is_int () {
     # each arg is the name of a variable, return 0 if all args are type integer,
     # else return 1
-    [[ ${#} -gt 0 ]] || return 1
+    if [[ ${#} -eq 0 ]]; then
+        echo "ERROR function var_is_int must be passed a variable name" >&2
+        return 1
+    fi
 
     declare arg=
     for arg in "${@}"; do
@@ -873,7 +895,10 @@ function var_is_int () {
 
 function bash_print_var () {
     # print the value of a variable
-    [[ ${#} -eq 1 ]] || return 1
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function bash_print_var must be passed one variable name" >&2
+        return 1
+    fi
 
     declare -r var=${1}
     if [[ ! "${!var+x}" ]]; then
@@ -1127,7 +1152,10 @@ function bash_print_bash_vars () {
 function bash_print_colors () {
     # print different colors and color codes
 
-    [[ ${#} -eq 0 ]] || return 1
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_print_colors takes no arguments" >&2
+        return 1
+    fi
 
     # borrowed from https://misc.flogisoft.com/bash/tip_colors_and_formatting
     echo -e "Normal \\\e[1m\e[1mBold\e[0m"
@@ -1189,8 +1217,12 @@ function bash_print_colors () {
 }
 
 function bash_print_colors_using_msgcat () {
-    # print different colors
-    [[ ${#} -eq 0 ]] || return 1
+    # print different colors using `msgcat` if it is installed
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_print_colors_using_msgcat takes no arguments" >&2
+        return 1
+    fi
+
 
     if ! bash_installed msgcat; then
         echo "Requires msgcat program which is part of the gettext package" >&2
@@ -1285,15 +1317,25 @@ function __bashrc_prompt_color_eval () {
 __bashrc_prompt_color_eval
 
 function bash_color_force_enable () {
-    # user helper
-    [[ ${#} -eq 0 ]] || return 1
+    # user helper to enable color
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_color_force_enable takes no arguments" >&2
+        return 1
+    fi
+
     bash_color_force=true
     __bashrc_prompt_color_eval
 }
 
 function bash_color_force_disable () {
-    # user helper
-    [[ ${#} -eq 0 ]] || return 1
+    # user helper to disable color
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_color_force_disable takes no arguments" >&2
+        return 1
+    fi
+
     bash_color_force=false
     __bashrc_prompt_color_eval
 }
@@ -1857,7 +1899,11 @@ function bash_prompt_table_variable_insert_after_var () {
     # insert variable $1 to $bash_prompt_table_variables_array after var $2
     # if var $2 is not found, fallback to inserting $1 at index $3
     # if index $3 is not given then append to end of array
-    [[ ${#} -eq 2 ]] || return 1
+
+    if [[ ${#} -lt 2 ]]; then
+        echo "ERROR function bash_prompt_table_variable_insert_after_var takes at least two arguments" >&2
+        return 1
+    fi
 
     declare -r var=${1}
     declare -r after_var=${2}
@@ -1883,7 +1929,11 @@ function bash_prompt_table_variable_insert_after_var () {
 
 function bash_prompt_table_variable_rm () {
     # remove a variable(s) from the $bash_prompt_table_variables_array
-    [[ ${#} -ge 1 ]] || return 1
+
+    if [[ ${#} -lt 1 ]]; then
+        echo "ERROR function bash_prompt_table_variable_rm takes at least one argument" >&2
+        return 1
+    fi
 
     declare -i i=0
     declare -i ret=0
@@ -1919,7 +1969,11 @@ function bash_prompt_table_variable_print () {
 
 function bash_prompt_table_variable_print_values () {
     # print $bash_prompt_table_variables_array with values
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_variable_print_values takes at least one argument" >&2
+        return 1
+    fi
 
     if ! bash_installed column; then
         return 1
@@ -2189,20 +2243,32 @@ function __bashrc_prompt_table () {
 
 function bash_prompt_table_enable() {
     # public-facing 'on' switch for prompt table
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_enable takes no arguments" >&2
+        return 1
+    fi
 
     __bashrc_prompt_table_enable=true
 }
 function bash_prompt_table_disable() {
     # public-facing 'off' switch for prompt table
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_disable takes no arguments" >&2
+        return 1
+    fi
 
     __bashrc_prompt_table_enable=false
 }
 
 function bash_prompt_table_print () {
     # Print the *entire* prompt table.
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_print takes no arguments" >&2
+        return 1
+    fi
 
     __bashrc_prompt_table --no-truncate
 }
@@ -2252,13 +2318,21 @@ function __bashrc_prompt_git_info_do () {
 
 function bash_prompt_git_info_enable() {
     # public-facing 'on' switch for prompt git info
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_git_info_enable takes no arguments" >&2
+        return 1
+    fi
 
     __bashrc_prompt_git_info_enable=true
 }
 function bash_prompt_git_info_disable() {
     # public-facing 'off' switch for prompt git info
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_git_info_disable takes no arguments" >&2
+        return 1
+    fi
 
     __bashrc_prompt_git_info_enable=false
 }
@@ -2285,7 +2359,11 @@ function bash_prompt_git_info_mountpoint_array_add () {
     # this function will reduce the path to it's mount point, then add that
     # mount point path to the private global
     # $__bashrc_prompt_git_info_mountpoint_array
-    [[ ${#} -gt 0 ]] || return 1
+
+    if [[ ${#} -eq 0 ]]; then
+        echo "ERROR function bash_prompt_git_info_mountpoint_array_add takes at least one argument" >&2
+        return 1
+    fi
 
     declare -i ret=0
     declare arg=
@@ -2330,7 +2408,11 @@ bash_prompt_git_info_mountpoint_array_add "/"
 
 function bash_prompt_git_info_mountpoint_array_print () {
     # print the array one entry per line
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_git_info_mountpoint_array_print takes no arguments" >&2
+        return 1
+    fi
 
     declare -i len_array=${#__bashrc_prompt_git_info_mountpoint_array[@]}
     declare -i i=0
@@ -2782,7 +2864,12 @@ function __bashrc_alias_greps_color () {
 
 function net_dev_exists () {
     # if network device $1 exists then return 0 else return 1
-    [[ ${#} -eq 1 ]] || return 1
+
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function net_dev_exists takes one argument" >&2
+        return 1
+    fi
+
     declare -r name=${1}
 
     # WSL
@@ -2814,7 +2901,11 @@ function print_dev_IPv4_Linux () {
     # outputs of either `ip` or `ifconfig`
     # TODO: this function should use only bash built-in features, rely less on
     #       `grep`, `tr`, `cut`
-    [[ ${#} -eq 1 ]] || return 1
+
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function print_dev_IPv4_Linux takes one argument" >&2
+        return 1
+    fi
 
     if ! bash_installed ip && ! bash_installed ifconfig; then
         return 1
@@ -2929,7 +3020,11 @@ function print_dev_IPv4_Win () {
     #    Gateway Metric:                    1
     #    InterfaceMetric:                   20
     #
-    [[ ${#} -eq 1 ]] || return 1
+
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function print_dev_IPv4_Win takes one argument" >&2
+        return 1
+    fi
 
     # WSL
     declare -r netsh_WSL='/mnt/c/Windows/System32/netsh.exe'
@@ -2971,7 +3066,11 @@ function print_dev_IPv4_Win () {
 function bash_print_host_IPv4() {
     # given $1 is an URI host, print the IPv4 address (DNS A Record)
     # with the help of `host` or `dig`
-    [[ ${#} -eq 1 ]] || return 1
+
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function bash_print_host_IPv4 takes one argument" >&2
+        return 1
+    fi
 
     declare -r host_=${1}
     declare out=
@@ -3019,7 +3118,11 @@ function bash_print_host_IPv4() {
 function bash_print_internet_IPv4() {
     # attempt to print the Internet-facing IPv4 address of this host using
     # helper website 'ifconfig.me'
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_print_internet_IPv4 takes no arguments" >&2
+        return 1
+    fi
 
     declare -r ihost="ifconfig.me"
     declare ipv4=
@@ -3061,7 +3164,11 @@ function print_dev_IPv4 () {
 
 function print_IPv4_DNS_PTR () {
     # given $1 IPv4 address, print the first DNS PTR Record found
-    [[ ${#} -eq 1 ]] || return 1
+
+    if [[ ${#} -ne 1 ]]; then
+        echo "ERROR function print_IPv4_DNS_PTR takes one argument" >&2
+        return 1
+    fi
 
     if ! bash_installed dig head; then
         return 1
@@ -3090,7 +3197,11 @@ function bash_prompt_table_variable_add_net_IPv4 () {
     #
     #    $ bash_prompt_table_variable_add_net_IPv4 'eth1' 5
     #
-    [[ ${#} -ge 1 ]] || return 1
+
+    if [[ ${#} -lt 1 ]]; then
+        echo "ERROR function bash_prompt_table_variable_add_net_IPv4 takes at least one argument" >&2
+        return 1
+    fi
 
     # before printing debug message check if the device exists, avoid confusing messages at login
     if ! net_dev_exists "${1}"; then
@@ -3124,7 +3235,18 @@ function bash_prompt_table_variable_add_Internet () {
     #
     # add the Internet-facing IPv4 to $bash_prompt_table_variables_array
     #
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_variable_add_Internet takes no arguments" >&2
+        return 1
+    fi
+
+    # user must define $bash_prompt_do_Internet_lookup=true to enable this
+    # function. This can be a time-consuming function where many things can go
+    # wrong, so `bash_prompt_do_Internet_lookup` allows an easy "off" switch.
+    if [[ "${bash_prompt_do_Internet_lookup+x}" = "true" ]]; then
+        return 0
+    fi
     echo "${PS4-}bash_prompt_table_variable_add_Internet" >&2
 
     declare ipv4=
@@ -3141,7 +3263,12 @@ function bash_prompt_table_variable_add_IPv4_Name () {
     # $1 is IPv4 for DNS reverse lookup
     # $2 is variable name to add to the $bash_prompt_table_variables_array
     #
-    [[ ${#} -eq 2 ]] || return 1
+
+    if [[ ${#} -ne 2 ]]; then
+        echo "ERROR function bash_prompt_table_variable_add_IPv4_Name takes two arguments" >&2
+        return 1
+    fi
+
     echo "${PS4-}bash_prompt_table_variable_add_IPv4_Name '${1}' '${2}'" >&2
 
     declare -r ipv4=${1}
@@ -3161,7 +3288,11 @@ function bash_prompt_table_variable_add_IPv4_Name () {
 function bash_prompt_table_variable_add_Internet_IPv4_Name () {
     # wrapper for adding Internet-related variables to
     # $bash_prompt_table_variables_array
-    [[ ${#} -eq 0 ]] || return 1
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_variable_add_Internet_IPv4_Name takes no arguments" >&2
+        return 1
+    fi
 
     if ! bash_prompt_table_variable_add_Internet; then
         return 1
