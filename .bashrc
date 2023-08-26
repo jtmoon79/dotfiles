@@ -3594,9 +3594,8 @@ ${b}screen Settings:${boff}
     fi
 
     # echo $PATHs
-    declare -r paths=$(__bashrc_tab_str "${PATH}" 1 ':')
-    # shellcheck disable=SC2155
-    declare -ir paths_c=$(echo -n "${paths}" | line_count)
+    declare -r paths=$(__bashrc_tab_str "$(bash_path_print)")
+    declare -ir paths_c=$(echo -n "${PATH}" | line_count)
     echo -e "\
 ${b}Paths (×${paths_c}):${boff}
 
@@ -3642,11 +3641,14 @@ ${b}Special Features of this .bashrc:${boff}
 }
 
 function bash_about () {
-    # wrapper to call `__bash_about` with pager `less` (presuming `less` is
-    # installed)
-    # TODO: use preferred $PAGER, fallback to `less`
-    if installed less; then
+    # wrapper to call `__bash_about` with user's $PAGER
+    # fallback to `less`, `more`, or nothing
+    if [[ ! -z "${PAGER-}" ]]; then
+        __bash_about "${@}" | "${PAGER}"
+    elif installed less; then
         __bash_about "${@}" | command -p less -SR
+    elif installed more; then
+        __bash_about "${@}" | command -p more
     else
         __bash_about "${@}"
     fi
