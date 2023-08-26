@@ -3,6 +3,9 @@
 # add customizations to this file
 # this file will not be overwritten by `dotfiles/install.sh`
 #
+# this file is sourced by `.bashrc.builtins.post` after that file has
+# nearly completed
+#
 # list of useful functions defined in `dotfiles/.bashrc`, with examples:
 #
 #   bash_prompt_table_variable_add
