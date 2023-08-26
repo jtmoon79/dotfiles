@@ -288,28 +288,18 @@ __bashrc_path_add_from_file "${__bashrc_path_dir_bashrc}/.bash_paths"
 # add NIC IPv4
 #
 
-# if user has defined special override $bash_prompt_net, use that. User can save
+# if user has defined special override $bash_prompt_net_devs, use that. User can save
 # some startup time this way.
 # presumed to be one entry per space, e.g. string value 'eth0 em1' is two NICs
 # BUG: does not handle spaces in names, e.g. "Local Area Connection"
-# XXX: $bash_prompt_net override should allow NICs with spaces in the name
-#      e.g. "Local Area Connection"
-if [[ -n "${bash_prompt_net+x}" ]]; then
-    __bashrc_net_interface_=
-    for __bashrc_net_interface_ in ${bash_prompt_net}; do
-        bash_prompt_table_variable_add_net_IPv4 "${__bashrc_net_interface_}"
+# TODO: $bash_prompt_net_devs override should allow NICs with spaces in the name
+#       e.g. "Local Area Connection"
+if [[ -n "${bash_prompt_net_devs+x}" ]]; then
+    __bashrc_net_dev_=
+    for __bashrc_net_dev_ in ${bash_prompt_net_devs}; do
+        bash_prompt_table_variable_add_net_IPv4 "${__bashrc_net_dev_}"
     done
-    unset __bashrc_net_interface_
-else
-    # if $bash_prompt_net not defined then try adding known common NIC names
-    bash_prompt_table_variable_add_net_IPv4 eth0
-    bash_prompt_table_variable_add_net_IPv4 em0
-    bash_prompt_table_variable_add_net_IPv4 eth1
-    bash_prompt_table_variable_add_net_IPv4 eth2
-    bash_prompt_table_variable_add_net_IPv4 enp0s3
-    bash_prompt_table_variable_add_net_IPv4 Ethernet
-    bash_prompt_table_variable_add_net_IPv4 LAN
-    bash_prompt_table_variable_add_net_IPv4 "Local Area Connection"
+    unset __bashrc_net_dev_
 fi
 bash_prompt_table_variable_add_Internet_IPv4_Name
 
@@ -321,7 +311,7 @@ __bashrc_os_release_out_=
 if [[ "${__bashrc_OperatingSystem-}" != '' ]]; then
     OS_RELEASE=${__bashrc_OperatingSystem}
     bash_prompt_table_variable_add OS_RELEASE
-elif __bashrc_os_release_out_=$(bash_OS); then
+elif __bashrc_os_release_out_=$(bash_print_OS); then
     OS_RELEASE=${__bashrc_os_release_out_}
     bash_prompt_table_variable_add OS_RELEASE
 fi
