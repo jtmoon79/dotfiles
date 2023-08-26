@@ -4,6 +4,7 @@
 # changes to this file will be overwritten by `dotfiles/install.sh`
 #
 # this file makes actual customizations
+# this file is sourced by `.bashrc` after that file is nearly completed
 #
 # Features:
 #   - attempts to set LOCALE to best choice of UTF-8
