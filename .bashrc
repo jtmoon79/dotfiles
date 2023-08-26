@@ -6,6 +6,15 @@
 # Install this file and neighboring dotfiles using instructions in
 #     https://github.com/jtmoon79/dotfiles/blob/master/install.sh
 #
+# The order of bash initialization files is:
+# 1. .bash_profile (called by bash)
+# 2. .bash_profile.local (sourced by .bash_profile near the middle)
+# 3. .bashrc (sourced by .bash_profile near the end)
+# 4. .bashrc.local (sourced by this .bashrc near the end)
+# 5. .bash_aliases (sourced by this .bashrc near the end)
+# 6. .bashrc.builtins.post (sourced by this .bashrc near the end)
+# 7. .bashrc.local.post (sourced by this .bashrc near the end)
+#
 # These dotfiles are intended for anyone that has to login to many different
 # Unix-based hosts very often. The `install.sh` script (URL above) is fast to
 # run.
