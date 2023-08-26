@@ -3595,7 +3595,8 @@ ${b}screen Settings:${boff}
 
     # echo $PATHs
     declare -r paths=$(__bashrc_tab_str "$(bash_path_print)")
-    declare -ir paths_c=$(echo -n "${PATH}" | line_count)
+    declare -ir paths_c=$(echo -n "${PATH//:/
+}" | line_count)
     echo -e "\
 ${b}Paths (×${paths_c}):${boff}
 
