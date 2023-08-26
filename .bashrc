@@ -1083,7 +1083,7 @@ function bash_print_bash_vars () {
         __bashrc_initialized_flag
         __bashrc_kernel_name_out_
         __bashrc_kernel_out_
-        __bashrc_net_interface_
+        __bashrc_net_dev_
         __bashrc_OperatingSystem
         __bashrc_os_release_out_
         __bashrc_path_dir_bashrc
@@ -2888,6 +2888,13 @@ function net_dev_exists () {
     # MinGW
     declare -r netsh_mingw='/c/Windows/System32/netsh.exe'
 
+    # BUG: on some Red Hat ditributions, CentOS 9 for example, if `ip` is not
+    #      installed a script named `ip` will be invoked, which is an
+    #      interactive script that asks:
+    #          Install package 'iproute' to provide command 'ip'? [N/y]
+    #      the script will wait for user input and either answer, will not
+    #      install `iproute`. Using `command -p` does not prevent this.
+    #      It's annoying.
     # try *nix first
     if bash_installed ip; then
         command -p ip address show dev "${name}" &>/dev/null && return 0
