@@ -449,6 +449,97 @@ function __bashrc_path_add_from_file () {
     fi
 }
 
+# print the path nicely for the user, highlight errors
+function bash_path_print () {
+    # print $PATH, one path per line, colorize according to any issues
+    # test with
+    #    (set -eu; mkdir /tmp/a; chmod 444 /tmp/a; PATH="$PATH:foo:bar:foo:/usr/bin:/usr/sbin:/usr/sbin:/usr/sbin:/usr/bin:/NO/EXIST:/usr/bin/sh:/tmp/a:/tmp/a" export PATH; bash_path_print)
+    # $1 may be --verbose or -v
+    #
+    # the user can pipe to `column` to print a nice table
+    #    bash_path_print -v | column -t -s $'\t'
+    #
+    declare verbose=false
+    if [[ "${1-}" = '-v' ]] || [[ "${1-}" = '--verbose' ]]; then
+        verbose=true
+    elif [[ "${1-}" != '' ]]; then
+        # passed unknown argument
+        echo "ERROR bash_path_print received unknown argument '${1-}'" >&2
+        return 1
+    fi
+    declare path=
+    # XXX: runtime O(n^2)
+    # TODO: if bash 4 then use associative array which I presume is O(1) lookup
+    declare -a paths=( '' )
+    declare color_end='\e[0m'
+    if ! ${__bashrc_color}; then
+        # color is turned off so do not print color escape codes
+        color_end=''
+    fi
+    while read -r path; do
+        # does it exist and is it a directory?
+        declare exists=false
+        declare is_dir=false
+        declare is_exec=false
+        if [[ -e "${path}" ]]; then
+            exists=true
+            if [[ -d "${path}" ]]; then
+                is_dir=true
+                if [[ -x "${path}" ]]; then
+                    is_exec=true
+                fi
+            fi
+        fi
+        # check if current $path is the same `realpath` as any prior $path
+        declare duplicate=false
+        declare p2=
+        for p2 in "${paths[@]}"; do
+            if [[ "${p2}" = '' ]]; then
+                continue
+            fi
+            declare rp1=$(realpath "${path}" 2>/dev/null)
+            declare rp2=$(realpath "${p2}" 2>/dev/null)
+            if [[ "${rp1}" = "${rp2}" ]]; then
+                duplicate=true
+                break
+            fi
+        done
+        paths[${#paths[@]}]=${path}
+
+        # print $path with colors depending upon what was found out about it
+        declare color=''
+        if ! ${exists}; then
+            # red
+            color='\e[31m'
+        fi
+        if ${exists} && ! ${is_dir}; then
+            # light yellow
+            color='\e[93m'
+        fi
+        if ${exists} && ${is_dir} && ! ${is_exec}; then
+            # magenta
+            color='\e[35m'
+        fi
+        declare color_duplicate=''
+        if ${duplicate}; then
+            # dim
+            color_duplicate='\e[2m'
+        fi
+        if ! ${__bashrc_color}; then
+            # color is turned off so do not print color escape codes
+            color=''
+            color_duplicate=''
+        fi
+        echo -ne "    ${color}${color_duplicate}${path}${color_end}"
+        if ${verbose}; then
+            echo -en "\texists? ${exists},\tis dir? ${is_dir},\tis executable? ${is_exec},\tduplicate? ${duplicate}"
+        fi
+        echo
+
+    done < <(echo "${PATH//:/
+}")
+}
+
 # ============================
 # other misc. helper functions
 # ============================
