@@ -560,8 +560,10 @@ function character () {
     command -p printf "\\$(printf '%03o' "${1}")"
 }
 
-function bash_OS () {
-    # print a useful string about this OS
+function bash_print_OS () {
+    # Print a useful string about this OS
+    # If nothing can be determined the return 1.
+    #
     # See also
     #    http://whatsmyos.com/
     #    https://stackoverflow.com/a/27776822/471376
@@ -570,13 +572,14 @@ function bash_OS () {
     #       what it is aiming to do.
     # TODO: this function could use bash variable $OSTYPE
     # TODO: not tested adequately on non-Linux
-    [[ ${#} -eq 0 ]] || return 1
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_print_OS takes no arguments" >&2
+        return 1
+    fi
 
-    declare -r uname_=$(uname -s) 2>/dev/null
-    declare os='unknown'
-    declare os_flavor=''
-    if [[ -e /proc/version ]]; then
-        os='Linux'
+    declare -r uname_=$(uname -s) 2>/dev/null || true
+    if [[ -e /proc/version ]] || [[ "${OSTYPE+x}" = 'linux-gnu' ]]; then
+        # most likely a Linux
         if [[ -r /etc/os-release ]]; then
             # five examples of /etc/os-release (can you spot the bug?)
             #
@@ -648,18 +651,18 @@ function bash_OS () {
                 echo -n "${PRETTY_NAME-${NAME-} ${VERSION_ID-}}"
             ) && return
         elif [[ -r /etc/centos-release ]]; then
-            # file /etc/centos-release from older CentOS
+            # example file `/etc/centos-release` from older CentOS
             #
             #    CentOS release 6.7 (Final)
             #
-            if bash_installed tr head; then
-                cat /etc/centos-release | head -n1 | tr -d '\n'
-            else
-                cat /etc/centos-release
-            fi
+            declare centos=$(cat /etc/centos-release 2>/dev/null)
+            # delete everything after the first newline
+            echo -n "${centos%%
+*}"
             return
         elif [[ -r /etc/redhat-release ]]; then
-             os_flavor='Redhat '
+             echo -n 'Redhat Linux'
+             return
         elif [[ "${uname_}" == CYGWIN* ]]; then
             echo -n "${uname_}"
             return
@@ -673,7 +676,28 @@ function bash_OS () {
             echo -n "Mac ${uname_}"
             return
         fi
-        echo -n "${os_flavor}${os}"
+    fi
+
+    # most likely a Unix
+
+    declare sysctl_output=
+    # BSD specific system call (AFAIK)
+    if sysctl_output=$(sysctl -n kern.osrelease kern.ostype 2>/dev/null); then
+        # try `uname` again because `uname -s -r` only shows `NetBSD 9.3`
+        # whereas Linux kernels include the arch in the `-r` output
+        uname_=$(uname -s -r -p 2>/dev/null)
+        if [[ "${uname_}" != '' ]]; then
+            echo -n "${uname_%%
+*}"
+            return
+        fi
+        echo -n "${sysctl_output}"
+        return
+    fi
+
+    # program unique to Solaris (AFAIK)
+    if bash_installed showrev; then
+        echo -n 'Solaris Unix'
         return
     fi
 
@@ -682,24 +706,10 @@ function bash_OS () {
         return
     fi
 
-    os='Unix'
-    declare sysctl_output
-    if sysctl_output=$(sysctl -n kern.osrelease kern.ostype 2>/dev/null); then
-        os_flavor='BSD '
-        if [[ "${sysctl_output}" = 'FreeBSD' ]]; then
-            os_flavor='FreeBSD '
-        fi
-        echo -n "${os_flavor}${os}"
-        return
-    fi
-
-    if bash_installed showrev; then
-        os_flavor='Solaris '
-    fi
-    echo -n "${os_flavor}${os}"
+    return 1
 }
 
-__bashrc_OperatingSystem=$(bash_OS)
+__bashrc_OperatingSystem=$(bash_print_OS) || true
 
 function __bashrc_replace_str () {
     # Portable string replacement not reliant on `sed`, `awk`
@@ -1260,7 +1270,7 @@ function __bashrc_prompt_color_eval () {
             # a case would tend to support setf rather than setaf.)
             __bashrc_prompt_color=true
             __bashrc_color_apps=true
-        elif [[ -x /usr/bin/tput ]] && [[ "${__bashrc_OperatingSystem}" =~ 'FreeBSD' ]]; then
+        elif [[ -x /usr/bin/tput ]] && [[ "${__bashrc_OperatingSystem-}" =~ 'FreeBSD' ]]; then
            # tput setaf always fails in FreeBSD 10, just try for color
            # https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=210858
             __bashrc_prompt_color=true
@@ -1436,7 +1446,7 @@ fi
 __bashrc_title_set_prev=$(echo -ne '\e[22t' 2>/dev/null)  # global
 __bashrc_title_set_TTY=$(tty 2>/dev/null || true)  # global, set once
 __bashrc_title_set_kernel=${__bashrc_title_set_kernel-kernel $(uname -r)}  # global
-__bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem}}  # global
+__bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem-}}  # global
 #__bashrc_title_set_hostname=$(hostname)
 #__bashrc_title_set_user=${USER-}
 
