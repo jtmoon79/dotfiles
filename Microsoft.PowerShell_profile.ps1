@@ -94,7 +94,7 @@ New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAc
 # prompt improvement
 #
 
-function prompt {
+function global:Prompt {
     Write-Host "[$Env:username@$Env:computername] " -NoNewline
     Write-Host "$($PWD.ProviderPath) " -ForegroundColor Cyan -NoNewline
     Write-Host "`nPS>" -NoNewline
