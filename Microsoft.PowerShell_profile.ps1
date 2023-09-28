@@ -9,6 +9,14 @@
 #     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile $PROFILE -Verbose
 #
 
+# add $PSCommandPath if does not exist (for Powershell prior to 3.0)
+if ($PSCommandPath -eq $null) {
+    function GetPSCommandPath() {
+        return $MyInvocation.PSCommandPath;
+    }
+    $PSCommandPath = GetPSCommandPath
+}
+
 if ( (Get-Variable -Name PSCommandPath -Scope Global -ErrorAction SilentlyContinue) -and ($PSCommandPath -ne $null) -and ($PSCommandPath -ne "") ) {
     Write-Host "$PSCommandPath" -ForegroundColor Yellow
 }
@@ -16,23 +24,23 @@ Write-Host "$(Get-Process -Id $PID | Select-Object -ExpandProperty path) " -None
 Write-Host $PSVersionTable.PSVersion -ForegroundColor Magenta
 
 # turn off check; the check can take tens of seconds on a slow network
-$env:POWERSHELL_UPDATECHECK = 'Off'
+$env:POWERSHELL_UPDATECHECK = "Off"
 
 # force UTF-8
 # from https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_character_encoding?view=powershell-7.2
 # https://archive.ph/S8uhz
-$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
-$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+$PSDefaultParameterValues["Out-File:Encoding"] = "utf8"
+$PSDefaultParameterValues['*:Encoding'] = "utf8"
 
 #
 # custom functions
 #
 
-function Print-Env {
+function Print-Env() {
     Get-ChildItem env:* | Sort-Object Name
 }
 
-function Print-Path
+function Print-Path()
 {
     $env:Path -replace ";","`n"
 
@@ -74,6 +82,77 @@ function Format-XML ([xml]$xml, $indent=2)
     $XmlWriter.Flush()
     $StringWriter.Flush()
     Write-Output $StringWriter.ToString()
+}
+
+function Update-This-Profile()
+{
+    $default_profile_content = '# Profile stub
+
+$env:POWERSHELL_UPDATECHECK = "Off"
+
+# add $PSCommandPath if does not exist (for Powershell prior to 3.0)
+if ($PSCommandPath -eq $null) {
+    function GetPSCommandPath() {
+        return $MyInvocation.PSCommandPath;
+    }
+    $PSCommandPath = GetPSCommandPath
+}
+
+if ( (Get-Variable -Name PSCommandPath -Scope Global -ErrorAction SilentlyContinue) -and ($PSCommandPath -ne $null) -and ($PSCommandPath -ne "") ) {
+    Write-Host "$PSCommandPath" -ForegroundColor Yellow
+}
+'
+
+    $uri = 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/Microsoft.PowerShell_profile.ps1'
+
+    if (($null -ne $env:OneDrive) -and (Test-Path "${env:OneDrive}\Documents")) {
+        $path_root = Resolve-Path -Path "${env:OneDrive}\Documents"
+    } elseif (Test-Path "${env:USERPROFILE}\Documents") {
+        $path_root = Resolve-Path -Path "${env:USERPROFILE}\Documents"
+    } else {
+        Write-Warning "Unable to install profile; no Documents directories found"
+        return
+    }
+
+    # PowerShell 6 and greater
+    # see https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-6.0
+
+    $path = "${path_root}\PowerShell"
+    if (-not (Test-Path -Path $path)) {
+        New-Item -ItemType Directory -Path $path -Verbose
+    }
+    $pathItem = Get-Item -Path $path
+    # Current User, Current Host
+    $path1 = Join-Path -Path $pathItem -ChildPath "Microsoft.PowerShell_profile.ps1"
+    $path_profile6 = $path1.Clone()
+    Write-Host "create main profile '$path1'" -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $uri -OutFile $path1 -Verbose
+    # Current User, All Hosts
+    $path1 = Join-Path -Path $pathItem -ChildPath "Profile.ps1"
+    Write-Host "create '$path1'" -ForegroundColor Yellow
+    Set-Content -Path $path1 -Value $default_profile_content -Verbose
+
+    # PowerShell 5
+    # https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-5.1
+
+    $path = "${path_root}\WindowsPowershell"
+    if (-not (Test-Path -Path $path)) {
+        New-Item -ItemType Directory -Path $path -Verbose
+    }
+    $pathItem = Get-Item -Path $path
+    # Current User, Current Host
+    $path1 = Join-Path -Path $pathItem -ChildPath "Microsoft.PowerShell_profile.ps1"
+    Write-Host "create '$path1'" -ForegroundColor Yellow
+    Set-Content -Path $path1 -Value $default_profile_content -Verbose
+    # run the main profile from this profile
+    $profile_addon = '
+# import the main profile
+& "' + $path_profile6 + '"'
+    Add-Content -Path $path1 -Value $profile_addon -Verbose
+    # Current User, All Hosts
+    $path1 = Join-Path -Path $pathItem -ChildPath "Profile.ps1"
+    Write-Host "create '$path1'" -ForegroundColor Yellow
+    Set-Content -Path $path1 -Value $default_profile_content -Verbose
 }
 
 #
