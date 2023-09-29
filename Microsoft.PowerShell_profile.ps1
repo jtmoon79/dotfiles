@@ -277,10 +277,16 @@ function global:Prompt {
 # something like an alias but really a shortcut to Windows Linux Subsystem vim application
 #
 
-# run Linux "vim" like it's a "normal" Windows program
 function vim ($File){
+    <#
+    .SYNOPSIS
+        Wrapper to run Linux "vim" like it's a "normal" Windows program.
+    #>
+    if (-not (Test-CommandExists "bash.exe")) {
+        return
+    }
     $File = $File -replace "\\", "/"
-    bash -c vim -- '$File'
+    bash.exe -c vim -- "'$File'"
 }
 
 # Import the Chocolatey Profile that contains the necessary code to enable
