@@ -95,7 +95,35 @@ function Get-CmdletAlias ($cmdlet_name) {
     Get-Alias | `
       Where-Object -FilterScript {$_.Definition -like "$cmdlet_name"} | `
         Format-Table -Property Definition,Name -AutoSize
-  }
+}
+
+Function Test-CommandExists
+{
+    <#
+    .SYNOPSIS
+        Test if a command exists.
+    .EXAMPLE
+        Test-CommandExists notepad++.exe
+    .PARAMETER command
+        The command to search for as a string.
+    #>
+    # copied from https://devblogs.microsoft.com/scripting/use-a-powershell-function-to-see-if-a-command-exists/
+    Param ($command)
+    $oldPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'stop'
+    try {
+        if(Get-Command $command){
+            return $true
+        }
+    }
+    Catch {
+        return $false
+    }
+    Finally {
+        $ErrorActionPreference = $oldPreference
+    }
+    return $false
+}
 
 # inspired from from https://devblogs.microsoft.com/powershell/format-xml/
 function Format-XML ($xml_file, $indent=2)
