@@ -1,7 +1,8 @@
 # .bash_profile.local
 #
 # add customizations to this file
-# this file will not be overwritten by `dotfiles/install.sh`
+# this file will not be overwritten by `dotfiles/install.sh` or
+# `bash_update_dots`
 #
 # list of useful variables defined in `dotfiles/.bashrc.builtins.post`, with examples:
 #

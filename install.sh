@@ -3,6 +3,9 @@
 # Install other . (dot) files in a one-liner, for fast setup of a new Unix user shell environment.
 # Parameters passed to this script will be passed as options to wget or curl, prefers curl.
 #
+# This will not overwrite `.bashrc.local.pre`, `.bashrc.local.post`,
+# `.bash_profile.local`
+#
 # To run this file:
 #
 #    curl --silent 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install.sh' | bash --norc --noprofile

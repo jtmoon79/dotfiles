@@ -1,7 +1,8 @@
 # .bashrc.local.pre
 #
 # add customizations to this file
-# this file will not be overwritten by `dotfiles/install.sh`
+# this file will not be overwritten by `dotfiles/install.sh` or
+# `bash_update_dots`
 #
 # this file is sourced by `.bashrc` at the start of it's execution
 #

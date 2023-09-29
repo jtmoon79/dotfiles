@@ -1,7 +1,8 @@
 # .bashrc.local.post
 #
 # add customizations to this file
-# this file will not be overwritten by `dotfiles/install.sh`
+# this file will not be overwritten by `dotfiles/install.sh` or
+# `bash_update_dots`
 #
 # this file is sourced by `.bashrc.builtins.post` after that file has
 # nearly completed
