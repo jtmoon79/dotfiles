@@ -1,12 +1,13 @@
 # Microsoft_PowerShell_profile.ps1
 #
-# custom Windows Powershell profile
+# Custom Windows Powershell profile
 #
-# copy this file to ${env:HOMEPATH}\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
-# this file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
+# Install this with helper script `install-profile.ps1`
 #
-# copy to your local $PROFILE
-#     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile $PROFILE -Verbose
+# Or manually copy this file to ${env:HOMEPATH}\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+#
+# This file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
+#
 #
 
 # add $PSCommandPath if does not exist (for Powershell prior to 3.0)
@@ -17,7 +18,7 @@ if ($PSCommandPath -eq $null) {
     $PSCommandPath = GetPSCommandPath
 }
 
-if ( (Get-Variable -Name PSCommandPath -Scope Global -ErrorAction SilentlyContinue) -and ($PSCommandPath -ne $null) -and ($PSCommandPath -ne "") ) {
+if ((Get-Variable -Name PSCommandPath -Scope Global -ErrorAction SilentlyContinue) -and ($PSCommandPath -ne $null) -and ($PSCommandPath -ne "")) {
     Write-Host "$PSCommandPath" -ForegroundColor Yellow
 }
 Write-Host "$(Get-Process -Id $PID | Select-Object -ExpandProperty path) " -Nonewline -ForegroundColor Magenta
@@ -37,43 +38,79 @@ $PSDefaultParameterValues['*:Encoding'] = "utf8"
 #
 
 function Print-Env() {
+    <#
+    .SYNOPSIS
+        Print environment variables nicely.
+    #>
     Get-ChildItem env:* | Sort-Object Name
 }
 
 function Print-Path()
 {
+    <#
+    .SYNOPSIS
+        Print `PATH` environment variable in a more readable manner.
+        Include Registry settings that effect Path searches.
+    #>
     $env:Path -replace ";","`n"
 
-    reg query "HKEY_CURRENT_USER\Environment" /f Path /t REG_EXPAND_SZ
-    reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /f Path /t REG_EXPAND_SZ
+    reg.exe QUERY "HKEY_CURRENT_USER\Environment" /f Path /t REG_EXPAND_SZ
+    reg.exe QUERY "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /f Path /t REG_EXPAND_SZ
 }
 
 # handy functions "Where am I?"
 # ripped from https://stackoverflow.com/a/43643346
  function PSCommandPath() {
+    <#
+    .SYNOPSIS
+        Which powershell is running?
+    #>
     return $PSCommandPath
 }
 function ScriptName() {
+    <#
+    .SYNOPSIS
+        The name of the running script.
+    #>
     return $MyInvocation.ScriptName
 }
 function MyCommandName() {
     return $MyInvocation.MyCommand.Name
 }
 function MyCommandDefinition() {
-    # Begin of MyCommandDefinition()
-    # Note: output of this script shows the contents of this function, not the execution result
     return $MyInvocation.MyCommand.Definition
-    # End of MyCommandDefinition()
 }
 function MyInvocationPSCommandPath() {
     return $MyInvocation.PSCommandPath
 }
 
-# copied from https://devblogs.microsoft.com/powershell/format-xml/
-# use it like:
-#      Format-XML ([xml](cat C:\path\to\file.xml)) -indent 4
-function Format-XML ([xml]$xml, $indent=2)
+function Get-CmdletAlias ($cmdlet_name) {
+    <#
+    .SYNOPSIS
+        Lists aliases for a cmdlet
+    .EXAMPLE
+        Get-CmdletAlias dir
+    #>
+    # copied from https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.3
+    Get-Alias | `
+      Where-Object -FilterScript {$_.Definition -like "$cmdlet_name"} | `
+        Format-Table -Property Definition,Name -AutoSize
+  }
+
+# inspired from from https://devblogs.microsoft.com/powershell/format-xml/
+function Format-XML ($xml_file, $indent=2)
 {
+    <#
+    .SYNOPSIS
+        Print an XML file nicely.
+    .PARAMETER xml_file
+        the file path
+    .PARAMETER indent
+        count of leading blank spaces
+    .EXAMPLE
+        Format-XML "C:\path\to\file.xml" -indent 4
+    #>
+    $xml = [xml](Get-Content -Path $xml_file)
     $StringWriter = New-Object System.IO.StringWriter
     $XmlWriter = New-Object System.XMl.XmlTextWriter $StringWriter
     $xmlWriter.Formatting = "indented"
@@ -86,6 +123,34 @@ function Format-XML ([xml]$xml, $indent=2)
 
 function Update-This-Profile()
 {
+    <#
+    .SYNOPSIS
+        Update all Powershell profiles from remote source.
+    .EXAMPLE
+        Update-This-Profile
+    .DESCRIPTION
+        Update all Powershell profiles from the remote source
+        https://github.com/jtmoon79/dotfiles/
+        to the latest version.
+        This will create or overwrite the Powershell profiles to locations used
+        by new Powershell versions (Powershell 6 and newer) and old Powershell
+        versions (Powershell 5 and older).
+
+        Only one Powershell profile with modifying behavior will be created
+        at `Documents/PowerShell/Microsoft.PowerShell_profile.ps1` for
+        local sytem User profile and OneDrive profile if available.
+
+        Other profile locations merely acknowledge they have run, i.e.
+        `Documents/PowerShell/Profile.ps1`.
+
+        The user can provide a local profile at
+        `Documents/PowerShell/Microsoft.PowerShell_profile.local.ps1`
+        will be imported by
+        `Documents/PowerShell/Microsoft.PowerShell_profile.ps1`.
+        The local profile will not be overwritten by this function.
+        $PROFILE_LOCAL will refer to that file if it exists.
+    #>
+
     $default_profile_content = '# Profile stub
 
 $env:POWERSHELL_UPDATECHECK = "Off"
@@ -164,7 +229,7 @@ try
     # two ways to create an alias, New-Alias and New-Item
     New-Alias -Name "which" -Description "just like Unix!" -Value Get-Command -Option Constant -ErrorAction SilentlyContinue
     # XXX: how to set Source property to "Microsoft.PowerShell_profile.ps1" ? This can be seen as a column in the `alias` command
-    New-Item -path alias:np -value c:\windows\notepad.exe -ErrorAction SilentlyContinue | Out-Null
+    New-Item -path alias:np -value 'c:\windows\notepad.exe' -ErrorAction SilentlyContinue | Out-Null
 } catch {}
 
 New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAction SilentlyContinue
@@ -196,7 +261,20 @@ function vim ($File){
 # for `choco` will not function.
 # See https://ch0.co/tab-completion for details.
 $ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
-if (Test-Path($ChocolateyProfile)) {
+if (Test-Path -Path $ChocolateyProfile) {
     Write-Host "Import-Module `"${ChocolateyProfile}`"" -ForegroundColor Yellow
     Import-Module "$ChocolateyProfile"
+}
+
+# check for a local profile to run
+$PROFILE_DIR = $(Get-Item -Path $PROFILE).Directory
+if (($null -ne $PROFILE_DIR) -and (Test-Path -Path $PROFILE_DIR)) {
+    $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR -ChildPath "Microsoft_PowerShell_profile.local.ps1"
+    if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
+        Write-Host ". '$PROFILE_LOCAL'" -ForegroundColor DarkYellow
+        . $PROFILE_LOCAL
+    } else {
+        Write-Host "No local profile found at '$($PROFILE_LOCAL)'" -ForegroundColor DarkGray
+        Remove-Variable -Name "PROFILE_LOCAL"
+    }
 }
