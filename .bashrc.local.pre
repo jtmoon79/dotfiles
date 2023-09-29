@@ -1,0 +1,13 @@
+# .bashrc.local.pre
+#
+# add customizations to this file
+# this file will not be overwritten by `dotfiles/install.sh`
+#
+# this file is sourced by `.bashrc` at the start of it's execution
+#
+# for example, you may want to set `LANG`, and `LC_ALL` which will
+# then be used in `.bashrc.builtins.post`
+#
+#     export LANG="es_MX.utf8"
+#     export LC_ALL="es_MX.utf8"
+#

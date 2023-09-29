@@ -75,6 +75,10 @@ function install_dotfiles() {
         download "./${fn}" "${URL}/${fn}" "${@-}"
         fn='.bashrc.builtins.post'
         download "./${fn}" "${URL}/${fn}" "${@-}"
+        fn='.bashrc.local.pre'
+        if ! [[ -e "${fn}" ]]; then
+            download "./${fn}" "${URL}/${fn}" "${@-}"
+        fi
         fn='.bashrc.local.post'
         if ! [[ -e "${fn}" ]]; then
             download "./${fn}" "${URL}/${fn}" "${@-}"
@@ -101,6 +105,10 @@ function install_dotfiles() {
         fn='.bashrc.builtins.post'
         download "./${fn}" "${URL}/${fn}"
         fn='.bashrc.local.post'
+        if ! [[ -e "${fn}" ]]; then
+            download "./${fn}" "${URL}/${fn}"
+        fi
+        fn='.bashrc.local.pre'
         if ! [[ -e "${fn}" ]]; then
             download "./${fn}" "${URL}/${fn}"
         fi

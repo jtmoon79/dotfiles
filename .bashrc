@@ -10,10 +10,12 @@
 # 1. .bash_profile (called by bash)
 # 2. .bash_profile.local (sourced by .bash_profile near the middle)
 # 3. .bashrc (sourced by .bash_profile near the end)
-# 4. .bashrc.local (sourced by this .bashrc near the end)
-# 5. .bash_aliases (sourced by this .bashrc near the end)
-# 6. .bashrc.builtins.post (sourced by this .bashrc near the end)
-# 7. .bashrc.local.post (sourced by this .bashrc near the end)
+# 4. .bashrc.local.pre (sourced by this .bashrc near the beginning)
+# 5. .bashrc.local (sourced by this .bashrc near the end; only for
+#    backwards-compatiblity)
+# 6. .bash_aliases (sourced by this .bashrc near the end)
+# 7. .bashrc.builtins.post (sourced by this .bashrc near the end)
+# 8. .bashrc.local.post (sourced by this .bashrc near the end)
 #
 # These dotfiles are intended for anyone that has to login to many different
 # Unix-based hosts very often. The `install.sh` script (URL above) is fast to
@@ -23,8 +25,8 @@
 # Other features like colors and command timer tracking have since been added.
 #
 # This file defines useful fuctions, makes very few changes. See neighboring
-# files `.bashrc.builtins.post` and `.bashrc.local.post` which make shell
-# changes.
+# files `.bashrc.builtins.post`, `.bashrc.local.pre`, and
+# `.bashrc.local.post` which make shell changes.
 # This file is expected to be sourced by it's companion `.bash_profile`.
 # This file mostly creates new functions and private variables. These can be
 # used to customize the shell in neighboring files `.bashrc.builtins.post`,
@@ -3384,6 +3386,24 @@ function __bash_update_dotbashrc () {
     chmod -v ugo-w './.bashrc'
 }
 
+function __bash_update_dotbashrc_local_pre () {
+    declare -r bashrc_local='.bashrc.local.pre'
+    declare -r bashrc_local_path="./${bashrc_local}"
+    if [[ -e "${bashrc_local_path}" ]]; then
+        return
+    fi
+    __bashrc_download_from_to "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/${bashrc_local}" "${bashrc_local_path}" "${@}"
+}
+
+function __bash_update_dotbashrc_local_post () {
+    declare -r bashrc_local='.bashrc.local.post'
+    declare -r bashrc_local_path="./${bashrc_local}"
+    if [[ -e "${bashrc_local_path}" ]]; then
+        return
+    fi
+    __bashrc_download_from_to "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/${bashrc_local}" "${bashrc_local_path}" "${@}"
+}
+
 function __bash_update_dotbashrc_builtins () {
     chmod -v +w './.bashrc.builtins.post'
     __bashrc_download_from_to 'https://raw.githubusercontent.com/jtmoon79/dotfiles/master/.bashrc.builtins.post' './.bashrc.builtins.post' "${@}"
@@ -3399,6 +3419,8 @@ function __bash_update_dotbash_logout () {
 function __bash_update_dotbash () {
     # install bash dot files in a one-liner
     __bash_update_dotbash_profile "${@}" \
+        && __bash_update_dotbashrc_local_pre "${@}" \
+        && __bash_update_dotbashrc_local_post "${@}" \
         && __bash_update_dotbashrc "${@}" \
         && __bash_update_dotbashrc_builtins "${@}" \
         && __bash_update_dotbash_logout "${@}"
