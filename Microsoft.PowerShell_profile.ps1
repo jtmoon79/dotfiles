@@ -262,6 +262,20 @@ try
 
 New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAction SilentlyContinue
 
+function vim ($File){
+    <#
+    .SYNOPSIS
+        Wrapper to run Linux "vim" like it's a "normal" Windows program.
+
+        Something like an alias but really a shortcut to Windows Linux Subsystem vim application
+    #>
+    if (-not (Test-CommandExists "bash.exe")) {
+        return
+    }
+    $File = $File -replace "\\", "/"
+    bash.exe -c vim -- "'$File'"
+}
+
 #
 # prompt improvement
 #
@@ -271,22 +285,6 @@ function global:Prompt {
     Write-Host "$($PWD.ProviderPath) " -ForegroundColor Cyan -NoNewline
     Write-Host "`nPS>" -NoNewline
     return " "  # must return something or else powershell will automatically tack on "PS>"
-}
-
-#
-# something like an alias but really a shortcut to Windows Linux Subsystem vim application
-#
-
-function vim ($File){
-    <#
-    .SYNOPSIS
-        Wrapper to run Linux "vim" like it's a "normal" Windows program.
-    #>
-    if (-not (Test-CommandExists "bash.exe")) {
-        return
-    }
-    $File = $File -replace "\\", "/"
-    bash.exe -c vim -- "'$File'"
 }
 
 # Import the Chocolatey Profile that contains the necessary code to enable
