@@ -2,7 +2,7 @@
 #
 # install the Microsoft.PowerShell_profile.ps1 and run `Update-This-Profile`
 #
-# Run this:
+# Run this script remotely:
 #
 #    $(Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/install-profile.ps1").Content | powershell -NoLogo -NoProfile -NonInteractive -Command -
 
