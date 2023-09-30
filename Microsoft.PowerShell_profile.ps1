@@ -37,15 +37,16 @@ $PSDefaultParameterValues['*:Encoding'] = "utf8"
 # custom functions
 #
 
-function Print-Env() {
+function global:Print-Env() {
     <#
     .SYNOPSIS
         Print environment variables nicely.
     #>
     Get-ChildItem env:* | Sort-Object Name
 }
+Write-Host "defined Print-Env()" -ForegroundColor DarkGreen
 
-function Print-Path()
+function global:Print-Path()
 {
     <#
     .SYNOPSIS
@@ -57,34 +58,44 @@ function Print-Path()
     reg.exe QUERY "HKEY_CURRENT_USER\Environment" /f Path /t REG_EXPAND_SZ
     reg.exe QUERY "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /f Path /t REG_EXPAND_SZ
 }
+Write-Host "defined Print-Path()" -ForegroundColor DarkGreen
 
 # handy functions "Where am I?"
 # ripped from https://stackoverflow.com/a/43643346
- function PSCommandPath() {
+ function global:PSCommandPath() {
     <#
     .SYNOPSIS
         Which powershell is running?
     #>
     return $PSCommandPath
 }
-function ScriptName() {
+Write-Host "defined PSCommandPath()" -ForegroundColor DarkGreen
+
+function global:ScriptName() {
     <#
     .SYNOPSIS
         The name of the running script.
     #>
     return $MyInvocation.ScriptName
 }
-function MyCommandName() {
+Write-Host "defined Print-Path" -ForegroundColor DarkGreen
+
+function global:MyCommandName() {
     return $MyInvocation.MyCommand.Name
 }
-function MyCommandDefinition() {
+Write-Host "defined MyCommandName()" -ForegroundColor DarkGreen
+
+function global:MyCommandDefinition() {
     return $MyInvocation.MyCommand.Definition
 }
-function MyInvocationPSCommandPath() {
+Write-Host "defined MyCommandDefinition()" -ForegroundColor DarkGreen
+
+function global:MyInvocationPSCommandPath() {
     return $MyInvocation.PSCommandPath
 }
+Write-Host "defined MyInvocationPSCommandPath()" -ForegroundColor DarkGreen
 
-function Get-CmdletAlias ($cmdlet_name) {
+function global:Get-CmdletAlias ($cmdlet_name) {
     <#
     .SYNOPSIS
         Lists aliases for a cmdlet
@@ -96,8 +107,9 @@ function Get-CmdletAlias ($cmdlet_name) {
       Where-Object -FilterScript {$_.Definition -like "$cmdlet_name"} | `
         Format-Table -Property Definition,Name -AutoSize
 }
+Write-Host "defined Get-CmdletAlias(cmdlet_name)" -ForegroundColor DarkGreen
 
-Function Test-CommandExists
+Function global:Test-CommandExists
 {
     <#
     .SYNOPSIS
@@ -124,9 +136,10 @@ Function Test-CommandExists
     }
     return $false
 }
+Write-Host "defined Test-CommandExists()" -ForegroundColor DarkGreen
 
 # inspired from from https://devblogs.microsoft.com/powershell/format-xml/
-function Format-XML ($xml_file, $indent=2)
+function global:Format-XML ($xml_file, $indent=2)
 {
     <#
     .SYNOPSIS
@@ -148,8 +161,9 @@ function Format-XML ($xml_file, $indent=2)
     $StringWriter.Flush()
     Write-Output $StringWriter.ToString()
 }
+Write-Host "defined Format-XML(xml_file, indent=2)" -ForegroundColor DarkGreen
 
-function Update-This-Profile()
+function global:Update-This-Profile()
 {
     <#
     .SYNOPSIS
@@ -247,6 +261,7 @@ if ( (Get-Variable -Name PSCommandPath -Scope Global -ErrorAction SilentlyContin
     Write-Host "create '$path1'" -ForegroundColor Yellow
     Set-Content -Path $path1 -Value $default_profile_content -Verbose
 }
+Write-Host "defined Update-This-Profile()" -ForegroundColor DarkGreen
 
 #
 # custom aliases
@@ -262,7 +277,7 @@ try
 
 New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAction SilentlyContinue
 
-function vim ($File){
+function global:vim ($File){
     <#
     .SYNOPSIS
         Wrapper to run Linux "vim" like it's a "normal" Windows program.
@@ -286,6 +301,7 @@ function global:Prompt {
     Write-Host "`nPS>" -NoNewline
     return " "  # must return something or else powershell will automatically tack on "PS>"
 }
+Write-Host "defined Prompt" -ForegroundColor DarkGreen
 
 # Import the Chocolatey Profile that contains the necessary code to enable
 # tab-completions to function for `choco`.
