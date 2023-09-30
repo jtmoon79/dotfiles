@@ -1,13 +1,13 @@
 # Microsoft_PowerShell_profile.ps1
 #
-# Custom Windows Powershell profile
+# Custom Windows Powershell profile.
 #
-# Install this with helper script `install-profile.ps1`
+# Install this with helper script `install-profile.ps1`.
+# See intructions within that script.
 #
 # Or manually copy this file to ${env:HOMEPATH}\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
 #
 # This file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
-#
 #
 
 # add $PSCommandPath if does not exist (for Powershell prior to 3.0)
