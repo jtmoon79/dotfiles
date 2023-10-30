@@ -41,7 +41,7 @@ function global:Print-Env() {
     .SYNOPSIS
         Print environment variables nicely.
     #>
-    Get-ChildItem env:* | Sort-Object Name
+    Get-ChildItem env:* | Select-Object -Property Name,Value | Sort-Object Name
 }
 Write-Host "defined Print-Env()" -ForegroundColor DarkGreen
 
