@@ -60,11 +60,12 @@ function global:Print-Path()
 Write-Host "defined Print-Path()" -ForegroundColor DarkGreen
 
 # handy functions "Where am I?"
-# ripped from https://stackoverflow.com/a/43643346
  function global:PSCommandPath() {
     <#
     .SYNOPSIS
         Which powershell is running?
+
+        Inspired from https://stackoverflow.com/a/43643346
     #>
     return $PSCommandPath
 }
@@ -98,10 +99,11 @@ function global:Get-CmdletAlias ($cmdlet_name) {
     <#
     .SYNOPSIS
         Lists aliases for a cmdlet
+
+        Inspired from https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.3
     .EXAMPLE
         Get-CmdletAlias dir
     #>
-    # copied from https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles?view=powershell-7.3
     Get-Alias | `
       Where-Object -FilterScript {$_.Definition -like "$cmdlet_name"} | `
         Format-Table -Property Definition,Name -AutoSize
@@ -113,12 +115,13 @@ Function global:Test-CommandExists
     <#
     .SYNOPSIS
         Test if a command exists.
+
+        Inspired from https://devblogs.microsoft.com/scripting/use-a-powershell-function-to-see-if-a-command-exists/
     .EXAMPLE
         Test-CommandExists notepad++.exe
     .PARAMETER command
         The command to search for as a string.
     #>
-    # copied from https://devblogs.microsoft.com/scripting/use-a-powershell-function-to-see-if-a-command-exists/
     Param ($command)
     $oldPreference = $ErrorActionPreference
     $ErrorActionPreference = 'stop'
@@ -137,12 +140,13 @@ Function global:Test-CommandExists
 }
 Write-Host "defined Test-CommandExists()" -ForegroundColor DarkGreen
 
-# inspired from from https://devblogs.microsoft.com/powershell/format-xml/
 function global:Format-XML ($xml_file, $indent=2)
 {
     <#
     .SYNOPSIS
         Print an XML file nicely.
+
+        Inspired from from https://devblogs.microsoft.com/powershell/format-xml/
     .PARAMETER xml_file
         the file path
     .PARAMETER indent
@@ -163,6 +167,14 @@ function global:Format-XML ($xml_file, $indent=2)
 Write-Host "defined Format-XML(xml_file, indent=2)" -ForegroundColor DarkGreen
 
 function Print-ProcessTree() {
+    <#
+    .SYNOPSIS
+        Print an all processes as an indented tree.
+
+        From https://superuser.com/a/1817805/167043
+    .EXAMPLE
+        Print-ProcessTree
+    #>
 
     function Get-ProcessAndChildProcesses($Level, $Process) {
         "{0}[{1,-5}] [{2}]" -f ("  " * $Level), $Process.ProcessId, $Process.Name
