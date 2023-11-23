@@ -121,26 +121,14 @@ Function global:Test-CommandExists
     <#
     .SYNOPSIS
         Test if a command exists.
-
-        Inspired from https://devblogs.microsoft.com/scripting/use-a-powershell-function-to-see-if-a-command-exists/
     .EXAMPLE
         Test-CommandExists notepad++.exe
     .PARAMETER command
         The command to search for as a string.
     #>
     Param ($command)
-    $oldPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'stop'
-    try {
-        if(Get-Command $command){
-            return $true
-        }
-    }
-    Catch {
-        return $false
-    }
-    Finally {
-        $ErrorActionPreference = $oldPreference
+    if (Get-Command -Name $command -ErrorAction SilentlyContinue) {
+        return $true
     }
     return $false
 }
