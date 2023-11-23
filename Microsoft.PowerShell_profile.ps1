@@ -165,7 +165,7 @@ function Print-ProcessTree() {
     .SYNOPSIS
         Print an all processes as an indented tree.
 
-        From https://superuser.com/a/1817805/167043
+        Modified from https://superuser.com/a/1817805/167043
     .EXAMPLE
         Print-ProcessTree
     #>
