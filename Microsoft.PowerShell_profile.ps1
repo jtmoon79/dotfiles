@@ -50,12 +50,18 @@ function global:Print-Path()
     <#
     .SYNOPSIS
         Print `PATH` environment variable in a more readable manner.
-        Include Registry settings that effect Path searches.
+        Include Registry settings that define the path.
     #>
+    Write-Host "env:Path" -ForegroundColor Yellow
     $env:Path -replace ";","`n"
 
-    reg.exe QUERY "HKEY_CURRENT_USER\Environment" /f Path /t REG_EXPAND_SZ
-    reg.exe QUERY "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /f Path /t REG_EXPAND_SZ
+    Write-Host "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path" -ForegroundColor Yellow
+    $(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" -Name "Path").Path `
+        -replace ";","`n"
+
+    Write-Host ""
+    Write-Host "HKCU:\Environment\Path" -ForegroundColor Yellow
+    $(Get-ItemProperty -Path "HKCU:\Environment" -Name "Path").Path -replace ";","`n"
 }
 Write-Host "defined Print-Path()" -ForegroundColor DarkGreen
 
