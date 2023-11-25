@@ -375,7 +375,7 @@ Write-Host "defined Prompt" -ForegroundColor DarkGreen
 # Be aware that if you are missing these lines from your profile, tab completion
 # for `choco` will not function.
 # See https://ch0.co/tab-completion for details.
-$ChocolateyProfile = "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+$ChocolateyProfile = "${env:ChocolateyInstall}\helpers\chocolateyProfile.psm1"
 if (Test-Path -Path $ChocolateyProfile) {
     Write-Host "Import-Module `"${ChocolateyProfile}`"" -ForegroundColor Yellow
     Import-Module "$ChocolateyProfile"
