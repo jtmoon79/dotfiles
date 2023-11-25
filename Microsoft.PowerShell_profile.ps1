@@ -331,10 +331,42 @@ function global:vim ($File){
 #
 
 function global:Prompt {
-    Write-Host "[$Env:username@$Env:computername] " -NoNewline
-    Write-Host "$($PWD.ProviderPath) " -ForegroundColor Cyan -NoNewline
-    Write-Host "`nPS>" -NoNewline
-    return " "  # must return something or else powershell will automatically tack on "PS>"
+    <#
+    .SYNOPSIS
+        The singular global Prompt function.
+        TODO: presumes dark background, need to handle light color background
+    #>
+    if ($null -ne $global:_PromptStopwatch) {
+        $p4a = '({0,6:n2}s) ' -f $global:_PromptStopwatch.Elapsed.TotalSeconds
+    } else {
+        $global:_PromptStopwatch = [System.Diagnostics.Stopwatch]::new()
+        $p4a = '() '
+    }
+    $p1 = ${env:username}
+    $p2 = '@'
+    $p3 = "${env:computername} "
+    $p4 = Get-Date -Format "[yyyy-MM-ddTHH:mm:ss] "
+    $len1234 = $p1.Length + $p2.Length + $p3.Length + $p4.Length + $p4a.Length
+    $p5 = $PWD.ProviderPath
+    Write-Host $p1 -ForegroundColor Blue -NoNewline
+    Write-Host $p2 -NoNewline
+    Write-Host $p3 -ForegroundColor Blue -NoNewline
+    Write-Host $p4 -ForegroundColor Green -NoNewline
+    Write-Host $p4a -ForegroundColor Gray -NoNewline
+    $lenC = $Host.UI.RawUI.WindowSize.Width + 1
+    if ($lenC -lt 0) {
+        $lenC = 2
+    }
+    if ($lenC -gt $len1234 + $p5.Length) {
+        Write-Host $p5 -ForegroundColor White
+    }
+    elseif (($lenC -lt $len1234 + $p5.Length) -and ($lenC -gt $len1234)) {
+        Write-Host ($p5.Substring(0, $lenC - $len1234 - 2) + '…') -ForegroundColor White
+    } else {
+        Write-Host ''
+    }
+    $global:_PromptStopwatch.Restart()
+    # powershell will tack on "PS>" if nothing is returned
 }
 Write-Host "defined Prompt" -ForegroundColor DarkGreen
 
