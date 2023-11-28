@@ -165,7 +165,7 @@ function global:Format-XML ($xml_file, $indent=2)
 }
 Write-Host "defined Format-XML(xml_file, indent=2)" -ForegroundColor DarkGreen
 
-function Print-ProcessTree() {
+function global:Print-ProcessTree() {
     <#
     .SYNOPSIS
         Print an all processes as an indented tree.
