@@ -329,6 +329,7 @@ try
     New-Alias -Name "which" -Description "just like Unix!" -Value Get-Command -Option Constant -ErrorAction SilentlyContinue
     # XXX: how to set Source property to "Microsoft.PowerShell_profile.ps1" ? This can be seen as a column in the `alias` command
     New-Item -path alias:np -value 'c:\windows\notepad.exe' -ErrorAction SilentlyContinue | Out-Null
+    New-Alias -Name "l" -Value Get-ChildItem -Option Constant -ErrorAction SilentlyContinue
 } catch {}
 
 New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAction SilentlyContinue
@@ -388,9 +389,12 @@ function global:Prompt {
     if (($null -ne $global:_PromptAsciiOnly) -and ($True -eq $global:_PromptAsciiOnly)) {
         Write-Host 'PS>' -NoNewLine
     } elseif ($null -ne $global:_PromptLead) {
-        Write-Host "$global:_PromptLead" -NoNewLine
+        Write-Host "$($global:_PromptLead)" -NoNewLine
     } else {
-        Write-Host '𝓟𝒮 ▷' -NoNewLine
+        # TODO: how to print this high-plane unicode? This `prompt` function works fine when defined locally but fails when
+        #       loaded during startup.
+        # Write-Host "𝓟𝒮 ▷ " -NoNewLine
+        Write-Host 'PS>' -NoNewLine
     }
     $global:_PromptStopwatch.Restart()
     # powershell will tack on "PS>" if no string is returned
