@@ -380,8 +380,7 @@ function global:Prompt {
     }
     if ($lenC -gt $len1234 + $p5.Length) {
         Write-Host $p5 -ForegroundColor White
-    }
-    elseif (($lenC -lt $len1234 + $p5.Length) -and ($lenC -gt $len1234)) {
+    } elseif (($lenC -lt $len1234 + $p5.Length) -and ($lenC -gt $len1234)) {
         Write-Host ($p5.Substring(0, $lenC - $len1234 - 2) + '…') -ForegroundColor White
     } else {
         Write-Host ''
@@ -389,7 +388,7 @@ function global:Prompt {
     if (($null -ne $global:_PromptAsciiOnly) -and ($True -eq $global:_PromptAsciiOnly)) {
         Write-Host 'PS>' -NoNewLine
     } elseif ($null -ne $global:_PromptLead) {
-        Write-Host $global:_PromptLead -NoNewLine
+        Write-Host "$global:_PromptLead" -NoNewLine
     } else {
         Write-Host '𝓟𝒮 ▷' -NoNewLine
     }
