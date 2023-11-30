@@ -386,10 +386,19 @@ function global:Prompt {
     } else {
         Write-Host ''
     }
+    if (($null -ne $global:_PromptAsciiOnly) -and ($True -eq $global:_PromptAsciiOnly)) {
+        Write-Host 'PS>' -NoNewLine
+    } elseif ($null -ne $global:_PromptLead) {
+        Write-Host $global:_PromptLead -NoNewLine
+    } else {
+        Write-Host '𝓟𝒮 ▷' -NoNewLine
+    }
     $global:_PromptStopwatch.Restart()
-    # powershell will tack on "PS>" if nothing is returned
+    # powershell will tack on "PS>" if no string is returned
+    return ' '
 }
-Write-Host "defined Prompt" -ForegroundColor DarkGreen
+Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
+Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define your own `$global:_PromptLead)" -ForegroundColor DarkGray
 
 # Import the Chocolatey Profile that contains the necessary code to enable
 # tab-completions to function for `choco`.
