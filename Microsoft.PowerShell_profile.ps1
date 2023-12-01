@@ -344,6 +344,29 @@ function global:vim ($File){
     bash.exe -c vim -- "'$File'"
 }
 
+function global:Unicode {
+    <#
+    .SYNOPSIS
+    Takes in a stream of strings and integers,
+    where integers are unicode codepoints,
+    and concatenates these into valid UTF16.
+
+    Derived from https://stackoverflow.com/a/60825403/471376
+    #>
+    Begin {
+        $output=[System.Text.StringBuilder]::new()
+    }
+    Process {
+        $output.Append($(
+            if ($_ -is [int]) { [char]::ConvertFromUtf32($_) }
+            else { [string]$_ }
+        )) | Out-Null
+    }
+    End {
+        $output.ToString()
+    }
+}
+
 #
 # prompt improvement
 #
