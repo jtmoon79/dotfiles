@@ -360,15 +360,32 @@ function global:Prompt {
         $global:_PromptStopwatch = [System.Diagnostics.Stopwatch]::new()
         $p4a = '() '
     }
-    $p1 = ${env:username}
+    if ($null -eq $global:_PromptFirstRun) {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [Security.Principal.WindowsPrincipal] $identity
+        $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
+        $global:_PromptUserName = $identity.Name
+        $global:_PromptCompName = (Get-CimInstance -ClassName Win32_ComputerSystem).Name
+        $global:_PromptIsAdmin = $principal.IsInRole($adminRole)
+        $global:_PromptFirstRun = $True
+    }
+    # assemble pieces of the first line of the prompt
+    $p1 = $global:_PromptUserName
     $p2 = '@'
-    $p3 = "${env:computername} "
+    $p3 = $global:_PromptCompName
+    $p3b = ' '
     $p4 = Get-Date -Format "[yyyy-MM-ddTHH:mm:ss] "
-    $len1234 = $p1.Length + $p2.Length + $p3.Length + $p4.Length + $p4a.Length
+    $len1234 = $p1.Length + $p2.Length + $p3.Length + $p3b.Length + $p4.Length + $p4a.Length
     $p5 = $PWD.ProviderPath
-    Write-Host $p1 -ForegroundColor Blue -NoNewline
+    # write the prompt pieces with colors
+    if ($global:_PromptIsAdmin) {
+        Write-Host $p1 -ForegroundColor Red -NoNewline
+    } else {
+        Write-Host $p1 -ForegroundColor Blue -NoNewline
+    }
     Write-Host $p2 -NoNewline
     Write-Host $p3 -ForegroundColor Blue -NoNewline
+    Write-Host $p3b -NoNewline
     Write-Host $p4 -ForegroundColor Green -NoNewline
     Write-Host $p4a -ForegroundColor Gray -NoNewline
     $lenC = $Host.UI.RawUI.WindowSize.Width + 1
@@ -378,23 +395,66 @@ function global:Prompt {
     if ($lenC -gt $len1234 + $p5.Length) {
         Write-Host $p5 -ForegroundColor White
     } elseif (($lenC -lt $len1234 + $p5.Length) -and ($lenC -gt $len1234)) {
-        Write-Host ($p5.Substring(0, $lenC - $len1234 - 2) + '…') -ForegroundColor White
+        # XXX: PowerShell 5 prints '…' as 'â€¦'
+        $append = ' '
+        if ($PSVersionTable.PSVersion.Major -ge 7) {
+            $append = '…'
+        }
+        Write-Host ($p5.Substring(0, $lenC - $len1234 - 2) + $append) -ForegroundColor White
     } else {
         Write-Host ''
     }
-    if (($null -ne $global:_PromptAsciiOnly) -and ($True -eq $global:_PromptAsciiOnly)) {
-        Write-Host 'PS>' -NoNewLine
+
+    # The second line of the prompt will not be written here but will be a returned string.
+    # The running powershell process will write this string to the console.
+
+    # check `$global:_PromptAsciiOnly=$True`, then check `$global:_PromptLead`, finally fallback
+    # to returning a default prompt string based on the Version.Major.
+    #
+    # Note that if nothing or an empty string is returned from this function then
+    # powershell will append string 'PS> ' to the prompt.
+    if (
+        ($null -ne $global:_PromptAsciiOnly) `
+        -and ($global:_PromptAsciiOnly -is [System.Boolean]) `
+        -and ($True -eq $global:_PromptAsciiOnly)
+    ) {
+        $global:_PromptStopwatch.Restart()
+        return 'PS>'
     } elseif ($null -ne $global:_PromptLead) {
-        Write-Host "$($global:_PromptLead)" -NoNewLine
+        $global:_PromptStopwatch.Restart()
+        if ('' -eq $global:_PromptLead) {
+            return ' '
+        }
+        return "$($global:_PromptLead)"
     } else {
-        # TODO: how to print this high-plane unicode? This `prompt` function works fine when defined locally but fails when
-        #       loaded during startup.
-        # Write-Host "𝓟𝒮 ▷ " -NoNewLine
-        Write-Host 'PS>' -NoNewLine
+        if ($PSVersionTable.PSVersion.Major -ge 7) {
+            $global:_PromptStopwatch.Restart()
+            # XXX: PowerShell 5 will throw an exception if this high-plane unicode is
+            #      anywhere in this function (yes, defined anywhere in this *function*, not even in
+            #      the returned prompt string itself).
+            #      i.e. cannot have this statement:
+            #          return '𝓟𝒮 ▷ '
+            #      Instead, call `ConvertFromUtf32` to express high-plane unicode chracters
+            #      without embedding them in this function.
+            #      Idea from https://stackoverflow.com/a/60825495/471376
+            #
+            #      Additionally, wrap this `return` in `try` in case it throws in some other
+            #      context that hasn't been tested. In my experiments with Powershell 5 in a few
+            #      contexts, it was surprisingly fragile in the presence of high-plane unicode
+            #      characters.
+            try {
+                # '𝓟𝒮 ▷ '
+                return [char]::ConvertFromUtf32(0x1D4DF) + [char]::ConvertFromUtf32(0x1D4AE) + ' ' `
+                + [char]::ConvertFromUtf32(0x25B7) + ' '
+            }
+            catch {
+                return 'PS> '
+            }
+        } else {
+            $global:_PromptStopwatch.Restart()
+            return 'PS> '
+        }
     }
-    $global:_PromptStopwatch.Restart()
-    # powershell will tack on "PS>" if no string is returned
-    return ' '
 }
 $global:_PromptFirstRun = $null  # reset this global switch
 Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
