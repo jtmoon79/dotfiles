@@ -9,10 +9,11 @@
 # This file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
 #
 
-if ($null -eq $global:_PromptStopwatch) {
-    $global:_PromptStopwatch = [System.Diagnostics.Stopwatch]::new()
-    $global:_PromptStopwatch.Start()
-}
+# Force `$global:_PromptStopwatch` to restart to simulate a new process.
+# Most likely this is a new process but sometimes this $PROFILE needs to be
+# tested (manually run again after the start of the shell) so have it behave liks it's new.
+$global:_PromptStopwatch = [System.Diagnostics.Stopwatch]::new()
+$global:_PromptStopwatch.Start()
 
 # add $PSCommandPath if does not exist (for Powershell prior to 3.0)
 if ($PSCommandPath -eq $null) {
@@ -236,11 +237,6 @@ function global:Update-This-Profile()
     $default_profile_content = `
 '$env:POWERSHELL_UPDATECHECK = "Off"
 
-if ($null -eq $global:_PromptStopwatch) {
-    $global:_PromptStopwatch = [System.Diagnostics.Stopwatch]::new()
-    $global:_PromptStopwatch.Start()
-}
-
 # add $PSCommandPath if does not exist (for Powershell prior to 3.0)
 if ($PSCommandPath -eq $null) {
     function GetPSCommandPath() {
@@ -400,6 +396,7 @@ function global:Prompt {
     # powershell will tack on "PS>" if no string is returned
     return ' '
 }
+$global:_PromptFirstRun = $null  # reset this global switch
 Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
 Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define your own `$global:_PromptLead)" -ForegroundColor DarkGray
 
