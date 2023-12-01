@@ -332,19 +332,23 @@ try
 } catch {}
 
 New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAction SilentlyContinue
+Write-Host "added alias env" -ForegroundColor DarkGreen
 
-function global:vim ($File){
-    <#
-    .SYNOPSIS
-        Wrapper to run Linux "vim" like it's a "normal" Windows program.
+if (-not (Test-CommandExists "bash.exe")) {
+    function global:vim ($File){
+        <#
+        .SYNOPSIS
+            Wrapper to run Linux "vim" like it's a "normal" Windows program.
 
-        Something like an alias but really a shortcut to Windows Linux Subsystem vim application
-    #>
-    if (-not (Test-CommandExists "bash.exe")) {
-        return
+            Something like an alias but really a shortcut to Windows Linux Subsystem vim application
+        #>
+        if (-not (Test-CommandExists "bash.exe")) {
+            return
+        }
+        $File = $File -replace "\\", "/"
+        bash.exe -c vim -- "'$File'"
     }
-    $File = $File -replace "\\", "/"
-    bash.exe -c vim -- "'$File'"
+    Write-Host "defined vim()" -ForegroundColor DarkGreen
 }
 
 function global:Unicode {
