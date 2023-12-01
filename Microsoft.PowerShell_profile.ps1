@@ -391,13 +391,14 @@ function global:Prompt {
         $global:_PromptStopwatch = [System.Diagnostics.Stopwatch]::new()
         $p4a = '() '
     }
+    # only need to define these once, it's presumed they take a bit of work to retrieve
+    # so don't run this on every prompt
     if ($null -eq $global:_PromptFirstRun) {
         $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [Security.Principal.WindowsPrincipal] $identity
-        $adminRole = [Security.Principal.WindowsBuiltInRole]::Administrator
         $global:_PromptUserName = $identity.Name
         $global:_PromptCompName = (Get-CimInstance -ClassName Win32_ComputerSystem).Name
-        $global:_PromptIsAdmin = $principal.IsInRole($adminRole)
+        $global:_PromptIsAdmin = $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
         $global:_PromptFirstRun = $True
     }
     # assemble pieces of the first line of the prompt
