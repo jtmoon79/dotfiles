@@ -506,7 +506,7 @@ if (Test-Path -Path $ChocolateyProfile) {
 # check for a local profile to run
 $PROFILE_DIR = $(Get-Item -Path $PROFILE).Directory
 if (($null -ne $PROFILE_DIR) -and (Test-Path -Path $PROFILE_DIR)) {
-    $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR -ChildPath "Microsoft_PowerShell_profile.local.ps1"
+    $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR -ChildPath "Microsoft.PowerShell_profile.local.ps1"
     if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
         Write-Host ". '$PROFILE_LOCAL'" -ForegroundColor DarkYellow
         . $PROFILE_LOCAL
