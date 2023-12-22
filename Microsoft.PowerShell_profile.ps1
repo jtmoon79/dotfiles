@@ -338,6 +338,13 @@ if ($?) {
     Write-Host "added alias env" -ForegroundColor DarkGreen
 }
 
+if (-not (Get-Command -Name lt -scope global -ErrorAction SilentlyContinue)) {
+    function global:lt {
+        Get-ChildItem @args | Sort-Object -Property LastWriteTime
+    }
+    Write-Host "defined lt" -ForegroundColor DarkGreen
+}
+
 if (-not (Test-CommandExists "bash.exe")) {
     function global:vim ($File){
         <#
