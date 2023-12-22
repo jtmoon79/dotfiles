@@ -319,20 +319,24 @@ Write-Host "defined Update-This-Profile()" -ForegroundColor DarkGreen
 # custom aliases
 #
 
-try
-{
-    # two ways to create an alias, New-Alias and New-Item
-    New-Alias -Name "which" -Description "just like Unix!" -Value Get-Command -Option Constant -ErrorAction SilentlyContinue
+New-Alias -Name "which" -Description "just like Unix!" -Value Get-Command -Scope Global -Option Constant -ErrorAction SilentlyContinue
+if ($?) {
     Write-Host "added alias which" -ForegroundColor DarkGreen
-    # XXX: how to set Source property to "Microsoft.PowerShell_profile.ps1" ? This can be seen as a column in the `alias` command
-    New-Item -path alias:np -value 'c:\windows\notepad.exe' -ErrorAction SilentlyContinue | Out-Null
-    Write-Host "added alias np" -ForegroundColor DarkGreen
-    New-Alias -Name "l" -Value Get-ChildItem -Option Constant -ErrorAction SilentlyContinue
+}
+if (Test-Path 'C:\windows\notepad.exe') {
+    New-Alias -Name "np" -Value 'C:\windows\notepad.exe' -Scope Global -Option Constant -ErrorAction SilentlyContinue
+    if ($?) {
+        Write-Host "added alias np" -ForegroundColor DarkGreen
+    }
+}
+New-Alias -Name "l" -Value Get-ChildItem -Scope Global -Option Constant -ErrorAction SilentlyContinue
+if ($?) {
     Write-Host "added alias l" -ForegroundColor DarkGreen
-} catch {}
-
-New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -ErrorAction SilentlyContinue
-Write-Host "added alias env" -ForegroundColor DarkGreen
+}
+New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -Scope Global -Option Constant -ErrorAction SilentlyContinue
+if ($?) {
+    Write-Host "added alias env" -ForegroundColor DarkGreen
+}
 
 if (-not (Test-CommandExists "bash.exe")) {
     function global:vim ($File){
