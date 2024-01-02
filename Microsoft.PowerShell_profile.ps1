@@ -435,18 +435,11 @@ function global:Prompt {
     if ($lenC -lt 0) {
         $lenC = 2
     }
-    if ($lenC -gt $len1234 + $p5.Length) {
-        Write-Host $p5 -ForegroundColor White
-    } elseif (($lenC -lt $len1234 + $p5.Length) -and ($lenC -gt $len1234)) {
-        # XXX: PowerShell 5 prints '…' as 'â€¦'
-        $append = ' '
-        if ($PSVersionTable.PSVersion.Major -ge 7) {
-            $append = '…'
-        }
-        Write-Host ($p5.Substring(0, $lenC - $len1234 - 2) + $append) -ForegroundColor White
-    } else {
-        Write-Host ''
+    # if full path will not fit onto this terminal row/line then print it on it's own row/line
+    if (-not ($lenC -gt $len1234 + $p5.Length)) {
+        Write-Host '' -ForegroundColor White
     }
+    Write-Host $p5 -ForegroundColor White
 
     # The second line of the prompt will not be written here but will be a returned string.
     # The running powershell process will write this string to the console.
