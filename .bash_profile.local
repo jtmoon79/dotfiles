@@ -20,6 +20,7 @@
 #      $ bash_prompt_do_Internet_lookup=false
 #
 
+# TODO: dynamically generate these default recommended interfaces based on `ip link show`
 # the end-user should adjust this list to their host
 bash_prompt_net_devs="eth0 eth1 eth2 em0 enp0s3 Ethernet LAN wm0"
 bash_prompt_do_Internet_lookup=true
