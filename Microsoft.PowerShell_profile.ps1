@@ -204,6 +204,61 @@ function global:Print-ProcessTree() {
 }
 Write-Host "defined Print-ProcessTree" -ForegroundColor DarkGreen
 
+function global:Print-Console-Colors()
+{
+    <#
+    .SYNOPSIS
+        Print console colors with keywords
+    .EXAMPLE
+        Print-Console-Colors
+    .DESCRIPTION
+        Inspired by https://stackoverflow.com/a/20588680/471376
+    #>
+    $colors = [Enum]::GetValues( [ConsoleColor] )
+    $max = ($colors | foreach { "$_ ".Length } | Measure-Object -Maximum).Maximum
+    foreach( $color in $colors ) {
+        Write-Host (" {0,2} {1,$max} " -f [int]$color,$color) -NoNewline
+        Write-Host "$color" -Foreground $color
+    }
+}
+Write-Host "defined Print-Console-Colors" -ForegroundColor DarkGreen
+
+function global:Get-Log-Color()
+{
+    <#
+    .SYNOPSIS
+        Colorize keywords found in log messages.
+        A "log message" is presumed to be a single line of text.
+    .EXAMPLE
+        Get-Content -wait ./file.log | ForEach { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
+    .DESCRIPTION
+        Add color to log file messages.
+
+        Inspired by https://stackoverflow.com/questions/6132140/colour-coding-get-content-results/29022748#29022748
+    #>
+    Param(
+        [Parameter(Position=0)]
+        [String]$LogMessage
+    )
+
+    process {
+        $a = '(^|\W)'
+        $b = '(\W)'
+        if ($LogMessage -match "${a}DEBUG2${b}") {Return "DarkGray"}
+        elseif ($LogMessage -match "${a}DEBUG1${b}") {Return "DarkGray"}
+        elseif ($LogMessage -match "${a}DEBUG${b}") {Return "Gray"}
+        elseif ($LogMessage -match "${a}TRACE${b}") {Return "DarkGray"}
+        elseif ($LogMessage -match "${a}INFO${b}") {Return "White"}
+        elseif ($LogMessage -match "${a}LAB${b}") {Return "DarkCyan"}
+        elseif ($LogMessage -match "${a}WARNING${b}") {Return "Yellow"}
+        elseif ($LogMessage -match "${a}ERROR${b}") {Return "Red"}
+        elseif ($LogMessage -match "${a}CRITICAL${b}") {Return "Red"}
+        elseif ($LogMessage -match "${a}EXCEPTION${b}") {Return "Red"}
+        else {Return "White"}
+    }
+}
+Write-Host "defined Get-Log-Color" -ForegroundColor DarkGreen
+
 function global:Update-This-Profile()
 {
     <#
@@ -396,6 +451,9 @@ function global:Prompt {
         The singular global Prompt function.
         TODO: presumes dark background, need to handle light color background
     #>
+    # set aside $LASTEXITCODE so it is not lost by proceeding commands
+    $LASTEXITCODE_actual = $global:LASTEXITCODE
+
     if ($null -ne $global:_PromptStopwatch) {
         $p4a = '({0,6:n2}s) ' -f $global:_PromptStopwatch.Elapsed.TotalSeconds
     } else {
@@ -415,10 +473,12 @@ function global:Prompt {
     # assemble pieces of the first line of the prompt
     $p1 = $global:_PromptUserName
     $p2 = '@'
-    $p3 = $global:_PromptCompName
-    $p3b = ' '
+    $p3a = $global:_PromptCompName
+    $p3b = ' ('
+    $p3c = "$LASTEXITCODE_actual"
+    $p3d = ') '
     $p4 = Get-Date -Format "[yyyy-MM-ddTHH:mm:ss] "
-    $len1234 = $p1.Length + $p2.Length + $p3.Length + $p3b.Length + $p4.Length + $p4a.Length
+    $len1234 = $p1.Length + $p2.Length + $p3a.Length + $p3b.Length + $p3c.Length + $p3d.Length + $p4.Length + $p4a.Length
     $p5 = $PWD.ProviderPath
     # write the prompt pieces with colors
     if ($global:_PromptIsAdmin) {
@@ -427,8 +487,14 @@ function global:Prompt {
         Write-Host $p1 -ForegroundColor Blue -NoNewline
     }
     Write-Host $p2 -NoNewline
-    Write-Host $p3 -ForegroundColor Blue -NoNewline
+    Write-Host $p3a -ForegroundColor Blue -NoNewline
     Write-Host $p3b -NoNewline
+    if ($LASTEXITCODE_actual -eq 0) {
+        Write-Host $p3c -NoNewline
+    } else {
+        Write-Host $p3c -ForegroundColor Red -NoNewline
+    }
+    Write-Host $p3d -NoNewline
     Write-Host $p4 -ForegroundColor Green -NoNewline
     Write-Host $p4a -ForegroundColor Gray -NoNewline
     $lenC = $Host.UI.RawUI.WindowSize.Width + 1
@@ -455,10 +521,14 @@ function global:Prompt {
         -and ($True -eq $global:_PromptAsciiOnly)
     ) {
         $global:_PromptStopwatch.Restart()
+        # restore $LASTEXITCODE as the last statement before return
+        $global:LASTEXITCODE = $LASTEXITCODE_actual
         return 'PS>'
     } elseif ($null -ne $global:_PromptLead) {
         $global:_PromptStopwatch.Restart()
         if ('' -eq $global:_PromptLead) {
+            # restore $LASTEXITCODE as the last statement before return
+            $global:LASTEXITCODE = $LASTEXITCODE_actual
             return ' '
         }
         return "$($global:_PromptLead)"
@@ -479,18 +549,27 @@ function global:Prompt {
             #      contexts, it was surprisingly fragile in the presence of high-plane unicode
             #      characters.
             try {
+                # restore $LASTEXITCODE as the last statement before return
+                $global:LASTEXITCODE = $LASTEXITCODE_actual
                 # '𝓟𝒮 ▷ '
                 return [char]::ConvertFromUtf32(0x1D4DF) + [char]::ConvertFromUtf32(0x1D4AE) + ' ' `
                 + [char]::ConvertFromUtf32(0x25B7) + ' '
             }
             catch {
+                # restore $LASTEXITCODE as the last statement before return
+                $global:LASTEXITCODE = $LASTEXITCODE_actual
                 return 'PS> '
             }
         } else {
             $global:_PromptStopwatch.Restart()
+            # restore $LASTEXITCODE as the last statement before return
+            $global:LASTEXITCODE = $LASTEXITCODE_actual
             return 'PS> '
         }
     }
+
+    # restore $LASTEXITCODE as the last statement
+    $global:LASTEXITCODE = $LASTEXITCODE_actual
 }
 $global:_PromptFirstRun = $null  # reset this global switch
 Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
