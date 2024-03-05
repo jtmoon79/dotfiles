@@ -610,9 +610,6 @@ Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define y
 
 # Import the Chocolatey Profile that contains the necessary code to enable
 # tab-completions to function for `choco`.
-# Be aware that if you are missing these lines from your profile, tab completion
-# for `choco` will not function.
-# See https://ch0.co/tab-completion for details.
 try {
     $__chocolatey_module = Get-Module chocolateyProfile
     if ($null -ne $__chocolatey_module) {
