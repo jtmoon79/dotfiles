@@ -445,13 +445,38 @@ Write-Host "defined Unicode()" -ForegroundColor DarkGreen
 # prompt improvement
 #
 
+# first setup `posh-git` prompt settings
+
+$global:__prompt_posh_git_installed = $False
+try {
+    $__poshgit_module = Get-Module posh-git
+    if ($null -ne $__poshgit_module) {
+        Write-Host "Import-Module `"$($__poshgit_module.Path)`"" -ForegroundColor Yellow
+        Import-Module -Name $__poshgit_module.Name -Force
+        # set posh-git prompt settings once
+        $global:GitPromptSettings.WindowTitle = ''
+        $global:GitPromptSettings.DefaultPromptPrefix = "$(Get-PromptConnectionInfo -Format "[{1}@{0}]:")"
+        $global:GitPromptSettings.DefaultPromptSuffix = ''
+        $global:GitPromptSettings.DefaultPromptPath = ''
+        $global:__prompt_posh_git_installed = $True
+    } else {
+        Write-Host "module posh-git not available, install: PowerShellGet\Install-Module posh-git -Scope CurrentUser" -ForegroundColor DarkGray
+    }
+} catch {
+    Write-Warning -Message $_.Exception.Message
+}
+
+# second define the `Prompt` function
+
 function global:Prompt {
     <#
     .SYNOPSIS
         The singular global Prompt function.
+
         TODO: presumes dark background, need to handle light color background
     #>
-    # set aside $LASTEXITCODE so it is not lost by proceeding commands
+
+    # set aside $LASTEXITCODE so it is not lost by proceeding commands/cmdlets
     $LASTEXITCODE_actual = $global:LASTEXITCODE
 
     if ($null -ne $global:_PromptStopwatch) {
@@ -506,6 +531,14 @@ function global:Prompt {
         Write-Host '' -ForegroundColor White
     }
     Write-Host $p5 -ForegroundColor White
+
+    # if posh-git is available then it get's it's own line
+    if ($global:__prompt_posh_git_installed) {
+        $gitp = & $GitPromptScriptBlock
+        if (-not ([String]::IsNullOrWhitespace($gitp))) {
+            Write-Host $gitp
+        }
+    }
 
     # The second line of the prompt will not be written here but will be a returned string.
     # The running powershell process will write this string to the console.
@@ -580,10 +613,15 @@ Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define y
 # Be aware that if you are missing these lines from your profile, tab completion
 # for `choco` will not function.
 # See https://ch0.co/tab-completion for details.
-$ChocolateyProfile = "${env:ChocolateyInstall}\helpers\chocolateyProfile.psm1"
-if (Test-Path -Path $ChocolateyProfile) {
-    Write-Host "Import-Module `"${ChocolateyProfile}`"" -ForegroundColor Yellow
-    Import-Module "$ChocolateyProfile"
+try {
+    $__chocolatey_module = Get-Module chocolateyProfile
+    if ($null -ne $__chocolatey_module) {
+        Write-Host "Import-Module `"$($__chocolatey_module.Path)`"" -ForegroundColor Yellow
+        # XXX: must import by path
+        Import-Module $__chocolatey_module.Path -Force
+    }
+} catch {
+    Write-Warning -Message $_.Exception.Message
 }
 
 # check for a local profile to run
