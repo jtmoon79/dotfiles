@@ -468,6 +468,7 @@ function global:Import-ModuleHelper {
         # search for the module code in some common locations of module installs
         foreach (
             $__try_module_path in (
+                # TODO: iterate over ${env:PSModulePath}
                 ([Environment]::GetFolderPath('MyDocuments') + "/WindowsPowerShell/Modules"),
                 ([Environment]::GetFolderPath('MyDocuments') + "/PowerShell/Modules")
             )
