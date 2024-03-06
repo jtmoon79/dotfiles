@@ -241,7 +241,7 @@ function global:Get-Log-Color()
         [String]$LogMessage
     )
 
-    process {
+    Process {
         $a = '(^|\W)'
         $b = '(\W)'
         if ($LogMessage -match "${a}DEBUG2${b}") {Return "DarkGray"}
@@ -441,24 +441,94 @@ function global:Unicode {
 }
 Write-Host "defined Unicode()" -ForegroundColor DarkGreen
 
+# find a valid script path
+
+function global:Import-ModuleHelper {
+    <#
+    .SYNOPSIS
+    On some systems `Import-Module foo` works and others the module must be implemented using
+    the resolved path to the module code.
+    Users can pass either a module name, e.g. `foo` or a module path, e.g. `C:\Program Files\Thingy\module.psm1`
+    #>
+    Param(
+        [String]$module_name_or_path
+    )
+    Process {
+        Write-Verbose "Get-Module -Name `"$module_name_or_path`""
+        $module = $null
+        try {
+            $module = Get-Module -Name $module_name_or_path -ErrorAction SilentlyContinue
+        } catch {}
+        if ($null -ne $module) {
+            # found the module the easy way
+            Import-Module $module
+            Write-Host "Import-Module `"$($module.Path)`"" -ForegroundColor Yellow
+            return $True
+        }
+        # search for the module code in some common locations of module installs
+        foreach (
+            $__try_module_path in (
+                ([Environment]::GetFolderPath('MyDocuments') + "/WindowsPowerShell/Modules"),
+                ([Environment]::GetFolderPath('MyDocuments') + "/PowerShell/Modules")
+            )
+        ) {
+            try {
+                Write-Verbose "Try `"$__try_module_path`""
+                # check the path is valid
+                $__module_path_r = Resolve-Path -Path $__try_module_path -ErrorAction SilentlyContinue
+                Write-Verbose "Test-Path `"$__module_path_r`""
+                if (-not (($null -ne $__module_path_r) -and (Test-Path $__module_path_r))) {
+                    continue
+                }
+                # the passed value might be a a module file name in a common location
+                $__module_path_psd = $__module_path_r.Path + "\" + $module_name_or_path
+                Write-Verbose "Test-Path `"$__module_path_psd`""
+                if (Test-Path $__module_path_psd) {
+                    Import-Module $__module_path_psd
+                    Write-Host "Import-Module `"$__module_path_psd`"" -ForegroundColor Yellow
+                    return $True
+                }
+                # the passed value might be a a module file name in a common location, sans extension .psm1
+                $__module_path_psd = $__module_path_r.Path + "/" + $module_name_or_path + ".psm1"
+                Write-Verbose "Test-Path `"$__module_path_psd`""
+                if (Test-Path $__module_path_psd) {
+                    Import-Module $__module_path_psd
+                    Write-Host "Import-Module `"$__module_path_psd`"" -ForegroundColor Yellow
+                    return $True
+                }
+            } catch {
+                continue
+            }
+        }
+        # the passed value might be an exact path, try that
+        Write-Verbose "Test-Path `"$module_name_or_path`""
+        if (Test-Path $module_name_or_path) {
+            Import-Module $module_name_or_path
+            Write-Host "Import-Module `"$module_name_or_path`"" -ForegroundColor Yellow
+            return $True
+        }
+    }
+    End {
+        return $False
+    }
+}
+Write-Host "defined Import-ModuleHelper()" -ForegroundColor DarkGreen
+
 #
 # prompt improvement
 #
 
 # first setup `posh-git` prompt settings
 
-$global:__prompt_posh_git_installed = $False
+$global:__imported_posh_git = $False
 try {
-    $__poshgit_module = Get-Module posh-git
-    if ($null -ne $__poshgit_module) {
-        Write-Host "Import-Module `"$($__poshgit_module.Path)`"" -ForegroundColor Yellow
-        Import-Module -Name $__poshgit_module.Name -Force
+    if (Import-ModuleHelper "posh-git") {
         # set posh-git prompt settings once
         $global:GitPromptSettings.WindowTitle = ''
-        $global:GitPromptSettings.DefaultPromptPrefix = "$(Get-PromptConnectionInfo -Format "[{1}@{0}]:")"
+        $global:GitPromptSettings.DefaultPromptPrefix = ''
         $global:GitPromptSettings.DefaultPromptSuffix = ''
         $global:GitPromptSettings.DefaultPromptPath = ''
-        $global:__prompt_posh_git_installed = $True
+        $global:__imported_posh_git = $True
     } else {
         Write-Host "module posh-git not available, install: PowerShellGet\Install-Module posh-git -Scope CurrentUser" -ForegroundColor DarkGray
     }
@@ -533,7 +603,7 @@ function global:Prompt {
     Write-Host $p5 -ForegroundColor White
 
     # if posh-git is available then it get's it's own line
-    if ($global:__prompt_posh_git_installed) {
+    if ($global:__imported_posh_git) {
         $gitp = & $GitPromptScriptBlock
         if (-not ([String]::IsNullOrWhitespace($gitp))) {
             Write-Host $gitp
@@ -608,14 +678,14 @@ $global:_PromptFirstRun = $null  # reset this global switch
 Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
 Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define your own `$global:_PromptLead)" -ForegroundColor DarkGray
 
-# Import the Chocolatey Profile that contains the necessary code to enable
-# tab-completions to function for `choco`.
+# Import the Chocolatey Profile with tab completions for `choco`
+$global:__imported_chocolatey_profile = $False
 try {
-    $__chocolatey_module = Get-Module chocolateyProfile
-    if ($null -ne $__chocolatey_module) {
-        Write-Host "Import-Module `"$($__chocolatey_module.Path)`"" -ForegroundColor Yellow
-        # XXX: must import by path
-        Import-Module $__chocolatey_module.Path -Force
+    if (Import-ModuleHelper "chocolateyProfile") {
+        $global:__imported_chocolatey_profile = $True
+    }
+    elseif (Import-ModuleHelper "${env:ChocolateyInstall}\helpers\chocolateyProfile.psm1") {
+        $global:__imported_chocolatey_profile = $True
     }
 } catch {
     Write-Warning -Message $_.Exception.Message
