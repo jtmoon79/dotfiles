@@ -594,7 +594,7 @@ function bash_print_OS () {
         return 1
     fi
 
-    declare -r uname_=$(uname -s) 2>/dev/null || true
+    declare uname_=$(uname -s) 2>/dev/null || true
     if [[ -e /proc/version ]] || [[ "${OSTYPE+x}" = 'linux-gnu' ]]; then
         # most likely a Linux
         if [[ -r /etc/os-release ]]; then
