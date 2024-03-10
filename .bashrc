@@ -2552,6 +2552,109 @@ function __bashrc_prompt_git_info () {
 }
 
 # --------------------------
+# prompt temperature
+# --------------------------
+
+__bashrc_prompt_temperature_enable=${__bashrc_prompt_temperature_enable-true}  # global
+
+function __bashrc_print_temperature_device_temp () {
+    # print information about the temperature for the passed device
+
+    declare temp=
+    if ! temp=$(cat "${1}" 2>/dev/null); then
+        return 1
+    fi
+    declare -ir temp_c=$((temp / 1000))
+    if [[ ${temp_c} -eq 0 ]]; then
+        return 1
+    fi
+
+    if ${__bashrc_prompt_color}; then
+        if [[ ${temp_c} -gt 60 ]]; then
+            # red
+            echo -en '\033[31m'"${temp_c}"'°C\033[0m'
+        elif [[ ${temp_c} -gt 50 ]]; then
+            # yellow
+            echo -en '\033[33m'"${temp_c}"'°C\033[0m'
+        elif [[ ${temp_c} -gt 40 ]]; then
+            # green
+            echo -en '\033[32m'"${temp_c}"'°C\033[0m'
+        else
+            # cyan
+            echo -en '\033[36m'"${temp_c}"'°C\033[0m'
+        fi
+    else
+        echo -n "${temp_c}°C"
+    fi
+}
+
+# path to temperature device files
+# XXX: backward-compatible array declaration
+__bashrc_temperature_devices_temp[0]=''  # global array
+unset __bashrc_temperature_devices_temp[0]
+# display name for temperature devices
+# XXX: backward-compatible array declaration
+__bashrc_temperature_devices_name[0]=''  # global array
+unset __bashrc_temperature_devices_name[0]
+
+function __bashrc_temperature_devices_find () {
+    # find temperature devices
+    # sets global arrays
+    #
+    # shortens temperature device names to something more human readable
+
+    declare -a devices_temp=()
+    declare -a devices_name=()
+    declare -i i=0
+    for path_temp in /sys/class/thermal/thermal_zone*/temp; do
+        declare path_type="${path_temp%/*}/type"
+        if [[ -r "${path_temp}" ]] && [[ -r "${path_temp}" ]]; then
+            devices_temp[${#devices_temp[@]}]=${path_temp}
+            declare type_=$(cat "${path_type}" 2>/dev/null)
+            if [[ "${type_}" = '' ]]; then
+                devices_name[${#devices_name[@]}]="thermal_zone${i}"
+            elif [[ "${type_}" = 'x86_pkg_temp' ]]; then
+                devices_name[${#devices_name[@]}]="cpu"
+            elif [[ "${type_}" = 'acpitz' ]]; then
+                devices_name[${#devices_name[@]}]="mainbrd"
+            elif [[ "${type_}" = 'pch_skylake' ]]; then
+                devices_name[${#devices_name[@]}]="mainbrd"
+            elif [[ "${type_}" = 'coretemp' ]]; then
+                devices_name[${#devices_name[@]}]="cpu"
+            elif [[ "${type_}" = 'cpu-thermal' ]]; then
+                devices_name[${#devices_name[@]}]="cpu"
+            elif [[ "${type_}" = 'soc-thermal' ]]; then
+                devices_name[${#devices_name[@]}]="mainbrd"
+            elif [[ "${type_}" = 'gpu-thermal' ]]; then
+                devices_name[${#devices_name[@]}]="gpu"
+            else
+                devices_name[${#devices_name[@]}]="${type_}"
+            fi
+        fi
+    done
+    __bashrc_temperature_devices_temp=("${devices_temp[@]}")
+    __bashrc_temperature_devices_name=("${devices_name[@]}")
+}
+
+__bashrc_temperature_devices_find
+
+function __bashrc_prompt_temperature_devices () {
+    # print the temperature devices for the prompt
+
+    if ! ${__bashrc_prompt_temperature_enable-true}; then
+        return 0
+    fi
+
+    declare -i i=0
+    for i in ${!__bashrc_temperature_devices_temp[*]}; do
+        declare path_temp=${__bashrc_temperature_devices_temp[${i}]}
+        declare name=${__bashrc_temperature_devices_name[${i}]}
+        declare temp=$(__bashrc_print_temperature_device_temp "${path_temp}")
+        echo -n " ${name}:${temp}"
+    done
+}
+
+# --------------------------
 # assemble the prompt pieces
 # --------------------------
 
@@ -2597,6 +2700,16 @@ function __bashrc_prompt_set () {
         if am_i_root; then
             color_user=${__bashrc_prompt_color_user_root}
         fi
+        # the last character of the `__bashrc_prompt_jobs_info` overlaps the
+        # next character. So add one extra space after
+        # it only if there is something to show in the following prompt
+        # `__bashrc_prompt_temperature_devices`
+        if ${__bashrc_prompt_temperature_enable-true} \
+           && [[ ${#__bashrc_temperature_devices_temp[@]} -gt 0 ]]; then
+            declare -r temp_lead=' '
+        else
+            declare -r temp_lead=''
+        fi
         # BUG: not putting the $(__bashrc_prompt_table) on it's own line causes oddity when resizing
         #      a window to be smaller;
         #      the next line becomes "attached" to the $(__bashrc_prompt_table) line.
@@ -2618,7 +2731,7 @@ function __bashrc_prompt_set () {
         PS1="
 ${a}${__bashrc_prompt_color_dateline}${b}\\D{${bash_prompt_strftime_format}}\
 ${r}${a}2${b} (${last_command_mesg} ${a}22${b}"'${__bashrc_prompt_timer_show-0}'"${a}22${b}; ${a}22${b}"'$(__bashrc_prompt_last_exit_code_show)'"${a}2${b})${r}\
- "'$(__bashrc_prompt_jobs_info)'"\
+ "'$(__bashrc_prompt_jobs_info)'"${temp_lead}"'$(__bashrc_prompt_temperature_devices)'"\
 ${a}${__bashrc_prompt_color_table_fg}${b}${a}"'${__bashrc_prompt_color_table_bg}'"${b}"'$(__bashrc_prompt_table)'"\
 ${r}${a}32${b}"'${__bashrc_prompt_git_info_show}'"${r}\
 "'${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}'"
@@ -2628,7 +2741,7 @@ ${a}${__bashrc_prompt_color_prompt_bullet}${b}"'${bash_prompt_bullet}'" ${r}"
         PS1='
 \D{'"${bash_prompt_strftime_format}"'}'\
 ' ('"${last_command_mesg}"' ${__bashrc_prompt_timer_show-0}; $(__bashrc_prompt_last_exit_code_show))'\
-' $(__bashrc_prompt_jobs_info)'\
+' $(__bashrc_prompt_jobs_info)'"${temp_lead}"'$(__bashrc_prompt_temperature_devices)'\
 '$(__bashrc_prompt_table)'\
 '${__bashrc_prompt_git_info_show}'\
 '${__bashrc_debian_chroot:+(${__bashrc_debian_chroot-})}
