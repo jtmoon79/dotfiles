@@ -2609,7 +2609,7 @@ function __bashrc_temperature_devices_find () {
     for path_temp in /sys/class/thermal/thermal_zone*/temp; do
         declare path_type="${path_temp%/*}/type"
         if [[ -r "${path_temp}" ]] && [[ -r "${path_temp}" ]]; then
-            devices_temp[${#devices_temp[@]}]=${path_temp}
+            devices_temp[${#devices_temp[@]-}]=${path_temp}
             declare type_=$(cat "${path_type}" 2>/dev/null)
             if [[ "${type_}" = '' ]]; then
                 devices_name[${#devices_name[@]}]="thermal_zone${i}"
@@ -2632,8 +2632,8 @@ function __bashrc_temperature_devices_find () {
             fi
         fi
     done
-    __bashrc_temperature_devices_temp=("${devices_temp[@]}")
-    __bashrc_temperature_devices_name=("${devices_name[@]}")
+    __bashrc_temperature_devices_temp=("${devices_temp[@]-}")
+    __bashrc_temperature_devices_name=("${devices_name[@]-}")
 }
 
 __bashrc_temperature_devices_find
