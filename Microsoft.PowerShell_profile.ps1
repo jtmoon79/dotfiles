@@ -679,7 +679,7 @@ $global:_PromptFirstRun = $null  # reset this global switch
 Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
 Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define your own `$global:_PromptLead)" -ForegroundColor DarkGray
 
-# Import the Chocolatey Profile with tab completions for `choco`
+# Import the Chocolatey Profile with tab completions for `choco` (if available)
 $global:__imported_chocolatey_profile = $False
 try {
     if (Import-ModuleHelper "chocolateyProfile") {
@@ -687,6 +687,21 @@ try {
     }
     elseif (Import-ModuleHelper "${env:ChocolateyInstall}\helpers\chocolateyProfile.psm1") {
         $global:__imported_chocolatey_profile = $True
+    }
+} catch {
+    Write-Warning -Message $_.Exception.Message
+}
+
+# Zoxide set (if available)
+#
+# install with `choco install zoxide` or `cargo install --locked zoxide`
+# see https://github.com/ajeetdsouza/zoxide?tab=readme-ov-file#installation
+$global:__imported_zoxide = $false
+try {
+    $script:zoxide_command = Get-Command 'zoxide.exe' -ErrorAction SilentlyContinue
+    if ($null -ne $script:zoxide_command) {
+        Write-Host "$($script:zoxide_command.Source) init powershell" -ForegroundColor Yellow
+        Invoke-Expression (& { (& $script:zoxide_command init powershell | Out-String) })
     }
 } catch {
     Write-Warning -Message $_.Exception.Message
