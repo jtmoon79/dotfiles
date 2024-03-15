@@ -2592,7 +2592,7 @@ function __bashrc_print_temperature_device_temp () {
 # XXX: backward-compatible array declaration
 __bashrc_temperature_devices_temp[0]=''  # global array
 unset __bashrc_temperature_devices_temp[0]
-# display name for temperature devices
+# display name for temperature devices, should mirror `__bashrc_temperature_devices_temp`
 # XXX: backward-compatible array declaration
 __bashrc_temperature_devices_name[0]=''  # global array
 unset __bashrc_temperature_devices_name[0]
@@ -2605,26 +2605,28 @@ function __bashrc_temperature_devices_find () {
 
     declare -a devices_temp=()
     declare -a devices_name=()
-    declare -i i=0
     for path_temp in /sys/class/thermal/thermal_zone*/temp; do
         declare path_type="${path_temp%/*}/type"
-        if [[ -r "${path_temp}" ]] && [[ -r "${path_temp}" ]]; then
-            devices_temp[${#devices_temp[@]-}]=${path_temp}
+        if [[ -r "${path_temp}" ]] && [[ -r "${path_type}" ]]; then
+            devices_temp[${#devices_temp[@]}]=${path_temp}
             declare type_=$(cat "${path_type}" 2>/dev/null)
+            # give type a friendlier name
             if [[ "${type_}" = '' ]]; then
-                devices_name[${#devices_name[@]}]="thermal_zone${i}"
+                # no type so use the `thermal_zone` number from the path
+                type_=${path_temp##/sys/class/thermal/}
+                devices_name[${#devices_name[@]}]="${type_%%/temp}"
             elif [[ "${type_}" = 'x86_pkg_temp' ]]; then
                 devices_name[${#devices_name[@]}]="cpu"
             elif [[ "${type_}" = 'acpitz' ]]; then
-                devices_name[${#devices_name[@]}]="mainbrd"
+                devices_name[${#devices_name[@]}]="mainboard"
             elif [[ "${type_}" = 'pch_skylake' ]]; then
-                devices_name[${#devices_name[@]}]="mainbrd"
+                devices_name[${#devices_name[@]}]="mainboard"
             elif [[ "${type_}" = 'coretemp' ]]; then
                 devices_name[${#devices_name[@]}]="cpu"
             elif [[ "${type_}" = 'cpu-thermal' ]]; then
                 devices_name[${#devices_name[@]}]="cpu"
             elif [[ "${type_}" = 'soc-thermal' ]]; then
-                devices_name[${#devices_name[@]}]="mainbrd"
+                devices_name[${#devices_name[@]}]="mainboard"
             elif [[ "${type_}" = 'gpu-thermal' ]]; then
                 devices_name[${#devices_name[@]}]="gpu"
             else
