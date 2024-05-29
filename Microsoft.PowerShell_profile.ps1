@@ -90,7 +90,7 @@ function global:ScriptName() {
     #>
     return $MyInvocation.ScriptName
 }
-Write-Host "defined Print-Path" -ForegroundColor DarkGreen
+Write-Host "defined ScriptName()" -ForegroundColor DarkGreen
 
 function global:MyCommandName() {
     return $MyInvocation.MyCommand.Name
@@ -202,7 +202,7 @@ function global:Print-ProcessTree() {
         Get-ProcessAndChildProcesses 0 $Process
     }
 }
-Write-Host "defined Print-ProcessTree" -ForegroundColor DarkGreen
+Write-Host "defined Print-ProcessTree()" -ForegroundColor DarkGreen
 
 function global:Print-Console-Colors()
 {
@@ -221,7 +221,7 @@ function global:Print-Console-Colors()
         Write-Host "$color" -Foreground $color
     }
 }
-Write-Host "defined Print-Console-Colors" -ForegroundColor DarkGreen
+Write-Host "defined Print-Console-Colors()" -ForegroundColor DarkGreen
 
 function global:Get-Log-Color()
 {
@@ -257,7 +257,28 @@ function global:Get-Log-Color()
         else {Return "White"}
     }
 }
-Write-Host "defined Get-Log-Color" -ForegroundColor DarkGreen
+Write-Host "defined Get-Log-Color()" -ForegroundColor DarkGreen
+
+function global:Print-Log-With-Color()
+{
+    <#
+    .SYNOPSIS
+        Helper to simplify use of Get-Log-Color
+    .EXAMPLE
+        Print-Log-With-Color ./file.log
+    .DESCRIPTION
+        Print a log file with colorized message levels.
+        Parameters -Wait will ``Get-Content -Wait``
+    #>
+    # TODO: forward -Wait switch
+    Param(
+        [Parameter()]
+        [String]$LogPath
+    )
+
+    Get-Content $LogPath | ForEach { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
+}
+Write-Host "defined Print-Log-With-Color()" -ForegroundColor DarkGreen
 
 function global:Update-This-Profile()
 {
@@ -679,7 +700,7 @@ $global:_PromptFirstRun = $null  # reset this global switch
 Write-Host "defined Prompt" -ForegroundColor DarkGreen -NoNewLine
 Write-Host " (turn off unicode with `$global:_PromptAsciiOnly=`$True or define your own `$global:_PromptLead)" -ForegroundColor DarkGray
 
-# Import the Chocolatey Profile with tab completions for `choco` (if available)
+# Import the Chocolatey Profile with tab completions for `choco`
 $global:__imported_chocolatey_profile = $False
 try {
     if (Import-ModuleHelper "chocolateyProfile") {
@@ -692,10 +713,7 @@ try {
     Write-Warning -Message $_.Exception.Message
 }
 
-# Zoxide set (if available)
-#
-# install with `choco install zoxide` or `cargo install --locked zoxide`
-# see https://github.com/ajeetdsouza/zoxide?tab=readme-ov-file#installation
+# check for Zoxide
 $global:__imported_zoxide = $false
 try {
     $script:zoxide_command = Get-Command 'zoxide.exe' -ErrorAction SilentlyContinue
