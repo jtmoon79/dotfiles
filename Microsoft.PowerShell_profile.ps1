@@ -8,6 +8,10 @@
 #
 # This file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
 #
+# Invoke this profile without copying to $PROFILE
+#
+#    Invoke-Expression $(Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/Microsoft.PowerShell_profile.ps1").Content
+#
 
 # Force `$global:_PromptStopwatch` to restart to simulate a new process.
 # Most likely this is a new process but sometimes this $PROFILE needs to be
