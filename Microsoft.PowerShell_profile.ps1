@@ -726,7 +726,7 @@ try {
 }
 
 # check for a local profile to run
-$PROFILE_DIR = $(Get-Item -Path $PROFILE).Directory
+$PROFILE_DIR = $(Get-Item -Path $PROFILE -ErrorAction SilentlyContinue).Directory
 if (($null -ne $PROFILE_DIR) -and (Test-Path -Path $PROFILE_DIR)) {
     $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR -ChildPath "Microsoft.PowerShell_profile.local.ps1"
     if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
