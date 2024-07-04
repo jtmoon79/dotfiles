@@ -41,6 +41,8 @@ $env:POWERSHELL_UPDATECHECK = "Off"
 # https://archive.ph/S8uhz
 $PSDefaultParameterValues["Out-File:Encoding"] = "utf8"
 $PSDefaultParameterValues['*:Encoding'] = "utf8"
+# https://stackoverflow.com/a/63838688/471376
+$OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding
 
 #
 # custom functions
