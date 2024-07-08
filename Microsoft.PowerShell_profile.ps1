@@ -186,7 +186,7 @@ function global:Print-ProcessTree() {
         "{0}[{1,-5}] [{2}]" -f ("  " * $Level), $Process.ProcessId, $Process.Name
         $Children = $AllProcesses | where-object {$_.ParentProcessId -eq $Process.ProcessId -and $_.CreationDate -ge $Process.CreationDate}
         if ($null -ne $Children) {
-            foreach ($Child in $Children) {
+            ForEach ($Child in $Children) {
                 Get-ProcessAndChildProcesses ($Level + 1) $Child
             }
         }
@@ -196,7 +196,7 @@ function global:Print-ProcessTree() {
     $RootProcesses = @()
     # Process "System Idle Process" is processed differently, as ProcessId and ParentProcessId are 0
     # $AllProcesses is sliced from index 1 to the end of the array
-    foreach ($Process in $AllProcesses[1..($AllProcesses.length-1)]) {
+    ForEach ($Process in $AllProcesses[1..($AllProcesses.length-1)]) {
         $Parent = $AllProcesses | where-object {$_.ProcessId -eq $Process.ParentProcessId -and $_.CreationDate -lt $Process.CreationDate}
         if ($null -eq $Parent) {
             $RootProcesses += $Process
@@ -204,7 +204,7 @@ function global:Print-ProcessTree() {
     }
     # Process the "System Idle process" separately
     "[{0,-5}] [{1}]" -f $AllProcesses[0].ProcessId, $AllProcesses[0].Name
-    foreach ($Process in $RootProcesses) {
+    ForEach ($Process in $RootProcesses) {
         Get-ProcessAndChildProcesses 0 $Process
     }
 }
@@ -221,8 +221,8 @@ function global:Print-Console-Colors()
         Inspired by https://stackoverflow.com/a/20588680/471376
     #>
     $colors = [Enum]::GetValues( [ConsoleColor] )
-    $max = ($colors | foreach { "$_ ".Length } | Measure-Object -Maximum).Maximum
-    foreach( $color in $colors ) {
+    $max = ($colors | ForEach-Object { "$_ ".Length } | Measure-Object -Maximum).Maximum
+    ForEach( $color in $colors ) {
         Write-Host (" {0,2} {1,$max} " -f [int]$color,$color) -NoNewline
         Write-Host "$color" -Foreground $color
     }
@@ -236,7 +236,7 @@ function global:Get-Log-Color()
         Colorize keywords found in log messages.
         A "log message" is presumed to be a single line of text.
     .EXAMPLE
-        Get-Content -wait ./file.log | ForEach { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
+        Get-Content -wait ./file.log | ForEach-Object { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
     .DESCRIPTION
         Add color to log file messages.
 
@@ -274,15 +274,32 @@ function global:Print-Log-With-Color()
         Print-Log-With-Color ./file.log
     .DESCRIPTION
         Print a log file with colorized message levels.
-        Parameters -Wait will ``Get-Content -Wait``
     #>
-    # TODO: forward -Wait switch
     Param(
-        [Parameter()]
-        [String]$LogPath
+        [Parameter(Mandatory=$false, ValueFromPipeline=$true, ParameterSetName="pipelined")]
+        [string]
+        $pipelineInput,
+        [Parameter(Position=0, Mandatory, ParameterSetName="file")]
+        [String]$LogPath,
+        [Parameter(Position=1, Mandatory=$false, ParameterSetName="file")]
+        [switch]$Wait=$false
     )
 
-    Get-Content $LogPath | ForEach { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
+    Process {
+        if (Test-Path $LogPath) {
+            Write-Debug "LogPath is file '$LogPath'"
+            if ($Wait) {
+                Write-Debug "-Wait"
+                Get-Content -Wait $LogPath | ForEach-Object { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
+            } else {
+                Write-Debug "No -Wait"
+                Get-Content $LogPath | ForEach-Object { Write-Host -ForegroundColor (Get-Log-Color $_) $_ }
+            }
+        } else {
+            Write-Debug "LogPath is not file, pipelined input"
+            $pipelineInput | ForEach-Object { Write-Host -ForegroundColor (Get-Log-Color $_) $_; }
+        }
+    }
 }
 Write-Host "defined Print-Log-With-Color()" -ForegroundColor DarkGreen
 
