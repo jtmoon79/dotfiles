@@ -286,7 +286,7 @@ function global:Print-Log-With-Color()
     )
 
     Process {
-        if (Test-Path $LogPath) {
+        if (($null -ne $LogPath) -and ("" -ne $LogPath) -and (Test-Path $LogPath)) {
             Write-Debug "LogPath is file '$LogPath'"
             if ($Wait) {
                 Write-Debug "-Wait"
