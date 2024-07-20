@@ -66,4 +66,3 @@ if ! ( \
         systemctl restart wg-quick@${iface}.service
     ) 2>&1 | log
 fi
-
