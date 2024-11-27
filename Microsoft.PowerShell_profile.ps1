@@ -444,6 +444,10 @@ New-Alias -Name "env" -Description "sorta' like Unix!" -Value Print-Env -Scope G
 if ($?) {
     Write-Host "added alias env" -ForegroundColor DarkGreen
 }
+New-Alias -Name "e" -Description "start Explorer" -Value "C:\WINDOWS\explorer.exe" -Scope Global -Option Constant -ErrorAction SilentlyContinue
+if ($?) {
+    Write-Host "added alias e" -ForegroundColor DarkGreen
+}
 
 if (-not (Get-Command -Name lt -scope global -ErrorAction SilentlyContinue)) {
     function global:lt {
