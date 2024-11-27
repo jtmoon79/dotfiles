@@ -64,7 +64,7 @@ function global:Print-Path()
         Print `PATH` environment variable in a more readable manner.
         Include Registry settings that define the path.
     #>
-    Write-Host "env:Path" -ForegroundColor Yellow
+    Write-Host "`$env:Path" -ForegroundColor Yellow
     $env:Path -replace ";","`n"
 
     Write-Host "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path" -ForegroundColor Yellow
@@ -74,6 +74,11 @@ function global:Print-Path()
     Write-Host ""
     Write-Host "HKCU:\Environment\Path" -ForegroundColor Yellow
     $(Get-ItemProperty -Path "HKCU:\Environment" -Name "Path").Path -replace ";","`n"
+
+    if ($null -ne $env:PSModulePath) {
+        Write-Host "`$env:PSModulePath" -ForegroundColor Yellow
+        $env:PSModulePath -replace ";","`n"
+    }
 }
 Write-Host "defined Print-Path()" -ForegroundColor DarkGreen
 
