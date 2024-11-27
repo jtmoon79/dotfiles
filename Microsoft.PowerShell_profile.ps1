@@ -2,11 +2,14 @@
 #
 # Custom Windows Powershell profile.
 #
-# First install of this profile with helper script `install-profile.ps1`. See
-# intructions within that script.
+# First install of this profile with helper script `install-profile.ps1`. See intructions within that script.
 # Subsequent updates to this profile only need to call `Update-This-Profile`.
 #
 # This file is available at https://github.com/jtmoon79/dotfiles/blob/master/Microsoft.PowerShell_profile.ps1
+#
+# Download this file
+#
+#     Invoke-WebRequest -Uri "https://raw.githubusercontent.com/jtmoon79/dotfiles/master/Microsoft.PowerShell_profile.ps1" -OutFile Microsoft.PowerShell_profile.ps1
 #
 # Invoke this profile without copying to $PROFILE
 #
