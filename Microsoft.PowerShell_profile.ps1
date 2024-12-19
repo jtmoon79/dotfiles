@@ -180,6 +180,14 @@ function global:Format-XML ($xml_file, $indent=2)
 }
 Write-Host "defined Format-XML(xml_file, indent=2)" -ForegroundColor DarkGreen
 
+function global:Get-TCPListen() {
+    Get-NetTcpConnection `
+        | Where-Object {( $_.State -eq 'Listen' )} `
+        | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess `
+        | Sort-Object -Property LocalPort,LocalAddress
+}
+Write-Host "defined Get-TCPListen()" -ForegroundColor DarkGreen
+
 function global:Print-ProcessTree() {
     <#
     .SYNOPSIS
