@@ -67,20 +67,58 @@ function global:Print-Path()
         Print `PATH` environment variable in a more readable manner.
         Include Registry settings that define the path.
     #>
-    Write-Host "`$env:Path" -ForegroundColor Yellow
-    $env:Path -replace ";","`n"
 
+    function print_single_path_with_resolve($p) {
+        <#
+        .SYNOPSIS
+            Print passed $p, additionally printing the resolve path if it's different,
+            and red color for non-existent paths.
+        #>
+        if ($p.Length -eq 0) {
+            return
+        }
+        $pr = Resolve-Path -Path $p -ErrorAction SilentlyContinue
+        if ($p -ne $pr) {
+            $c_p = $null
+            if (($null -eq $p) -or (-not (Test-Path $p))) {
+                $c_p = "Red"
+            }
+            $c_pr = "Green"
+            if (($null -eq $pr) -or (-not (Test-Path $pr))) {
+                $c_pr = "Red"
+            }
+            if ($null -ne $c_p) {
+                Write-Host $p -ForegroundColor $c_p -NoNewLine
+            } else {
+                Write-Host $p -NoNewLine
+            }
+            if (($pr -ne $null) -and ($pr.Length -gt 0)) {
+                Write-Host " (" -NoNewLine
+                Write-Host $pr -ForegroundColor $c_pr -NoNewLine
+                Write-Host ")" -NoNewLine
+            }
+            Write-Host ""
+        } else {
+            Write-Host $p
+        }
+    }
+    Write-Host "`$env:Path" -ForegroundColor Yellow
+    ${env:Path}.Split(";") | foreach { print_single_path_with_resolve $_ }
+
+    Write-Host ""
     Write-Host "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path" -ForegroundColor Yellow
-    $(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" -Name "Path").Path `
-        -replace ";","`n"
+    $(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" -Name "Path").Path.Split(";") `
+        | foreach { print_single_path_with_resolve $_ }
 
     Write-Host ""
     Write-Host "HKCU:\Environment\Path" -ForegroundColor Yellow
-    $(Get-ItemProperty -Path "HKCU:\Environment" -Name "Path").Path -replace ";","`n"
+    $(Get-ItemProperty -Path "HKCU:\Environment" -Name "Path").Path.Split(";") `
+        | foreach { print_single_path_with_resolve $_ }
 
-    if ($null -ne $env:PSModulePath) {
+    if ($null -ne ${env:PSModulePath}) {
+        Write-Host ""
         Write-Host "`$env:PSModulePath" -ForegroundColor Yellow
-        $env:PSModulePath -replace ";","`n"
+        ${env:PSModulePath}.Split(";") | foreach { print_single_path_with_resolve $_ }
     }
 }
 Write-Host "defined Print-Path()" -ForegroundColor DarkGreen
