@@ -808,8 +808,8 @@ try {
 
 # check for local profiles to run; check the absolute path and the relative path
 $profile_tried = @()
-foreach ($path in @($PROFILE, $PSCommandPath)) {
-    $PROFILE_DIR = $(Get-Item -Path $path -ErrorAction SilentlyContinue).Directory
+foreach ($path1 in @($PROFILE, $PSCommandPath)) {
+    $PROFILE_DIR = $(Get-Item -Path $path1 -ErrorAction SilentlyContinue).Directory
     if (($null -eq $PROFILE_DIR) -or (-not (Test-Path -Path $PROFILE_DIR))) {
         continue
     }
@@ -823,12 +823,14 @@ foreach ($path in @($PROFILE, $PSCommandPath)) {
     if (($null -ne $PROFILE_LOCAL1) -and (Test-Path -Path $PROFILE_LOCAL1)) {
         Write-Host ". '$PROFILE_LOCAL1'" -ForegroundColor DarkYellow
         . $PROFILE_LOCAL1
+        # leave set to last imported .local file
         $PROFILE_LOCAL = $PROFILE_LOCAL1
     } else {
         Write-Host "No local profile found at '$($PROFILE_LOCAL1)'" -ForegroundColor DarkGray
     }
 }
 Remove-Variable -Name "profile_tried" -ErrorAction SilentlyContinue
+Remove-Variable -Name "path1" -ErrorAction SilentlyContinue
 Remove-Variable -Name "PROFILE_DIR" -ErrorAction SilentlyContinue
 Remove-Variable -Name "PROFILE_DIR_RESP" -ErrorAction SilentlyContinue
 Remove-Variable -Name "PROFILE_LOCAL1" -ErrorAction SilentlyContinue
