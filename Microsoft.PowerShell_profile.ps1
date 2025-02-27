@@ -806,15 +806,22 @@ try {
     Write-Warning -Message $_.Exception.Message
 }
 
-# check for a local profile to run
-$PROFILE_DIR = $(Get-Item -Path $PROFILE -ErrorAction SilentlyContinue).Directory
-if (($null -ne $PROFILE_DIR) -and (Test-Path -Path $PROFILE_DIR)) {
-    $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR -ChildPath "Microsoft.PowerShell_profile.local.ps1"
-    if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
-        Write-Host ". '$PROFILE_LOCAL'" -ForegroundColor DarkYellow
-        . $PROFILE_LOCAL
-    } else {
-        Write-Host "No local profile found at '$($PROFILE_LOCAL)'" -ForegroundColor DarkGray
-        Remove-Variable -Name "PROFILE_LOCAL"
+# check for local profiles to run; check the absolute path and the relative path
+foreach ($path in @($PROFILE, $PSCommandPath)) {
+    if (($null -ne $PROFILE_DIR) -and ($PROFILE_DIR -eq $path)) {
+        # skip repeating an import
+        continue
+    }
+    $PROFILE_DIR = $(Get-Item -Path $path -ErrorAction SilentlyContinue).Directory
+    if (($null -ne $PROFILE_DIR) -and (Test-Path -Path $PROFILE_DIR)) {
+        $PROFILE_DIR_RESP = Resolve-Path $PROFILE_DIR
+        $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR_RESP -ChildPath "Microsoft.PowerShell_profile.local.ps1"
+        if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
+            Write-Host ". '$PROFILE_LOCAL'" -ForegroundColor DarkYellow
+            . $PROFILE_LOCAL
+        } else {
+            Write-Host "No local profile found at '$($PROFILE_LOCAL)'" -ForegroundColor DarkGray
+            Remove-Variable -Name "PROFILE_LOCAL"
+        }
     }
 }
