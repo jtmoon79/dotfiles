@@ -814,17 +814,21 @@ foreach ($path in @($PROFILE, $PSCommandPath)) {
         continue
     }
     $PROFILE_DIR_RESP = Resolve-Path $PROFILE_DIR
-    $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR_RESP -ChildPath "Microsoft.PowerShell_profile.local.ps1"
-    if ($profile_tried.Contains($PROFILE_LOCAL)) {
+    $PROFILE_LOCAL1 = Join-Path -Path $PROFILE_DIR_RESP -ChildPath "Microsoft.PowerShell_profile.local.ps1"
+    if ($profile_tried.Contains($PROFILE_LOCAL1)) {
         # do not import something already imported
         continue
     }
-    $profile_tried += $PROFILE_LOCAL
-    if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
-        Write-Host ". '$PROFILE_LOCAL'" -ForegroundColor DarkYellow
-        . $PROFILE_LOCAL
+    $profile_tried += $PROFILE_LOCAL1
+    if (($null -ne $PROFILE_LOCAL1) -and (Test-Path -Path $PROFILE_LOCAL1)) {
+        Write-Host ". '$PROFILE_LOCAL1'" -ForegroundColor DarkYellow
+        . $PROFILE_LOCAL1
+        $PROFILE_LOCAL = $PROFILE_LOCAL1
     } else {
-        Write-Host "No local profile found at '$($PROFILE_LOCAL)'" -ForegroundColor DarkGray
-        Remove-Variable -Name "PROFILE_LOCAL"
+        Write-Host "No local profile found at '$($PROFILE_LOCAL1)'" -ForegroundColor DarkGray
     }
 }
+Remove-Variable -Name "profile_tried" -ErrorAction SilentlyContinue
+Remove-Variable -Name "PROFILE_DIR" -ErrorAction SilentlyContinue
+Remove-Variable -Name "PROFILE_DIR_RESP" -ErrorAction SilentlyContinue
+Remove-Variable -Name "PROFILE_LOCAL1" -ErrorAction SilentlyContinue
