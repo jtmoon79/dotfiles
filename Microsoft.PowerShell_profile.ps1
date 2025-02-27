@@ -807,15 +807,17 @@ try {
 }
 
 # check for local profiles to run; check the absolute path and the relative path
+$profiled_tried = @()
 foreach ($path in @($PROFILE, $PSCommandPath)) {
-    if (($null -ne $PROFILE_DIR) -and ($PROFILE_DIR -eq $path)) {
-        # skip repeating an import
-        continue
-    }
     $PROFILE_DIR = $(Get-Item -Path $path -ErrorAction SilentlyContinue).Directory
     if (($null -ne $PROFILE_DIR) -and (Test-Path -Path $PROFILE_DIR)) {
         $PROFILE_DIR_RESP = Resolve-Path $PROFILE_DIR
         $PROFILE_LOCAL = Join-Path -Path $PROFILE_DIR_RESP -ChildPath "Microsoft.PowerShell_profile.local.ps1"
+        if ($profiled_tried.Contains($PROFILE_LOCAL)) {
+            # do not import something already imported
+            continue
+        }
+        $profiled_tried += $PROFILE_LOCAL
         if (($null -ne $PROFILE_LOCAL) -and (Test-Path -Path $PROFILE_LOCAL)) {
             Write-Host ". '$PROFILE_LOCAL'" -ForegroundColor DarkYellow
             . $PROFILE_LOCAL
