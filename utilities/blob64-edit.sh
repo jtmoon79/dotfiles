@@ -50,12 +50,12 @@ TMPFILE1=$(mktemp -q)
 TMPFILE2=$(mktemp -q)
 TMPFILE3=$(mktemp -q)
 function exit_ () {
+    # throwaway remaining STDIN
+    read -t0 -s _ || true
     if which shred &>/dev/null; then
         shred -z -- "${TMPFILE1}" "${TMPFILE2}" "${TMPFILE3}"
     fi
     rm -f -- "${TMPFILE1}" "${TMPFILE2}" "${TMPFILE3}"
-    # throwaway remaining STDIN
-    read -t0 -s _ || true
 }
 trap exit_ EXIT
 
@@ -63,13 +63,19 @@ BLOB=${1}
 
 RESTORE=$(dirname -- "${0}")/blob64-restore.sh
 STORE=$(dirname -- "${0}")/blob64-store.sh
-
 input=
+
+if [[ "${BLOB64_DEBUG+x}" ]]; then
+    set -x
+fi
+
 if [[ ${#} -le 1 ]]; then
     # TODO: this should allow for using the gpg interactive dialog
     #       when the user does not pass a passphrase file on STDIN nor a passphrase file argument
-    read -t1 -s || true
-    input=${REPLY}
+    read -t1 -s input || true
+    # "drain" remaining stdin buffer
+    while read -s _IGNORE_DATA; do true; done
+    unset _IGNORE_DATA
     if [[ -z "${input}" ]]; then
         echo "ERROR passphrase passed on STDIN is empty" >&2
         echo "      did you mean to pass a passphrase file as the second argument?" >&2
@@ -77,23 +83,25 @@ if [[ ${#} -le 1 ]]; then
     fi
 fi
 
-if [[ ${#} -gt 1 ]]; then
+if [[ -z "${input-}" ]]; then
     (
         set -x
         "${RESTORE}" "${@}" > "${TMPFILE1}"
     )
 else
     (
+        set +x
         echo -n "${input}"
     ) | (
         set -x
         "${RESTORE}" "${@}" > "${TMPFILE1}"
     )
+    while read -s _IGNORE_DATA; do true; done
+    unset _IGNORE_DATA
 fi
-(
-    set -x
-    "${EDITOR}" "${TMPFILE1}"
-)
+
+echo "${PS4}${EDITOR} ${TMPFILE1}" >&2
+"${EDITOR}" "${TMPFILE1}"
 
 if [[ ! -r "${TMPFILE1}" ]]; then
     echo "ERROR temporary file for editing ${TMPFILE1} was lost; EDITOR '${EDITOR}'" >&2
@@ -112,7 +120,7 @@ else
     echo -n "${input}" > "${TMPFILE3}"
     (
         set -x
-        "${STORE}" "${TMPFILE2}" "${TMPFILE3}" < "${TMPFILE1}"
+        cat "${TMPFILE1}" | "${STORE}" "${TMPFILE2}" "${TMPFILE3}"
     )
 fi
 
