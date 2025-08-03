@@ -34,6 +34,10 @@ non-interactive decryption written to a file:
 fi
 input=${1}
 
+if [[ "${BLOB64_DEBUG+x}" ]]; then
+    set -x
+fi
+
 # check validatity of optional passphrase argument before writing to the TMPFILE
 if [[ ${#} -gt 1 ]]; then
     if [[ ! -e "${2}" ]]; then
