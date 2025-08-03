@@ -24,7 +24,12 @@ non-interactive decryption:
 
     echo -n 'passw0rd' | ${bname} /tmp/my-encrypted-data.blob64
 
-    ${bname} /tmp/my-encrypted-data.blob64 /tmp/passphrase.tmp" >&2
+    ${bname} /tmp/my-encrypted-data.blob64 /tmp/passphrase.tmp
+
+non-interactive decryption written to a file:
+
+    ${bname} /tmp/my-encrypted-data.blob64 /tmp/passphrase.tmp > /tmp/my-unencrypted-data
+" >&2
     exit 1
 fi
 input=${1}
