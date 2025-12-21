@@ -95,3 +95,41 @@
 #   ordinal
 #   character
 #
+
+if which zoxide >/dev/null 2>&1 && [[ -z "${__BASH_ZOXIDE_LOADED-}" ]]; then
+    eval "$(zoxide init bash)"
+    __BASH_ZOXIDE_LOADED=1
+fi
+
+if which hstr >/dev/null 2>&1 && [[ -z "${__BASH_HSTR_LOADED-}" ]]; then
+    #
+    # HSTR configuration
+    #
+    export HSTR_CONFIG=hicolor       # get more colors
+    shopt -s histappend              # append new history items to .bash_history
+    if [[ "${HSTR_TIOCSTI-}" = '' ]]; then
+        # save the prior return code in `__ret_prompt`
+        # synchronize the history file after each command
+        # so that hstr can see commands from other terminal sessions
+        # then "replay" the return code
+        # then execute remaining PROMPT_COMMAND, which will itself save the return code
+        export PROMPT_COMMAND="{ declare -i __ret_prompt=\$?; history -a; history -n; function __ret() { return \$__ret_prompt; }; __ret;  ${PROMPT_COMMAND} }"
+    fi
+    function hstrnotiocsti {
+        { READLINE_LINE="$( { </dev/tty hstr ${READLINE_LINE}; } 2>&1 1>&3 3>&- )"; } 3>&1;
+        READLINE_POINT=${#READLINE_LINE}
+    }
+    # if this is interactive shell, then bind hstr to Ctrl-r (for Vi mode check doc)
+    if [[ $- =~ .*i.* ]]; then bind -x '"\C-r": "hstrnotiocsti"'; fi
+    export HSTR_TIOCSTI=n
+    __BASH_HSTR_LOADED=1
+fi
+
+# attempt to add paths that commonly exist
+bash_paths_add \
+    ~/.cargo/bin \
+    ~/bin \
+    ~/.local/bin \
+    ~/.wasmtime/bin \
+    ~/go/bin/ \
+    /usr/local/go/bin \
