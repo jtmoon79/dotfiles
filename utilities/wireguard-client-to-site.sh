@@ -4,6 +4,8 @@
 #
 # Script to generate a client-to-site Wireguard IPv4 VPN tunnel
 # configuration files, and commands for systemd services.
+# This script only prints commands for the user to run manually. It does not
+# modify any files.
 # This script only covers a narrow scope of possible networking arrangements.
 # It may not perfectly fit the user's needs, but it may provide the user with
 # a working example that they can modify for their needs.
@@ -36,6 +38,14 @@
 # https://gist.github.com/jtmoon79/c951f81f621bb87ddb60836245aca4ff
 #
 
+# defaults
+SITECLIENT_VLAN_FIRST2_DEFAULT=10.0
+SITE_LAN_DEV_DEFAULT=eth0
+SITE_MTU_DEFAULT=1420
+SITE_WG_PORT_DEFAULT=51000
+CLIENT_WG_PORT_DEFAULT=51000
+CLIENT_MTU_DEFAULT=1340
+
 set -euo pipefail
 
 SCRIPT=$(basename -- "${0}")
@@ -44,8 +54,8 @@ function usage_exit() {
     echo "\
 Generate Wireguard IPv4 VPN client-to-site configuration files and commands.
 
-This script does not modify files. The user must selectively copy+paste+run the
-highlighted output.
+This script does not modify files. It only prints commands for the user to run manually.
+The user must selectively copy+paste+run the highlighted output.
 
 Usage:
 
@@ -65,7 +75,18 @@ port will shown in the output, or can be overridden via SITE_PORT, e.g.
 
 SITE_DNS is added but commented.
 
-Review the script for other optional environment variable settings.
+Environment variables that can be set to override defaults:
+
+    SITE_LAN_DEV       - default: ${SITE_LAN_DEV_DEFAULT}
+    SITE_MTU           - default: ${SITE_MTU_DEFAULT}
+    SITE_PORT          - default: ${SITE_WG_PORT_DEFAULT} + OFFSET
+                         UDP port for Wireguard server to listen on for incoming connections
+    CLIENT_WG_PORT     - default: ${CLIENT_WG_PORT_DEFAULT} + OFFSET
+                         UDP port for Wireguard client to send on
+    CLIENT_MTU         - default: ${CLIENT_MTU_DEFAULT}
+                         MTU for the client Wireguard interface
+    SITECLIENT_VLAN_FIRST3   - default: ${SITECLIENT_VLAN_FIRST2_DEFAULT}.OFFSET
+                               first 3 octets of the virtual LAN network for both sites
 
 To allow other hosts on the site network to connect to the client through
 the VPN tunnel, the user must push additional routes to the other network hosts.
@@ -85,7 +106,11 @@ for prog in wg wg-quick; do
         exit 1
     fi
 done
-for prog in iptables qrencode; do
+if ! which qrencode &>/dev/null; then
+    echo "command \"qrencode\" not found, is 'qrencode' installed?" >&2
+    exit 1
+fi
+for prog in iptables; do
     if ! which "${prog}" &>/dev/null; then
         echo "command \"${prog}\" not found" >&2
         exit 1
@@ -123,7 +148,7 @@ fi
 TEMPD=$(umask 0077; mktemp -d -t "${SCRIPT}.XXX")
 
 # first 3 IPv4 network octets of the virtual LAN, make it unique and obvious
-SITE12_VLAN_FIRST3=${SITE12_VLAN_FIRST3-"10.0.${OFFSET}"}
+SITECLIENT_VLAN_FIRST3=${SITECLIENT_VLAN_FIRST3-"${SITECLIENT_VLAN_FIRST2_DEFAULT}.${OFFSET}"}
 WG_DEV=wg${OFFSET}
 # e.g. "my-host.domainhost.org"
 SITE_FQDN=${2}
@@ -137,9 +162,9 @@ SITE_WG_DEV=wg${OFFSET}
 SITE_WG_CONF_NAME=${SITE_WG_DEV}.conf
 SITE_WG_CONF=/etc/wireguard/${SITE_WG_CONF_NAME}
 # unique VLAN address
-SITE_ADDR=${SITE12_VLAN_FIRST3}.1
+SITE_ADDR=${SITECLIENT_VLAN_FIRST3}.1
 SITE_ADDR_CIDR=${SITE_ADDR}/24
-SITE_PORT=${SITE_PORT-$((51000 + ${OFFSET}))}
+SITE_PORT=${SITE_PORT-$((${SITE_WG_PORT_DEFAULT} + ${OFFSET}))}
 # Internet-accessible Endpoint
 SITE_ENDPOINT=${SITE_FQDN}:${SITE_PORT}
 # CIDR network of site 1, must match actual network!
@@ -149,7 +174,7 @@ SITE_MTU=${SITE_MTU-1340}
 SITE_DNS=${5}
 
 # site and client virtual network
-SITE12_VNET=${SITE12_VLAN_FIRST3}.0/24
+SITECLIENT_VNET=${SITECLIENT_VLAN_FIRST3}.0/24
 
 CLIENT_NAME=${3}
 #CLIENT_ETH_DEV=${CLIENT_ETH_DEV-eth0}
@@ -157,10 +182,10 @@ CLIENT_NAME=${3}
 CLIENT_WG_CONF=/etc/wireguard/${WG_DEV}.conf
 CLIENT_WG_CONF_TEMP=${TEMPD}/${WG_DEV}.conf
 # unique VLAN address
-CLIENT_ADDR=${SITE12_VLAN_FIRST3}.2
+CLIENT_ADDR=${SITECLIENT_VLAN_FIRST3}.2
 CLIENT_ADDR_CIDR=${CLIENT_ADDR}/24
-CLIENT_WG_PORT=${CLIENT_WG_PORT-$((51000 + ${OFFSET}))}
-CLIENT_MTU=${CLIENT_MTU-1340}
+CLIENT_WG_PORT=${CLIENT_WG_PORT-$(($CLIENT_WG_PORT_DEFAULT + ${OFFSET}))}
+CLIENT_MTU=${CLIENT_MTU_DEFAULT-1340}
 
 SITE_KEY=${TEMPD}/site-${SITE_NAME}.key
 SITE_PUB=${TEMPD}/site-${SITE_NAME}.pub
@@ -193,7 +218,7 @@ trap exit_ EXIT
 )
 
 # enable forwarding, enable debug logging if available
-SITE12_PREUP="set -x; sysctl -w net.ipv4.ip_forward=1; ([[ -e /sys/kernel/debug/dynamic_debug/control ]] && (modprobe wireguard && echo module wireguard +p > /sys/kernel/debug/dynamic_debug/control)) || true; ip -4 -N route list;"
+SITECLIENT_PREUP="set -x; sysctl -w net.ipv4.ip_forward=1; ([[ -e /sys/kernel/debug/dynamic_debug/control ]] && (modprobe wireguard && echo module wireguard +p > /sys/kernel/debug/dynamic_debug/control)) || true; ip -4 -N route list;"
 
 # create iptables rules to forward and masquerade between the different networks
 # comments added to clarify the rule source and help debugging/fixing rules
@@ -254,7 +279,7 @@ ListenPort = ${SITE_PORT}
 MTU = ${SITE_MTU}
 PrivateKey = $(cat ${SITE_KEY})
 
-PreUp = ${SITE12_PREUP}
+PreUp = ${SITECLIENT_PREUP}
 
 PostUp = ${SITE_CONF_POSTUP}
 
@@ -264,7 +289,7 @@ PostDown = ${SITE_CONF_POSTDOWN}
 [Peer]
 PublicKey = $(cat ${CLIENT_PUB})
 PresharedKey = $(cat ${SITE_CLIENT_PSK})
-AllowedIPs = ${SITE12_VNET}
+AllowedIPs = ${SITECLIENT_VNET}
 PersistentKeepalive = 300
 
 # test connection:
@@ -287,7 +312,7 @@ cat <<HEREDOC1c
 systemctl enable wg-quick@${WG_DEV}.service
 systemctl daemon-reload
 systemctl start wg-quick@${WG_DEV}
-systemctl status wg-quick@${WG_DEV}
+systemctl status --no-pager wg-quick@${WG_DEV}
 
 HEREDOC1c
 
@@ -328,7 +353,7 @@ PrivateKey = $(cat ${CLIENT_KEY})
 [Peer]
 PublicKey = $(cat ${SITE_PUB})
 PresharedKey = $(cat ${SITE_CLIENT_PSK})
-AllowedIPs = ${SITE12_VNET}
+AllowedIPs = ${SITECLIENT_VNET}
 AllowedIPs = ${SITE_NET}
 # including Endpoint treats the peer as a server and this host as a client
 Endpoint = ${SITE_ENDPOINT}
@@ -396,3 +421,4 @@ echo "
 iptables --list
 iptables --list -t nat
 "
+n

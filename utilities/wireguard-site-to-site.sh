@@ -4,6 +4,8 @@
 #
 # Script to generate a site-to-site Wireguard IPv4 VPN tunnel
 # configuration files, and commands for systemd services.
+# This script only prints commands for the user to run manually. It does not
+# modify any files.
 # This script only covers a narrow scope of possible networking arrangements.
 # It may not perfectly fit the user's needs, but it may provide the user with
 # a working example that they can modify for their needs.
@@ -36,6 +38,14 @@
 #          (ip -4 -N route; ip -4 route del $NET) || true
 #
 
+# defaults
+SITE1_DEV_LAN_DEFAULT=eth0
+SITE1_MTU_DEFAULT=1420
+SITE2_DEV_LAN_DEFAULT=eth0
+SITE2_MTU_DEFAULT=1420
+SITE12_VLAN_FIRST2_DEFAULT=10.12
+SITE12_PORT_DEFAULT=51000
+
 set -euo pipefail
 
 SCRIPT=$(basename -- "${0}")
@@ -44,8 +54,8 @@ function usage_exit() {
     echo "\
 Generate Wireguard IPv4 VPN site-to-site configuration files and commands.
 
-This script does not modify files. The user must selectively copy+paste+run the
-highlighted output.
+This script does not modify files. It only prints commands for the user to run manually.
+The user must selectively copy+paste+run the highlighted output.
 
 Usage:
 
@@ -72,7 +82,17 @@ SITE12_PORT, e.g.
 
 SITE_DNS is added but commented.
 
-Review the script for other optional environment variable settings.
+Environment variables that can be set to override defaults:
+
+    SITE1_DEV_LAN - default: ${SITE1_DEV_LAN_DEFAULT}
+    SITE1_MTU     - default: ${SITE1_MTU_DEFAULT}
+    SITE2_DEV_LAN - default: ${SITE2_DEV_LAN_DEFAULT}
+    SITE2_MTU     - default: ${SITE2_MTU_DEFAULT}
+    SITE12_VLAN_FIRST3 - default: ${SITE12_VLAN_FIRST2_DEFAULT}.OFFSET
+                         first 3 octets of the virtual LAN network for both sites
+    SITE12_PORT        - default: ${SITE12_PORT_DEFAULT} + OFFSET
+                         UDP port for Wireguard server to listen on for incoming connections
+                         and Wireguard client to send on
 
 To allow other hosts at each network to connect to hosts on the other side of
 the VPN tunnel, the user must push additional routes to the other network hosts.
@@ -130,8 +150,8 @@ fi
 #
 
 # first 3 IPv4 network octets of the virtual LAN, make it unique and obvious
-SITE12_VLAN_FIRST3=${SITE12_VLAN_FIRST3-"10.12.${OFFSET}"}
-SITE12_PORT=${SITE12_PORT-$((51000 + ${OFFSET}))}
+SITE12_VLAN_FIRST3=${SITE12_VLAN_FIRST3-"${SITE12_VLAN_FIRST2_DEFAULT}.${OFFSET}"}
+SITE12_PORT=${SITE12_PORT-$((${SITE12_PORT_DEFAULT} + ${OFFSET}))}
 
 # e.g. "my-host.domainhost.org"
 SITE1_FQDN=${2}
@@ -467,3 +487,4 @@ echo "
 iptables --list && iptables --list -t nat
 (iptables --list && iptables --list -t nat) | grep -Fe 'wireguard-'
 "
+n
