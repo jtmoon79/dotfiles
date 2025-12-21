@@ -1,6 +1,32 @@
 # endlessh.service
 #
-# modified from https://www.digitalocean.com/community/tutorials/how-to-set-up-an-endlessh-tarpit-on-ubuntu-22-04
+# description: endlessh is a SSH tarpit designed to slow down and frustrate
+#              attackers by keeping their connections open indefinitely.
+# source:
+#   modified from https://www.digitalocean.com/community/tutorials/how-to-set-up-an-endlessh-tarpit-on-ubuntu-22-04
+#   this version from https://github.com/jtmoon79/dotfiles/blob/master/services/endlessh/endlessh.service
+#
+# instructions:
+#   You may want to modify the port used in ExecStart (default is 22).
+#
+# to build:
+#     git clone https://github.com/skeeto/endlessh.git
+#     cd endlessh
+#     make
+#     sudo cp endlessh /usr/local/bin/
+#     sudo chmod -w /usr/local/bin/endlessh
+#     sudo mkdir /etc/endlessh
+# to install the service (this file):
+#     sudo cp endlessh.service /etc/systemd/system/
+#     sudo systemctl --now enable endlessh
+# to check service status:
+#     sudo systemctl status endlessh
+# to view service logs:
+#     sudo journalctl --no-pager -u endlessh -f
+#
+# systemd service docs: https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html
+#
+
 
 [Unit]
 Description=Endlessh SSH Tarpit
@@ -24,6 +50,9 @@ StandardOutput=journal
 StandardError=journal
 StandardInput=null
 
+#
+# add a lot of security hardening options
+#
 PrivateIPC=true
 PrivateTmp=true
 PrivateDevices=true
@@ -35,8 +64,14 @@ ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectKernelLogs=true
 ProtectControlGroups=true
+# XXX: InaccessiblePaths caused failures for me, MMV
 #InaccessiblePaths=/run
-
+NoNewPrivileges=true
+ConfigurationDirectory=endlessh
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+MemoryDenyWriteExecute=true
 ## If you want Endlessh to bind on ports < 1024
 ## 1) run:
 ##     setcap 'cap_net_bind_service=+ep' /usr/local/bin/endlessh
@@ -44,13 +79,6 @@ ProtectControlGroups=true
 #AmbientCapabilities=CAP_NET_BIND_SERVICE
 ## 3) comment following line
 PrivateUsers=true
-
-NoNewPrivileges=true
-ConfigurationDirectory=endlessh
-ProtectKernelTunables=true
-ProtectKernelModules=true
-ProtectControlGroups=true
-MemoryDenyWriteExecute=true
 
 [Install]
 WantedBy=multi-user.target
