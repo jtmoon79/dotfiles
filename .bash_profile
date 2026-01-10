@@ -121,7 +121,7 @@ function __bash_profile_source_file () {
     fi
     # help the user understand what is happening
     if ${__bash_profile_verbose}; then
-        echo "${PS4-}source ${sourcef} from ${BASH_SOURCE:-}" >&2
+        echo "${PS4-}source '${sourcef}' from '${BASH_SOURCE:-}'" >&2
     fi
     source "${sourcef}"
     __bash_sourced_files_array[${#__bash_sourced_files_array[@]}]=${sourcef}
@@ -233,7 +233,7 @@ if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && bash_installed xhost &>/dev/n
     # TODO: can the current xhost settings be checked before calling this? (to
     #       avoid duplicate calls)
     # TODO: should this be a switch that is set in the .bash_profile.local ?
-    xhost +local:
+    (set -x; xhost +local:)
 fi
 
 __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"

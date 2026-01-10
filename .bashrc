@@ -1066,6 +1066,7 @@ function bash_print_bash_vars () {
     # list gathered with command:
     #   grep -hoEe '[[:alpha:]_]+=' -- ./.bashrc ./.bash_profile ./.bashrc.builtins.post | sort | uniq | tr -d '='
     declare -ar vars=(
+        __bash_about_startup_print_enable
         __bash_installed_git
         __bash_installed_id
         __bash_installed_stat
@@ -1125,7 +1126,7 @@ function bash_print_bash_vars () {
         __bashrc_prompt_git_info_enable
         __bashrc_prompt_git_info_git_stat
         __bashrc_prompt_git_info_show
-        __bashrc_prompt_jobs_info_is_enable
+        __bashrc_prompt_jobs_info_enable
         __bashrc_prompt_last_exit_code_banner
         __bashrc_prompt_set_count
         __bashrc_prompt_strftime_format_default
@@ -1502,9 +1503,14 @@ __bashrc_title_set_kernel=${__bashrc_title_set_kernel-kernel $(uname -r)}  # glo
 __bashrc_title_set_OS=${__bashrc_title_set_OS-${__bashrc_OperatingSystem-}}  # global
 #__bashrc_title_set_hostname=$(hostname)
 #__bashrc_title_set_user=${USER-}
+__bashrc_title_set_enable=${__bashrc_title_set_enable-true}
 
 function __bashrc_title_set () {
     [[ ${#} -eq 0 ]] || return 1
+
+    if ! ${__bashrc_title_set_enable}; then
+        return 0
+    fi
     # title will only accept one line of text
     declare ssh_connection=
     # shellcheck disable=SC2153
@@ -1595,13 +1601,13 @@ fi
 # prompt jerbs
 # ------------
 
-__bashrc_prompt_jobs_info_is_enable=true
+__bashrc_prompt_jobs_info_enable=${__bashrc_prompt_jobs_info_enable-true}
 
 function __bashrc_prompt_jobs_info () {
     # print a string about current jobs, to be used the prompt
     # XXX: skip arg count check
 
-    if ! ${__bashrc_prompt_jobs_info_is_enable}; then
+    if ! ${__bashrc_prompt_jobs_info_enable}; then
         return 0
     fi
     if ! ${__bash_installed_tr}; then
@@ -2284,6 +2290,20 @@ function bash_prompt_table_print () {
     __bashrc_prompt_table --no-truncate
 }
 
+function bash_prompt_table_variables_clear() {
+    # Clear all variables from the prompt table variable array.
+
+    if [[ ${#} -ne 0 ]]; then
+        echo "ERROR function bash_prompt_table_variables_clear takes no arguments" >&2
+        return 1
+    fi
+
+    unset bash_prompt_table_variables_array
+    # XXX: backward-compatible array declaration
+    bash_prompt_table_variables_array[0]=''  # global array
+    unset bash_prompt_table_variables_array[0]
+}
+
 # ---------------
 # prompt git info
 # ---------------
@@ -2374,6 +2394,10 @@ function bash_prompt_git_info_mountpoint_array_add () {
     if [[ ${#} -eq 0 ]]; then
         echo "ERROR function bash_prompt_git_info_mountpoint_array_add takes at least one argument" >&2
         return 1
+    fi
+
+    if ! ${__bashrc_prompt_git_info_enable}; then
+        return 0
     fi
 
     declare -i ret=0
@@ -3377,7 +3401,7 @@ function bash_prompt_table_variable_add_Internet () {
     # user must define $bash_prompt_do_Internet_lookup=true to enable this
     # function. This can be a time-consuming function where many things can go
     # wrong, so `bash_prompt_do_Internet_lookup` allows an easy "off" switch.
-    if [[ "${bash_prompt_do_Internet_lookup+x}" = "true" ]]; then
+    if [[ "${bash_prompt_do_Internet_lookup+x}" != "true" ]]; then
         return 0
     fi
     echo "${PS4-}bash_prompt_table_variable_add_Internet" >&2
@@ -3400,6 +3424,11 @@ function bash_prompt_table_variable_add_IPv4_Name () {
     if [[ ${#} -ne 2 ]]; then
         echo "ERROR function bash_prompt_table_variable_add_IPv4_Name takes two arguments" >&2
         return 1
+    fi
+
+    # user must define $bash_prompt_do_add_IPv4_Name=true to enable this
+    if [[ "${bash_prompt_do_add_IPv4_Name+x}" != "true" ]]; then
+        return 0
     fi
 
     echo "${PS4-}bash_prompt_table_variable_add_IPv4_Name '${1}' '${2}'" >&2
@@ -3595,6 +3624,8 @@ fi
 # ====================================================
 # print information this .bashrc has done for the user
 # ====================================================
+
+__bash_about_startup_print_enable=${__bash_about_startup_print_enable-true}
 
 function __bash_about () {
     # echo information about this shell instance for the user with pretty
@@ -3792,6 +3823,8 @@ function bash_about () {
     fi
 }
 
-__bash_about --minimal >&2
+if ${__bash_about_startup_print_enable}; then
+    bash_about --minimal >&2
+fi
 
 set +u

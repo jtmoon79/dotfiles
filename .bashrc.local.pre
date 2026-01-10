@@ -12,3 +12,14 @@
 #     export LANG="es_MX.utf8"
 #     export LC_ALL="es_MX.utf8"
 #
+
+__bash_about_startup_print_enable=true
+__bashrc_prompt_jobs_info_enable=true
+__bashrc_prompt_git_info_enable=true
+__bashrc_prompt_temperature_enable=true
+__bashrc_prompt_table_enable=true
+__bashrc_title_set_enable=false
+bash_prompt_bullet='$'
+bash_prompt_do_add_IPv4_Name=true
+bash_prompt_do_Internet_lookup=true
+bash_prompt_net_devs='eth0 eth1 eth2 em0 enp0s3 Ethernet LAN wm0'
