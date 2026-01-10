@@ -3814,9 +3814,9 @@ function bash_about () {
     # fallback to `less`, `more`, or nothing
     if [[ ! -z "${PAGER-}" ]]; then
         __bash_about "${@}" | "${PAGER}"
-    elif installed less; then
+    elif bash_installed less; then
         __bash_about "${@}" | command -p less -SR
-    elif installed more; then
+    elif bash_installed more; then
         __bash_about "${@}" | command -p more
     else
         __bash_about "${@}"
@@ -3824,7 +3824,7 @@ function bash_about () {
 }
 
 if ${__bash_about_startup_print_enable}; then
-    bash_about --minimal >&2
+    __bash_about --minimal >&2
 fi
 
 set +u
