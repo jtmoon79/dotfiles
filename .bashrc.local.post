@@ -133,3 +133,13 @@ bash_paths_add \
     ~/.wasmtime/bin \
     ~/go/bin/ \
     /usr/local/go/bin \
+
+# ls colors; make dirs brighter
+export LS_COLORS="${LS_COLORS}:di=93"
+# try to use vivid to set a nice color pallete; https://github.com/sharkdp/vivid
+if which vivid &>/dev/null; then
+    if __LS_COLORS_PRE=$(vivid generate rose-pine-dawn 2>/dev/null); then
+        export LS_COLORS=$__LS_COLORS_PRE
+    fi
+    unset __LS_COLORS_PRE
+fi
