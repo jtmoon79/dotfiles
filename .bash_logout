@@ -7,7 +7,13 @@
 # executed by bash(1) when login shell exits.
 
 # run local logout activity if it exists
-bashrc_source_file "${__bash_profile_path_dir}/.bash_logout.local"
+if declare -F bashrc_source_file &>/dev/null; then
+    bashrc_source_file "${__bash_profile_path_dir}/.bash_logout.local"
+else
+    if [[ -f "${__bash_profile_path_dir}/.bash_logout.local" ]]; then
+        source "${__bash_profile_path_dir}/.bash_logout.local"
+    fi
+fi
 
 # when leaving the console clear the screen to increase privacy
 if [[ "${SHLVL-}" = 1 ]] && [[ -x /usr/bin/clear_console ]]; then
