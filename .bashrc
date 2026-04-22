@@ -3411,7 +3411,7 @@ function bash_prompt_table_variable_add_net_IPv4 () {
     devname_varname=${devname_varname//'['/_}
     devname_varname=${devname_varname//']'/_}
     devname_varname=${devname_varname//'.'/_}
-    declare -g IPv4_${devname_varname}=${ipv4}
+    IPv4_${devname_varname}=${ipv4}
     bash_prompt_table_variable_insert_at_index "IPv4_${devname_varname}" "${@}"
 }
 
@@ -3469,7 +3469,7 @@ function bash_prompt_table_variable_add_IPv4_Name () {
     if ! out=$(print_IPv4_DNS_PTR "${ipv4}" 2>/dev/null); then
         return 1
     fi
-    declare -g "${name}"=${out}
+    "${name}"=${out}
     [[ "${!name}" != '' ]] &>/dev/null || return 1
     bash_prompt_table_variable_add "${name}"
 }
