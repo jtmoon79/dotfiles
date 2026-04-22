@@ -1445,21 +1445,36 @@ trap '__bashrc_prompt_timer_start' DEBUG
 # ---------------------
 
 function __bashrc_prompt_last_exit_code_update () {
-    # this function must run first within
-    # $PROMPT_COMMAND or else last exit code will be overwritten
-    declare -ir last_exit=$?  # first save this value
+    # setting `__BASHRC_PROMPT_LAST_EXIT=$?` must be the first statement
+    # within the `PROMPT_COMMAND`
+
+    declare -ir last_exit=${__BASHRC_PROMPT_LAST_EXIT:-1}
+    if [[ ! "${__BASHRC_PROMPT_LAST_EXIT+x}" ]]; then
+        # __BASHRC_PROMPT_LAST_EXIT is not defined
+        # I have no idea how this could happen
+        # red
+        # use older escape sequence declaration style
+        __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002ERROR __BASHRC_PROMPT_LAST_EXIT not set\001\033[00m\002"
+        return
+    fi
+    # write the new value for the next prompt
     __bashrc_prompt_last_exit_code_banner=
     if [[ ${last_exit} -eq 0 ]]; then
         if ${__bashrc_prompt_color}; then
-            __bashrc_prompt_last_exit_code_banner="\001\033[02mreturn code \033[22m${last_exit}\033[00m\002"  # dim + normal
+            # dim + normal
+            # use older escape sequence declaration style
+            __bashrc_prompt_last_exit_code_banner="\001\033[02mreturn code \033[22m${last_exit}\033[00m\002"
         else
             __bashrc_prompt_last_exit_code_banner="return code ${last_exit}"
         fi
     else  # non-zero exit code
         if ${__bashrc_prompt_color}; then
-            __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"  # red
+            # red
+            # use older escape sequence declaration style
+            # prepend `‼`
+            __bashrc_prompt_last_exit_code_banner="\001\033[01;31m\002‼ return code ${last_exit}\001\033[00m\002"
         else
-            # prepend
+            # prepend `‼`
             __bashrc_prompt_last_exit_code_banner="‼ return code ${last_exit}"
         fi
     fi
@@ -2410,7 +2425,7 @@ function bash_prompt_git_info_mountpoint_array_add () {
             ret=1
             continue
         elif [[ "${arg_mp}" = '' ]]; then
-            echo "ERROR: failed to find mount point for '${arg}'" >&2
+            echo "ERROR: failed to find mount point for '${arg}'; (empty string)" >&2
             ret=1
             continue
         fi
@@ -2926,14 +2941,26 @@ if ! command type -t __bashrc_prompt_extras &>/dev/null; then
     }
 fi
 
+# set the `PROMPT_COMMAND`!
 # order is important; additional commands must be *between*
 # functions __bashrc_prompt_last_exit_code_update and __bashrc_prompt_timer_stop
+# XXX: in some unusual situations this `PROMPT_COMMAND` persists into new bash child processes
+#      despite passing `--norc` and `--noprofile` (like with AI helpers).
+#      The result is each prompt refresh will print errors like
+#            __bashrc_prompt_last_exit_code_update: command not found
+#            __bashrc_prompt_live_updates: command not found
+#            ...
+#      So add check `declare -F` before calling each function.
 PROMPT_COMMAND=\
-'__bashrc_prompt_last_exit_code_update;'\
-'__bashrc_prompt_live_updates;'\
-'__bashrc_prompt_extras;'\
-'__bashrc_prompt_count_update;'\
-'__bashrc_prompt_timer_stop;'\
+'__BASHRC_PROMPT_LAST_EXIT=$?;'\
+'if declare -F __bashrc_prompt_last_exit_code_update &>/dev/null; then __bashrc_prompt_last_exit_code_update; fi;'\
+'if declare -F __bashrc_prompt_live_updates &>/dev/null; then __bashrc_prompt_live_updates; fi;'\
+'if declare -F __bashrc_prompt_extras &>/dev/null; then __bashrc_prompt_extras; fi;'\
+'if declare -F __bashrc_prompt_count_update &>/dev/null; then __bashrc_prompt_count_update; fi;'\
+'if declare -F __bashrc_prompt_timer_stop &>/dev/null; then __bashrc_prompt_timer_stop; fi;'
+
+# `__BASHRC_PROMPT_LAST_EXIT` must be used exclusively by `__bashrc_prompt_last_exit_code_update`
+declare -i __BASHRC_PROMPT_LAST_EXIT=0
 
 # =======
 # aliases
