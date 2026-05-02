@@ -848,24 +848,76 @@ function env_sorted () {
         return 1
     fi
 
-    if ! bash_installed env sort tr; then
+    if ! bash_installed cut env sort tr; then
         return 1
     fi
-    # The programs env and sort may not supported the passed options. Shell
-    # option `pipefail` will cause immediate exit if any program fail in the
-    # pipeline fails. This function will return that failure code.
     (
         set -e
         set -o pipefail
-        env --null 2>/dev/null \
-           | sort --zero-terminated 2>/dev/null \
-           | tr '\000' '\n' 2>/dev/null
+
+        # Environment variables may be multiple lines (multiple '\n' chars)
+        # so this must use null-terminated fields via `env --null`.
+        # Annoyingly, bash wants to spew warning message
+        #    -bash: warning: command substitution: ignored null byte in input
+        # and it can't be smothered (why does bash care about null bytes in pipes!?)
+        # Because of that, this portion does some extra tedious work to
+        # avoid triggering bash warnings.
+
+        # First confirm the unusual CLI options work for both programs.
+        # Unfortunately this means the program run twice.
+        # Normally the data would be captured so the programs only run once
+        # but because it's null-terminated bash spews warning
+        # "ignored null byte in input".
+        if ! (env --null 2>/dev/null | sort --zero-terminated 2>/dev/null) &>/dev/null; then
+            return 1
+        fi
+
+        # The `tr -s \000 \v` command below feeding stdin swaps out `\0` for `\v`
+        # so this `read` also uses delimiter `\v`.
+        # This avoid bash spewing warning "ignored null byte in input"
+        while read -d $'\v' var_val; do
+            # The extra `tr -d \\0` is to prevent bash spewing warning
+            # "ignored null byte in input".
+            # Suggested here https://lists.gnu.org/archive/html/bug-bash/2016-09/msg00063.html
+            var=$(echo -n "$var_val" | cut -f1 -z -d '=' | tr -d \\0)
+            val=$(echo -n "$var_val" | cut -f2- -z -d '=' | tr -d \\0)
+            if [[ "${NO_COLOR-}" ]]; then
+                echo "${var}=${val}"
+            elif [[ "${var}" != "PATH" ]]; then
+                # white=green
+                echo -en "\e[97m${var}\e[37m=\e[32m"
+                echo -n "${val}"
+                echo -e "\e[39m"
+            else
+                # special handling for PATH variable
+                mapfile -t -d ':' <<< "$(echo -n "$val")"
+                # print 'PATH='
+                echo -en "\e[97m${var}\e[37m=\e[32m"
+                declare -i pi=${#MAPFILE[@]}
+                declare -i c=0
+                for path in "${MAPFILE[@]}"; do
+                    # print path component
+                    echo -en "\e[32m"
+                    echo -n "${path}"
+                    let c+=1
+                    # print ':' but not after the last component
+                    if [[ $c -lt $pi ]]; then
+                        echo -en "\e[37m:"
+                    fi
+                done
+                echo -en "\e[39m"
+            fi
+        done <<< $(
+            env --null \
+            | sort --zero-terminated \
+            | tr -s '\000' $'\v'
+        )
     )
 }
 
 # Record original environment variables for later diff
 # shellcheck disable=SC2034
-__bashrc_env_0_original=$(env_sorted)
+__bashrc_env_0_original=$(NO_COLOR=1 env_sorted)
 
 function var_is_array () {
     # each arg is the name of a variable, return 0 if all args are type array,
