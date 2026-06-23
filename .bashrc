@@ -1314,6 +1314,30 @@ function bash_print_colors_using_msgcat () {
 }
 
 # ==============
+# specific tools
+# ==============
+
+function shpool_launch_attach() {
+    if ! bash_installed shpool; then
+        return 1
+    fi
+    declare logd=/tmp/${USER-${USERNAME-}}/
+    mkdir -vp "$logd" || return 1
+    declare logf="${logd}shpool-daemon.log"
+    touch "$logf" || return 1
+    echo "${PS4}shpool --log-file '$logf' daemon &" >&2
+    shpool --log-file "$logf" daemon &
+    declare -i PIDs=$!
+    sleep 1
+    declare -r session_name_fallback="Session_PID=$$_tty=$(basename $(tty))"
+    declare -r session_name=${SHPOOL_SESSION_NAME:-"${session_name_fallback}"}
+    (
+        set -x
+        shpool attach "${session_name}" -c "bash ${*}"
+    )
+}
+
+# ==============
 # prompt changes
 # ==============
 
