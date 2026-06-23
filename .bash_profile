@@ -233,7 +233,7 @@ if [[ "$-" =~ 'i' ]] && [[ -n "${DISPLAY:-}" ]] && bash_installed xhost &>/dev/n
     # TODO: can the current xhost settings be checked before calling this? (to
     #       avoid duplicate calls)
     # TODO: should this be a switch that is set in the .bash_profile.local ?
-    (set -x; xhost +local:)
+    xhost +local:
 fi
 
 __bash_profile_source_file "${__bash_profile_path_dir}/.bashrc"
