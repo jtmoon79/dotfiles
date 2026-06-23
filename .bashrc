@@ -893,20 +893,37 @@ function env_sorted () {
                 # special handling for PATH variable
                 mapfile -t -d ':' <<< "$(echo -n "$val")"
                 # print 'PATH='
-                echo -en "\e[97m${var}\e[37m=\e[32m"
+                if ${__bashrc_color_apps}; then
+                    echo -en '\e[97m'
+                fi
+                echo -en "${var}"
+                if ${__bashrc_color_apps}; then
+                    echo -en '\e[37m'
+                fi
+                echo -en '='
+                if ${__bashrc_color_apps}; then
+                    echo -en '\e[32m'
+                fi
                 declare -i pi=${#MAPFILE[@]}
                 declare -i c=0
                 for path in "${MAPFILE[@]}"; do
                     # print path component
-                    echo -en "\e[32m"
+                    if ${__bashrc_color_apps}; then
+                        echo -en '\e[32m'
+                    fi
                     echo -n "${path}"
                     let c+=1
                     # print ':' but not after the last component
                     if [[ $c -lt $pi ]]; then
-                        echo -en "\e[37m:"
+                        if ${__bashrc_color_apps}; then
+                            echo -en '\e[37m'
+                        fi
+                        echo -n ':'
                     fi
                 done
-                echo -en "\e[39m"
+                if ${__bashrc_color_apps}; then
+                    echo -en '\e[39m'
+                fi
             fi
         done <<< $(
             env --null \
