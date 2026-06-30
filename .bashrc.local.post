@@ -96,6 +96,9 @@
 #   character
 #
 
+# mount point '/' is very likely not a remote filesystem
+bash_prompt_git_info_mountpoint_array_add "/"
+
 # XXX: do not eval `zoxide init bash` here. zoxide
 #      forcefully prepends `__zoxide_hook` into the `PROMPT_COMMAND`
 #      which then overwrites the last error code `$?`. Then the custom

@@ -2416,7 +2416,6 @@ function bash_prompt_table_variables_clear() {
 # ---------------
 # prompt git info
 # ---------------
-
 __bashrc_prompt_git_info_enable=${__bashrc_prompt_git_info_enable-true}  # global
 
 __bash_installed_git=false  # global
@@ -2429,14 +2428,18 @@ if bash_installed stat; then
     __bash_installed_stat=true
 fi
 
-# check `stat` works as expected as it can vary among Unixes
-# consolidate checks to one variable
 __bashrc_prompt_git_info_git_stat=false  # global
-if ${__bash_installed_git} \
-   && ${__bash_installed_stat} \
-   && [[ "$(stat '--format=%m' --dereference '/' 2>/dev/null)" = '/' ]]; then
-    __bashrc_prompt_git_info_git_stat=true
-fi
+function __bash_prompt_git_info_stat_confirm () {
+    # check `stat` works as expected as it can vary among Unixes
+    if ${__bash_installed_git} \
+    && ${__bash_installed_stat}; then
+        if [[ "$(stat '--format=%m' --dereference '/' 2>/dev/null)" = '/' ]]; then
+            __bashrc_prompt_git_info_git_stat=true
+        else
+            __bashrc_prompt_git_info_git_stat=false
+        fi
+    fi
+}
 
 # check `__git_ps1` exists
 __bashrc_prompt_git_info_git_ps1=false
@@ -2463,9 +2466,14 @@ function bash_prompt_git_info_enable() {
         echo "ERROR function bash_prompt_git_info_enable takes no arguments" >&2
         return 1
     fi
+    if ! __bash_prompt_git_info_stat_confirm; then
+        echo "ERROR function bash_prompt_git_info_enable failed to confirm program stat" >&2
+        return 1
+    fi
 
     __bashrc_prompt_git_info_enable=true
 }
+
 function bash_prompt_git_info_disable() {
     # public-facing 'off' switch for prompt git info
 
@@ -2509,6 +2517,11 @@ function bash_prompt_git_info_mountpoint_array_add () {
         return 0
     fi
 
+    if ! __bash_prompt_git_info_stat_confirm; then
+        echo "ERROR function bash_prompt_git_info_mountpoint_array_add failed to confirm program stat" >&2
+        return 1
+    fi
+
     declare -i ret=0
     declare arg=
     for arg in "${@}"; do
@@ -2546,9 +2559,6 @@ function bash_prompt_git_info_mountpoint_array_add () {
     done
     return ${ret}
 }
-
-# mount point '/' is very likely not a remote filesystem
-bash_prompt_git_info_mountpoint_array_add "/"
 
 function bash_prompt_git_info_mountpoint_array_print () {
     # print the array one entry per line
