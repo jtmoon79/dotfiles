@@ -33,7 +33,7 @@ function download () {
     shift
     declare -r from_=${1}
     shift
-    if which curl &>/dev/null; then
+    if command -v curl &>/dev/null; then
         if [[ ${#} -gt 0 ]]; then
         (
             set -x
@@ -45,7 +45,7 @@ function download () {
             curl --output "${to_}" "${from_}"
         )
         fi
-    elif which wget &>/dev/null; then
+    elif command -v wget &>/dev/null; then
         if [[ ${#} -gt 0 ]]; then
         (
             set -x
@@ -88,11 +88,11 @@ function install_dotfiles() {
         fi
         fn='.bash_logout'
         download "./${fn}" "${URL}/${fn}" "${@-}"
-        if which screen &>/dev/null; then
+        if command -v screen &>/dev/null; then
             fn='.screenrc'
             download "./${fn}" "${URL}/${fn}" "${@-}"
         fi
-        if which vim &>/dev/null; then
+        if command -v vim &>/dev/null; then
             fn='.vimrc'
             download "./${fn}" "${URL}/${fn}" "${@-}"
         fi
@@ -117,11 +117,11 @@ function install_dotfiles() {
         fi
         fn='.bash_logout'
         download "./${fn}" "${URL}/${fn}"
-        if which screen &>/dev/null; then
+        if command -v screen &>/dev/null; then
             fn='.screenrc'
             download "./${fn}" "${URL}/${fn}"
         fi
-        if which vim &>/dev/null; then
+        if command -v vim &>/dev/null; then
             fn='.vimrc'
             download "./${fn}" "${URL}/${fn}"
         fi
